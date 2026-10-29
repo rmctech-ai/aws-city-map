@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Raul's AWS City Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<style>
+/* Layout: graph-paper notebook — hand-drawn radial map with a sticky "flashcard" panel, then flows and a keyword finder */
+:root{
+  --paper:#f6f8fc; --card:#ffffff; --grid:#e2e8f3; --ink:#1b2742; --muted:#5a6684; --line:#c9d2e3;
+  --hl:rgba(255,214,10,.55);
+  --compute:#d9480f; --storage:#2b8a3e; --database:#1864ab; --network:#6741d9;
+  --security:#c92a2a; --integration:#0b7285; --monitor:#a61e4d; --ai:#946200;
+  --f-hand:"Kalam","Comic Sans MS","Segoe Print",cursive;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#121825; --card:#1a2233; --grid:#1d2637; --ink:#e7ecf6; --muted:#9aa6c0; --line:#33405a;
+  --hl:rgba(255,212,59,.28);
+  --compute:#ff8f4d; --storage:#5fd47a; --database:#5cb3ff; --network:#a48bff;
+  --security:#ff7676; --integration:#45d0e0; --monitor:#f877a8; --ai:#f5c542; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#121825; --card:#1a2233; --grid:#1d2637; --ink:#e7ecf6; --muted:#9aa6c0; --line:#33405a;
+  --hl:rgba(255,212,59,.28);
+  --compute:#ff8f4d; --storage:#5fd47a; --database:#5cb3ff; --network:#a48bff;
+  --security:#ff7676; --integration:#45d0e0; --monitor:#f877a8; --ai:#f5c542; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px}
+.wrap{max-width:1600px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px;display:grid;gap:40px}
+h1,h2,h3{font-family:var(--f-hand);font-weight:700;text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(2.2rem,5vw,3.4rem)}
+h2{font-size:clamp(1.6rem,3vw,2.1rem)}
+h3{font-size:1.35rem}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lead{max-width:68ch;color:var(--muted);font-size:1.06rem}
+.lead b{color:var(--ink)}
+header{display:grid;gap:12px}
+.mark{background:linear-gradient(transparent 55%,var(--hl) 55%,var(--hl) 92%,transparent 92%);padding:0 .1em}
+
+/* foundation */
+.infra{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.infra article{background:var(--card);border:1.5px solid var(--line);border-radius:6px 14px 8px 12px;padding:16px 18px;display:grid;gap:6px;min-width:0}
+.infra .hook{font-family:var(--f-hand);font-size:1.1rem}
+.infra small{color:var(--muted);font-size:.9rem}
+@media (max-width:820px){.infra{grid-template-columns:1fr}}
+
+/* stage */
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+@media (max-width:1180px){.stage{grid-template-columns:minmax(0,1fr)}}
+.mapcard{background:color-mix(in srgb,var(--card) 70%,transparent);border:1.5px solid var(--line);border-radius:14px;min-width:0;display:grid}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1.5px dashed var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.85rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;background:currentColor;display:inline-block}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button,.chip{font:inherit;cursor:pointer}
+.btn{font-family:var(--f-body);font-size:.88rem;background:var(--card);color:var(--ink);border:1.5px solid var(--ink);border-radius:8px 10px 7px 11px;padding:6px 12px}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.btn:focus-visible,.chip:focus-visible,.node:focus-visible{outline:3px solid var(--network);outline-offset:3px}
+.scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
+svg#map{display:block;width:100%;min-width:980px;height:auto}
+.hint{padding:8px 14px 12px;font-size:.85rem;color:var(--muted)}
+
+/* svg */
+.node{cursor:pointer;transition:opacity .2s}
+.node .bg{fill:var(--card)}
+.node .hl{fill:var(--hl);opacity:0;transition:opacity .2s}
+.node.sel .hl,.node.rel .hl{opacity:1}
+.node.rel .hl{opacity:.55}
+.node .nm{font-family:var(--f-hand);font-weight:700;fill:var(--ink)}
+.node .tg{font-family:var(--f-body);fill:var(--muted)}
+.node.branch .nm{fill:currentColor}
+.node.dim,.tree.dim{opacity:.22}
+.tree{fill:none;transition:opacity .2s}
+.xlink{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-dasharray:5 6;opacity:0;transition:opacity .2s}
+svg.allx .xlink{opacity:.18}
+.xlink.on{opacity:.85!important;stroke-width:2.2}
+.trace path{fill:none;stroke:var(--ink);stroke-width:3}
+.trace circle{fill:var(--ink)}
+.trace text{fill:var(--paper);font-family:var(--f-mono);font-size:15px;font-weight:600}
+.arrowhead{fill:var(--ink)}
+@media (prefers-reduced-motion:no-preference){.xlink.on{animation:march 1.2s linear infinite}}
+@keyframes march{to{stroke-dashoffset:-22}}
+.c-compute{color:var(--compute)}.c-storage{color:var(--storage)}.c-database{color:var(--database)}.c-network{color:var(--network)}
+.c-security{color:var(--security)}.c-integration{color:var(--integration)}.c-monitor{color:var(--monitor)}.c-ai{color:var(--ai)}
+
+/* panel */
+.panel{background:var(--card);border:1.5px solid var(--ink);border-radius:10px 16px 12px 18px;padding:20px;display:grid;gap:14px;position:sticky;top:max(16px,env(safe-area-inset-top,0px));box-shadow:5px 6px 0 var(--grid);min-width:0;max-height:calc(100vh - 32px);overflow:auto}
+@media (max-width:1180px){.panel{position:static;max-height:none}}
+.panel .kid{font-size:1.08rem}
+.panel dl{margin:0;display:grid;gap:12px}
+.panel dt{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.panel dd{margin:2px 0 0}
+.hookbox{font-family:var(--f-hand);font-size:1.15rem;line-height:1.35;border-left:4px solid currentColor;padding:4px 0 4px 12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:.78rem;border:1.2px solid var(--line);border-radius:999px;padding:3px 10px;background:transparent;color:var(--ink)}
+button.chip:hover{border-color:var(--ink)}
+.links{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.links li{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:baseline;font-size:.92rem}
+.links .chip{font-weight:600}
+
+/* flows */
+section{display:grid;gap:16px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.flow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.flow{grid-template-columns:1fr}}
+.flow .intro{display:grid;gap:12px;align-content:start}
+ol.steps{list-style:none;margin:0;padding:0;display:grid;gap:0;counter-reset:s}
+ol.steps li{counter-increment:s;position:relative;padding:0 0 18px 50px;display:grid;gap:6px;min-width:0}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:34px;height:34px;border:2px solid var(--ink);border-radius:50% 46% 52% 48%;display:grid;place-items:center;font-family:var(--f-hand);font-weight:700;font-size:1.1rem;background:var(--card)}
+ol.steps li::after{content:"";position:absolute;left:16px;top:36px;bottom:2px;border-left:2px dashed var(--line)}
+ol.steps li:last-child::after{display:none}
+
+/* triggers */
+.finder{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.finder input{font:inherit;font-size:1rem;padding:9px 12px;border:1.5px solid var(--ink);border-radius:8px 11px 9px 10px;background:var(--card);color:var(--ink);width:min(420px,100%)}
+.kwgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px 18px}
+.kw{display:flex;justify-content:space-between;gap:10px;align-items:baseline;text-align:left;background:none;border:0;border-bottom:1px dotted var(--line);padding:6px 2px;color:var(--ink);min-width:0}
+.kw:hover .kwt{text-decoration:underline}
+.kwt{font-size:.92rem;min-width:0}
+.kws{font-family:var(--f-hand);font-weight:700;white-space:nowrap}
+.count{font-size:.85rem;color:var(--muted)}
+footer{font-size:.85rem;color:var(--muted)}
+.jump{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.92rem}
+.jump a{color:var(--ink);text-decoration:none;border-bottom:2px solid var(--hl);padding-bottom:1px}
+.jump a:hover{border-bottom-color:var(--ink)}
+.exam{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.88rem;color:var(--muted)}
+.exam b{color:var(--ink);font-variant-numeric:tabular-nums}
+.lagrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,520px),1fr));gap:14px;align-items:start}
+.la{background:var(--card);border:1.5px solid var(--line);border-radius:8px 14px 10px 12px;min-width:0}
+.la summary{cursor:pointer;list-style:none;padding:14px 16px;display:grid;gap:6px}
+.la summary::-webkit-details-marker{display:none}
+.la summary h3{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.la summary h3::after{content:"+";font-family:var(--f-mono);font-size:1rem;color:var(--muted)}
+.la[open] summary h3::after{content:"−"}
+.la .trick{font-family:var(--f-hand);font-size:1.08rem;line-height:1.35;background:linear-gradient(transparent 60%,var(--hl) 60%);display:inline}
+.la .tw{overflow-x:auto;padding:0 16px 14px}
+.la table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:440px}
+.la th{text-align:left;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;padding:6px 8px;border-bottom:1.5px solid var(--ink)}
+.la td{padding:7px 8px;border-bottom:1px dotted var(--line);vertical-align:top}
+.la td:first-child{font-family:var(--f-hand);font-weight:700;font-size:1rem;white-space:nowrap}
+.la td:last-child{font-family:var(--f-mono);font-size:.76rem;color:var(--muted)}
+.cats{display:flex;flex-wrap:wrap;gap:6px}
+.cats .chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.ixgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:12px}
+.ix{background:var(--card);border:1.2px solid var(--line);border-radius:6px 12px 8px 10px;padding:12px 14px;display:grid;gap:5px;align-content:start;min-width:0}
+.ix h3{font-size:1.15rem;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.ix .cat{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ix p{font-size:.92rem}
+.ix .an{color:var(--muted);font-style:italic}
+.ix .tr{font-family:var(--f-mono);font-size:.74rem;color:var(--muted)}
+.onmap{font-family:var(--f-mono);font-size:.68rem;border:1.2px solid var(--ink);border-radius:999px;padding:1px 8px;background:var(--hl);color:var(--ink);white-space:nowrap}
+button.onmap{cursor:pointer}
+.ixhead{grid-column:1/-1;font-family:var(--f-hand);font-weight:700;font-size:1.3rem;margin-top:8px;border-bottom:1.5px dashed var(--line);padding-bottom:2px}
+ol.plan{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
+.plan li{background:var(--card);border:1.2px solid var(--line);border-radius:8px 12px 9px 11px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:start}
+.plan input{width:20px;height:20px;margin:3px 0 0;accent-color:var(--storage)}
+.plan .d{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.plan .f{font-family:var(--f-hand);font-weight:700;font-size:1.1rem;line-height:1.25}
+.plan .w{grid-column:2;font-size:.88rem;color:var(--muted)}
+.plan li.done{opacity:.6}
+.plan li.done .f{text-decoration:line-through}
+.plan li.exam .f{color:var(--security)}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Raul's CLF-C02 review · AWS Cloud Practitioner mind map</div>
+    <h1>Raul's AWS City: <span class="mark">a city you rent</span> by the hour</h1>
+    <p class="lead">Every AWS service is a shop or worker in that city. <b>Compute</b> are the workers, <b>Storage</b> the warehouses, <b>Databases</b> the record keepers, <b>Networking</b> the roads and gates, <b>Security</b> the guards, <b>Integration</b> the messengers, <b>Monitoring</b> the CCTV and accountant, and <b>AI</b> the brains. Tap any bubble to see what it does, a real-life analogy, a memory hook, the exam keywords, and who it works with.</p>
+    <nav class="jump" aria-label="Sections"><a href="#mapsec">Mind map</a><a href="#flows">Flows</a><a href="#lookalikes">Don't mix these up</a><a href="#allsvc">All exam services</a><a href="#triggers">Keyword finder</a><a href="#plan">14-day plan</a></nav>
+    <div class="exam"><span><b>65</b> questions</span><span><b>90</b> minutes</span><span><b>700</b>/1000 to pass</span><span>Domains: Cloud Concepts <b>24%</b> · Security &amp; Compliance <b>30%</b> · Technology &amp; Services <b>34%</b> · Billing, Pricing &amp; Support <b>12%</b></span></div>
+  </header>
+
+  <div class="infra" aria-label="Global infrastructure">
+    <article><div class="eyebrow">Ground floor 1</div><h3>Region</h3><p>A city where AWS has data centers, like Singapore (ap-southeast-1). You pick one for speed, data laws and price.</p><p class="hook">Region = the city.</p><small>Keywords: data sovereignty, latency, "closest to customers"</small></article>
+    <article><div class="eyebrow">Ground floor 2</div><h3>Availability Zone</h3><p>Separate data-center buildings inside a Region, each with its own power and network. Put your app in 2+ AZs so one blackout doesn't take you down.</p><p class="hook">AZ = separate buildings. Multi-AZ = don't put all your eggs in one building.</p><small>Keywords: high availability, fault tolerance, Multi-AZ</small></article>
+    <article><div class="eyebrow">Ground floor 3</div><h3>Edge Location</h3><p>Small outposts close to users. CloudFront and Route 53 use them to answer fast without going back to the Region.</p><p class="hook">Edge = a convenience store on every corner.</p><small>Keywords: caching, CDN, low latency for global users</small></article>
+  </div>
+
+  <div class="stage" id="mapsec">
+    <div class="mapcard">
+      <div class="toolbar">
+        <div class="legend" id="legend"></div>
+        <div class="btns">
+          <button class="btn" id="allx" type="button" aria-pressed="false">Show all connections</button>
+          <button class="btn" id="reset" type="button">Reset map</button>
+        </div>
+      </div>
+      <div class="scroller"><svg id="map" viewBox="-780 -540 1560 1080" role="img" aria-label="Mind map of AWS services grouped into eight districts"></svg></div>
+      <p class="hint">Dashed moving lines = "works with". Highlighter = what's related. On a phone, swipe the map sideways.</p>
+    </div>
+    <aside class="panel" id="panel" aria-live="polite"></aside>
+  </div>
+
+  <section id="flows">
+    <div class="eyebrow">Show the flow</div>
+    <h2>Follow one request through the city</h2>
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <div id="flowbody"></div>
+  </section>
+
+  <section id="lookalikes">
+    <div class="eyebrow">Sounds the same, does something different</div>
+    <h2>Don't mix these up</h2>
+    <p class="lead">These are the groups the exam loves to swap around. Read the one-line trick first, then open the group to compare each service side by side.</p>
+    <div class="finder"><label class="eyebrow" for="laq">Filter</label><input id="laq" type="search" placeholder="try: VPN, keys, Shield, queue" autocomplete="off"><button class="btn" type="button" id="laopen">Open all</button><span class="count" id="lacount"></span></div>
+    <div class="lagrid" id="lagrid"></div>
+  </section>
+
+  <section id="allsvc">
+    <div class="eyebrow">Every service on the CLF-C02 list</div>
+    <h2>All exam services, one card each</h2>
+    <p class="lead">Grouped the way the official in-scope list groups them. Cards marked <span class="onmap">on map</span> open the full flashcard above.</p>
+    <div class="cats" id="cats"></div>
+    <div class="finder"><label class="eyebrow" for="ixq">Search</label><input id="ixq" type="search" placeholder="try: Kubernetes, PII, speech" autocomplete="off"><span class="count" id="ixcount"></span></div>
+    <div class="ixgrid" id="ixgrid"></div>
+  </section>
+
+  <section id="triggers">
+    <div class="eyebrow">Keyword triggers</div>
+    <h2>Exam says this word → think this service</h2>
+    <div class="finder"><label class="eyebrow" for="kwq">Find</label><input id="kwq" type="search" placeholder="try: decouple, serverless, audit, cache" autocomplete="off"><span class="count" id="kwcount"></span></div>
+    <div class="kwgrid" id="kwgrid"></div>
+  </section>
+
+  <section id="plan">
+    <div class="eyebrow">Oct 30 – Nov 12</div>
+    <h2>Raul's two-week review</h2>
+    <p class="lead">One focus a day, with practice exams on days 8, 12 and 14. Tick a day when it's done; the ticks stay in this browser.</p>
+    <ol class="plan" id="planlist"></ol>
+  </section>
+
+  <footer>Built for Raul's AWS Cloud Practitioner (CLF-C02) review. Service list follows AWS's in-scope list, which AWS says is not exhaustive. Analogies are memory aids, not exact definitions; check AWS docs for limits and pricing. Analogies are memory aids, not exact definitions; check AWS docs for limits and pricing.</footer>
+</div>
+
+<script>
+const BR=[
+ {id:'compute',name:'Compute',nick:'the workers',analogy:'The crew that actually does the work. You decide how much control you want: rent a whole house (EC2), hire a driver per trip (Lambda), or let someone else build everything (Beanstalk).',hook:'More control = more chores. EC2 (you do everything) → Beanstalk → Lambda (AWS does almost everything).'},
+ {id:'storage',name:'Storage',nick:'the warehouses',analogy:'Places to keep your stuff. Ask: is it a file anyone grabs by link (S3), a hard drive for one computer (EBS), a shared office drive (EFS), or something you almost never open (Glacier)?',hook:'Object = S3, Block = EBS, File = EFS, Frozen = Glacier.'},
+ {id:'database',name:'Database',nick:'the record keepers',analogy:'Organized records. Tables with rows and columns go to RDS/Aurora. Fast lookups by a key go to DynamoDB. Big analysis goes to Redshift. Hot repeat questions go to ElastiCache.',hook:'SQL → RDS. NoSQL → Dynamo. Analytics → Redshift. Speed → Cache.'},
+ {id:'ai',name:'AI & ML',nick:'the brains',analogy:'Ready-made smart services. Some you just call (Rekognition, Textract, Bedrock); one lets you build your own model (SageMaker).',hook:'Call a model → Bedrock. Build a model → SageMaker.'},
+ {id:'integration',name:'Integration',nick:'the messengers',analogy:'They carry messages between services so nobody has to wait for anybody. That is called decoupling.',hook:'Queue waits (SQS). Megaphone shouts (SNS). Bridge routes events (EventBridge). Steps follow a recipe (Step Functions).'},
+ {id:'monitor',name:'Monitor & Manage',nick:'CCTV & accountant',analogy:'Watching what happens, recording who did it, building things from blueprints, and keeping the bill in check.',hook:'Watch = CloudWatch. Who did it = CloudTrail. Blueprint = CloudFormation. Money = Budgets.'},
+ {id:'security',name:'Security',nick:'the guards',analogy:'IDs, locks, bouncers and crowd control. Remember the Shared Responsibility Model: AWS secures the building, you lock your own unit.',hook:'AWS = security OF the cloud. You = security IN the cloud.'},
+ {id:'network',name:'Networking',nick:'roads & gates',analogy:'How visitors find you and travel to your servers: the address book, the fast local stores, the traffic guard, and your gated village.',hook:'Find (Route 53) → Fast (CloudFront) → Spread (ELB) → Private (VPC).'}
+];
+const SV=[
+ // compute
+ {id:'ec2',b:'compute',name:'EC2',tag:'rent-a-computer',kid:'A computer you rent inside AWS. You choose its size and operating system, and you take care of it.',an:'Renting a condo unit: you furnish it, you fix it, and you pay while you stay.',use:'Run an n8n or FastAPI server 24/7.',hook:'EC2 = Elastic Compute Cloud = "Every Customer gets a Computer." Pricing: On-Demand, Reserved, Savings Plans, Spot.',kw:['virtual server','full control of the OS','IaaS','instance types','Spot Instances','Reserved Instances']},
+ {id:'lambda',b:'compute',name:'Lambda',tag:'code on demand',kid:'Code that wakes up only when something happens, runs for a moment, then disappears. You pay only for that moment.',an:'A Grab ride: you don\'t own the car, you just book a trip when you need one.',use:'Resize a photo the second it lands in S3, or answer a webhook.',hook:'Lambda = no server to babysit. Max 15 minutes per run.',kw:['serverless','event-driven','run code without provisioning servers','pay per request','15 minutes']},
+ {id:'autoscaling',b:'compute',name:'Auto Scaling',tag:'more crew at rush hour',kid:'Adds more EC2 computers when it\'s busy and removes them when it\'s quiet.',an:'A fast-food manager calling extra crew for the lunch rush and sending them home after.',use:'Survive a 12.12 sale traffic spike without paying for idle servers all year.',hook:'Scale OUT = more boxes. Scale UP = a bigger box.',kw:['elasticity','scale out / scale in','changing demand','horizontal scaling']},
+ {id:'beanstalk',b:'compute',name:'Beanstalk',tag:'just upload code',kid:'You upload your app\'s code and AWS builds the servers, load balancer and scaling around it.',an:'A turnkey house: you just bring your furniture (code).',use:'Ship a web app fast without designing the infrastructure.',hook:'Elastic Beanstalk = PaaS. Plant code, the infra grows.',kw:['PaaS','deploy web apps quickly','developers focus on code']},
+ {id:'fargate',b:'compute',name:'ECS / Fargate',tag:'containers',kid:'Runs containers (apps packed with everything they need) without you managing servers.',an:'Shipping containers on a ship. Fargate is the ship crew you never have to hire.',use:'Run a Dockerized microservice.',hook:'ECS = container boss. EKS = Kubernetes. Fargate = serverless containers.',kw:['Docker','containers','microservices','Kubernetes (EKS)','serverless containers']},
+ // storage
+ {id:'s3',b:'storage',name:'S3',tag:'endless file locker',kid:'Online storage for any file. Files live in "buckets" and each gets its own link.',an:'A warehouse for balikbayan boxes: drop off any box, get a claim tag (the URL).',use:'Store images, backups, PDFs, a static website, or a data lake.',hook:'S3 = Simple Storage Service (3 S). Eleven 9s durability (99.999999999%).',kw:['object storage','bucket','static website hosting','11 nines durability','data lake','storage classes']},
+ {id:'glacier',b:'storage',name:'S3 Glacier',tag:'deep-freeze archive',kid:'Super cheap storage for files you almost never open. Getting them back takes minutes to hours.',an:'A bodega back in the province: cheap to keep things, a long trip to fetch them.',use:'Keep 7 years of invoices for compliance.',hook:'Glacier = frozen. Cheap to keep, slow to thaw.',kw:['archive','long-term retention','lowest storage cost','retrieval in minutes to hours']},
+ {id:'ebs',b:'storage',name:'EBS',tag:'disk for one EC2',kid:'A hard drive plugged into one EC2 computer.',an:'The SSD inside a laptop. Only that laptop uses it.',use:'The C: drive and database files of an EC2 server.',hook:'EBS = Block storage = Bound to one box, in one AZ.',kw:['block storage','attached to an EC2 instance','snapshots','same Availability Zone']},
+ {id:'efs',b:'storage',name:'EFS',tag:'shared folder',kid:'A shared drive many EC2 computers can open at the same time.',an:'The office shared drive everyone can open.',use:'Several web servers reading the same uploaded files.',hook:'EFS = Everyone\'s File Shelf.',kw:['shared file system','many EC2 instances at once','Linux / NFS']},
+ // database
+ {id:'rds',b:'database',name:'RDS',tag:'managed SQL',kid:'A database with tables (MySQL, PostgreSQL and others). AWS handles backups, patching and failover.',an:'Hiring a bookkeeper: you write the entries, they keep the ledger neat.',use:'Orders and customers table for an online shop.',hook:'RDS = Relational = rows and columns. AWS does the chores.',kw:['relational database','SQL','managed database','Multi-AZ','read replicas']},
+ {id:'aurora',b:'database',name:'Aurora',tag:'turbo SQL',kid:'AWS\'s own high-speed SQL database that speaks MySQL and PostgreSQL.',an:'The same bookkeeper, now with a super calculator.',use:'A busy app that outgrew normal MySQL.',hook:'Aurora = RDS on boost. MySQL + PostgreSQL compatible.',kw:['high-performance relational','MySQL and PostgreSQL compatible','built by AWS']},
+ {id:'dynamodb',b:'database',name:'DynamoDB',tag:'fast NoSQL',kid:'A super fast database where you look things up by a key. No tables to plan, no servers.',an:'The sari-sari store notebook: look up a name, get the balance instantly.',use:'Shopping carts, user sessions, leaderboards.',hook:'Dynamo = dynamic = NoSQL, millisecond speed, serverless.',kw:['NoSQL','key-value','single-digit millisecond','serverless database']},
+ {id:'elasticache',b:'database',name:'ElastiCache',tag:'cheat sheet in memory',kid:'Keeps popular answers in memory so the main database isn\'t asked again and again.',an:'A sticky note on the fridge so you don\'t open the filing cabinet every time.',use:'Cache the product list that thousands of users view.',hook:'Cache = cheat sheet. Redis or Memcached.',kw:['in-memory','caching','Redis','Memcached','reduce database load']},
+ {id:'redshift',b:'database',name:'Redshift',tag:'analytics warehouse',kid:'A data warehouse for big reports over huge amounts of data.',an:'The archive room where analysts crunch years of sales records.',use:'Yearly sales dashboards for management.',hook:'Redshift = Reports. OLAP, not day-to-day transactions.',kw:['data warehouse','analytics','OLAP','business intelligence','petabyte scale']},
+ // ai
+ {id:'bedrock',b:'ai',name:'Bedrock',tag:'GenAI models on tap',kid:'Use big AI models (Claude and others) through one API without running any servers.',an:'A talent agency for AI models: pick one and hire it per job.',use:'An assistant that drafts replies or reads contracts.',hook:'Bedrock = the bedrock of GenAI apps. No training needed. (Bonus: not on the CLF-C02 list; Amazon Q is.)',kw:['generative AI','foundation models','LLM','no infrastructure to manage']},
+ {id:'sagemaker',b:'ai',name:'SageMaker',tag:'build your own ML',kid:'A workshop to build, train and launch your own machine-learning models.',an:'A full woodworking shop for making your own furniture.',use:'Predict which customers will cancel.',hook:'SageMaker = make a sage (a smart model) yourself.',kw:['build, train and deploy ML','data scientists','custom models']},
+ {id:'rekognition',b:'ai',name:'Rekognition',tag:'eyes for images',kid:'Looks at pictures and videos and tells you what\'s in them: faces, objects, text.',an:'A friend who names everything in a photo.',use:'Check that an uploaded ID photo shows a face.',hook:'reKOGnition = recognize images and video.',kw:['image analysis','facial analysis','video analysis','object detection']},
+ {id:'textract',b:'ai',name:'Textract',tag:'reads documents',kid:'Pulls typed and handwritten text, forms and tables out of scanned documents.',an:'An encoder who types up every scanned form for you.',use:'Extract invoice number, date and total from PDFs.',hook:'Textract = extract text. Smarter than plain OCR.',kw:['OCR','extract text from documents','forms and tables','invoices']},
+ // integration
+ {id:'sqs',b:'integration',name:'SQS',tag:'waiting line',kid:'A queue that holds jobs until a worker is ready to pick them up.',an:'Numbered tickets at the LTO: you get in line, and someone serves you when free.',use:'Order spikes pile up safely; workers process them one by one.',hook:'SQS = Queue = waiting line. Decouples sender from worker.',kw:['decouple','message queue','buffer','asynchronous','polling']},
+ {id:'sns',b:'integration',name:'SNS',tag:'megaphone',kid:'Sends one message to many subscribers at once: email, SMS, Lambda, queues.',an:'The barangay megaphone: one announcement, everybody hears it.',use:'Text and email the team when a server alarm fires.',hook:'SNS = Notification = push to many (pub/sub). SQS pulls, SNS pushes.',kw:['pub/sub','push notifications','fan-out','email and SMS']},
+ {id:'eventbridge',b:'integration',name:'EventBridge',tag:'event router',kid:'Watches for events ("file uploaded", "it\'s 9 AM") and sends them to the right service.',an:'A traffic enforcer pointing each car to the right street.',use:'Every weekday at 8 AM, start a report job.',hook:'EventBridge = bridge events to targets. Also your cron.',kw:['event bus','scheduled rules','event-driven','SaaS events']},
+ {id:'stepfn',b:'integration',name:'Step Functions',tag:'workflow recipe',kid:'Draw a workflow of steps with arrows, and AWS runs each step in order, with retries.',an:'An n8n workflow, but living inside AWS.',use:'Upload → extract → validate → save → notify.',hook:'Step Functions = state machine = steps with arrows.',kw:['orchestration','workflow','state machine','coordinate Lambda functions']},
+ // monitor
+ {id:'cloudwatch',b:'monitor',name:'CloudWatch',tag:'CCTV + alarms',kid:'Collects numbers and logs from your services and rings an alarm when something looks wrong.',an:'CCTV plus a thermometer on every machine.',use:'Alert me when CPU stays above 80% for 5 minutes.',hook:'CloudWatch = watch performance (metrics, logs, alarms).',kw:['metrics','logs','alarms','dashboards','CPU utilization']},
+ {id:'cloudtrail',b:'monitor',name:'CloudTrail',tag:'who did what',kid:'Records every action taken in your AWS account: who, what, when, from where.',an:'The guard\'s logbook at the gate.',use:'Find out who deleted the S3 bucket.',hook:'CloudTrail = trail of footprints = audit.',kw:['audit','API call history','who did what','governance and compliance']},
+ {id:'cloudformation',b:'monitor',name:'CloudFormation',tag:'infra blueprint',kid:'Describe your servers, networks and databases in a file, and AWS builds them the same way every time.',an:'A LEGO instruction booklet.',use:'Spin up identical test and production environments.',hook:'CloudFormation = form the infra from a template (IaC).',kw:['infrastructure as code','templates','YAML / JSON','stacks','repeatable deployments']},
+ {id:'budgets',b:'monitor',name:'Budgets',tag:'spending alarm',kid:'Cost Explorer shows where your money went. Budgets warns you before you overspend.',an:'A household budget notebook with an alarm.',use:'Email me if this month will pass $50.',hook:'Explorer looks back. Budgets warns ahead.',kw:['cost alerts','forecast','Cost Explorer','billing']},
+ {id:'trustedadvisor',b:'monitor',name:'Trusted Advisor',tag:'account check-up',kid:'Scans your account and suggests fixes for cost, security, performance, fault tolerance and service limits.',an:'A home inspector with a checklist.',use:'Spot idle servers and open security ports.',hook:'Trusted Advisor = a free check-up (more checks with Business support).',kw:['best-practice recommendations','cost optimization checks','service limits']},
+ // security
+ {id:'iam',b:'security',name:'IAM',tag:'IDs & permissions',kid:'Decides who can log in and what each person or service is allowed to do.',an:'Company ID cards and door access: users, groups, roles and policies.',use:'Give the intern read-only access; give EC2 a role to read S3.',hook:'IAM = "I Am" — prove who you are, then what you may do. Global and free. Least privilege.',kw:['users, groups, roles','policies','least privilege','MFA','root user']},
+ {id:'kms',b:'security',name:'KMS',tag:'key cabinet',kid:'Creates and guards the keys that scramble (encrypt) your data.',an:'The locksmith\'s locked key cabinet.',use:'Encrypt customer files in S3 and the RDS database.',hook:'KMS = Key Management Service = keys to lock data.',kw:['encryption at rest','encryption keys','managed keys']},
+ {id:'shield',b:'security',name:'Shield',tag:'anti-DDoS',kid:'Protects you from floods of fake traffic meant to knock your site offline.',an:'Crowd-control barriers at a concert.',use:'Keep the site up during an attack.',hook:'Shield Standard is free and on by default. Advanced is paid, with a response team.',kw:['DDoS protection','Shield Standard (free)','Shield Advanced']},
+ {id:'waf',b:'security',name:'WAF',tag:'web bouncer',kid:'A firewall that blocks bad web requests like SQL injection and cross-site scripting.',an:'A bouncer checking every guest at the door.',use:'Block a country or a known bad IP list.',hook:'WAF = Web Application Firewall. Layer 7 rules.',kw:['SQL injection','cross-site scripting','web exploits','firewall rules']},
+ {id:'cognito',b:'security',name:'Cognito',tag:'app logins',kid:'Handles sign-up and log-in for your app\'s users, including Google or Facebook login.',an:'The guest list and wristband at an event.',use:'Customer accounts for a mobile app.',hook:'Cognito = cognition = know who your app users are.',kw:['user sign-up and sign-in','social login','web and mobile app users']},
+ // network
+ {id:'vpc',b:'network',name:'VPC',tag:'your private village',kid:'Your own private network inside AWS. You draw the streets (subnets) and the gate rules.',an:'A gated subdivision with a guardhouse.',use:'Web servers in a public subnet, database in a private one.',hook:'VPC = Virtual Private Cloud = your own village. Security Group = door lock; NACL = village gate.',kw:['subnets (public / private)','Internet Gateway','NAT Gateway','security groups','network ACLs']},
+ {id:'route53',b:'network',name:'Route 53',tag:'address book (DNS)',kid:'Turns names like mysite.com into the address of your servers.',an:'The phonebook, or Waze for websites.',use:'Point your domain to CloudFront and fail over if a Region goes down.',hook:'53 = the DNS port number.',kw:['DNS','domain registration','routing policies','health checks']},
+ {id:'cloudfront',b:'network',name:'CloudFront',tag:'copies near users',kid:'Keeps copies of your content in locations near your users so pages load fast.',an:'7-Eleven branches everywhere, so nobody drives to the main warehouse.',use:'Fast images and videos for users in Manila and Madrid.',hook:'CloudFront = front stores near you (edge locations). CDN.',kw:['CDN','edge locations','caching','low latency','global users']},
+ {id:'elb',b:'network',name:'ELB',tag:'traffic guard',kid:'Spreads incoming visitors across many servers and skips the unhealthy ones.',an:'The bank guard pointing you to the free teller.',use:'Share traffic across three EC2s in two AZs.',hook:'ELB = Evenly Load Balanced. ALB = web (HTTP). NLB = super fast (TCP).',kw:['distribute traffic','Application Load Balancer','Network Load Balancer','health checks','high availability']},
+ {id:'apigw',b:'network',name:'API Gateway',tag:'front door for APIs',kid:'The front door for your app\'s API. It receives requests and hands them to Lambda or other backends.',an:'The order counter: takes your order and passes it to the kitchen.',use:'A /invoices endpoint that triggers a Lambda.',hook:'API Gateway = receptionist for your code.',kw:['REST API','WebSocket API','throttling','front door for backends']}
+];
+const ED=[
+ ['ec2','ebs','EBS is the hard drive EC2 boots and saves to'],['ec2','efs','Many EC2s share one EFS folder'],
+ ['autoscaling','ec2','Adds or removes copies of EC2'],['elb','ec2','Spreads visitors across EC2s'],
+ ['elb','autoscaling','New EC2s from Auto Scaling join the load balancer'],['cloudwatch','autoscaling','CloudWatch alarms tell Auto Scaling when to scale'],
+ ['vpc','ec2','EC2 lives inside a VPC subnet'],['vpc','rds','RDS sits in a private subnet'],
+ ['ec2','rds','The app on EC2 reads and writes data in RDS'],['rds','aurora','Aurora is one of the RDS engines'],
+ ['elasticache','rds','Cache sits in front of RDS to save trips'],['beanstalk','ec2','Beanstalk creates EC2, ELB and Auto Scaling for you'],
+ ['fargate','elb','A load balancer routes traffic to containers'],['route53','cloudfront','DNS points your domain to CloudFront'],
+ ['route53','elb','DNS can point straight to the load balancer'],['cloudfront','s3','CloudFront caches S3 files near users'],
+ ['cloudfront','elb','CloudFront can also front the dynamic app behind ELB'],['shield','cloudfront','Shield protects CloudFront and Route 53 from DDoS'],
+ ['waf','cloudfront','WAF rules filter bad requests at the edge'],['waf','apigw','WAF can protect API Gateway too'],
+ ['apigw','lambda','API Gateway calls a Lambda for each request'],['cognito','apigw','Cognito checks the user is logged in before the API runs'],
+ ['lambda','dynamodb','Lambda saves and reads data in DynamoDB'],['s3','lambda','A new S3 upload can trigger Lambda'],
+ ['s3','glacier','Lifecycle rules move old S3 files to Glacier'],['kms','s3','KMS keys encrypt S3 objects'],
+ ['kms','rds','KMS keys encrypt RDS storage'],['kms','ebs','KMS encrypts EBS volumes'],
+ ['iam','ec2','An IAM role lets EC2 call other services'],['iam','lambda','Lambda runs with an IAM execution role'],
+ ['iam','s3','IAM policies control who can read a bucket'],['cloudtrail','iam','CloudTrail logs every action IAM identities take'],
+ ['sqs','lambda','Lambda can process jobs from SQS'],['sqs','ec2','Worker EC2s poll SQS for jobs'],
+ ['sns','sqs','SNS fans one message out to many SQS queues'],['cloudwatch','sns','Alarms send alerts through SNS'],
+ ['budgets','sns','Budget alerts go out through SNS or email'],['eventbridge','lambda','Events and schedules trigger Lambda'],
+ ['stepfn','lambda','Step Functions runs Lambdas in order'],['eventbridge','stepfn','An event can start a Step Functions workflow'],
+ ['cloudwatch','lambda','Lambda logs land in CloudWatch Logs'],['cloudformation','vpc','One template can build the VPC, EC2s and more'],
+ ['redshift','s3','Redshift loads and queries data from S3'],['sagemaker','s3','SageMaker reads training data from S3'],
+ ['bedrock','lambda','Lambda calls Bedrock to ask an AI model'],['textract','s3','Textract reads documents stored in S3'],
+ ['textract','lambda','Lambda sends files to Textract'],['rekognition','s3','Rekognition analyzes images in S3'],
+ ['trustedadvisor','iam','Flags risky setups like no MFA on the root user']
+];
+const FLOWS=[
+ {id:'web',name:'A visitor opens your website',sum:'The classic "3-tier" web app: roads in front, workers in the middle, records at the back. Memorize this one and half the exam architecture questions get easy.',steps:[
+  {s:['route53'],t:'They type yoursite.com. Route 53 looks up where it lives.'},
+  {s:['cloudfront','shield','waf'],t:'CloudFront answers from a nearby edge location. Shield and WAF block attackers on the way in.'},
+  {s:['s3'],t:'Images and CSS that aren\'t cached yet come from an S3 bucket.'},
+  {s:['elb'],t:'Page requests that need fresh data go to the load balancer.'},
+  {s:['ec2','autoscaling','vpc'],t:'ELB hands the request to a healthy EC2 inside your VPC. Auto Scaling adds more EC2s if it gets busy.'},
+  {s:['rds','elasticache'],t:'EC2 reads orders from RDS in a private subnet, with ElastiCache keeping popular answers handy.'},
+  {s:['cloudwatch','sns'],t:'CloudWatch watches CPU and errors. An alarm scales the fleet or texts you through SNS.'}]},
+ {id:'invoice',name:'Serverless invoice robot',sum:'An event-driven pipeline with no servers to manage. Same idea as an n8n workflow, built from AWS parts: trigger → extract → think → save → notify.',steps:[
+  {s:['s3'],t:'A supplier\'s invoice PDF is uploaded to an S3 bucket.'},
+  {s:['eventbridge'],t:'The upload is an event. EventBridge catches it and starts the workflow.'},
+  {s:['stepfn'],t:'Step Functions runs each step in order and retries if one fails.'},
+  {s:['textract','lambda'],t:'A Lambda sends the PDF to Textract, which pulls out vendor, date, line items and total.'},
+  {s:['bedrock'],t:'Bedrock (an LLM like Claude) checks the fields make sense and classifies the expense.'},
+  {s:['dynamodb'],t:'The clean result is saved in DynamoDB.'},
+  {s:['sqs','sns'],t:'A job goes into SQS for the system that posts to accounting, and SNS emails the finance team.'}]}
+];
+const byId=Object.fromEntries(SV.map(s=>[s.id,s]));
+const brById=Object.fromEntries(BR.map(b=>[b.id,b]));
+const NS='http://www.w3.org/2000/svg';
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const svg=document.getElementById('map');
+const panel=document.getElementById('panel');
+function mk(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+// layout
+const RX1=280,RY1=205,RX2=575,RY2=395,PUSH=78;
+BR.forEach((b,i)=>{
+  const a=(-90+i*45)*Math.PI/180;b.a=a;b.x=RX1*Math.cos(a);b.y=RY1*Math.sin(a);
+  const L=SV.filter(s=>s.b===b.id),n=L.length,span=n>1?Math.min(38,10*(n-1)):0;
+  L.forEach((s,j)=>{const d=n>1?-span/2+j*span/(n-1):0,la=a+d*Math.PI/180,p=(j%2)*PUSH;
+    s.a=la;s.x=(RX2+p)*Math.cos(la);s.y=(RY2+p*.9)*Math.sin(la);});
+});
+
+let rc=null;let seed=7;
+function rough(type,args,opts,parent){
+  const RG=window.rough&&(window.rough.svg?window.rough:window.rough.default);if(RG&&RG.svg&&!rc)rc=RG.svg(svg);
+  if(rc){let g;const o=Object.assign({stroke:'currentColor',roughness:1.1,bowing:1.2,seed:seed++},opts);
+    if(type==='path')g=rc.path(args[0],o);else g=rc.ellipse(args[0],args[1],args[2],args[3],o);
+    g.querySelectorAll('path').forEach(p=>{if(p.getAttribute('fill')&&p.getAttribute('fill')!=='none'){}else p.setAttribute('fill','none')});
+    parent.appendChild(g);return g}
+  if(type==='path')return mk('path',{d:args[0],fill:'none',stroke:'currentColor','stroke-width':opts.strokeWidth||1.5},parent);
+  return mk('ellipse',{cx:args[0],cy:args[1],rx:args[2]/2,ry:args[3]/2,fill:'none',stroke:'currentColor','stroke-width':opts.strokeWidth||2},parent);
+}
+function rrect(w,h,r){const x=-w/2,y=-h/2;return `M${x+r},${y} H${x+w-r} Q${x+w},${y} ${x+w},${y+r} V${y+h-r} Q${x+w},${y+h} ${x+w-r},${y+h} H${x+r} Q${x},${y+h} ${x},${y+h-r} V${y+r} Q${x},${y} ${x+r},${y} Z`}
+
+const L={};
+function draw(){
+  svg.innerHTML='';seed=7;rc=null;
+  const defs=mk('defs',{},svg);
+  const m=mk('marker',{id:'ah',viewBox:'0 0 10 10',refX:'9',refY:'5',markerWidth:'7',markerHeight:'7',orient:'auto-start-reverse'},defs);
+  mk('path',{d:'M0,0 L10,5 L0,10 z',class:'arrowhead'},m);
+  L.tree=mk('g',{},svg);L.x=mk('g',{},svg);L.trace=mk('g',{class:'trace'},svg);L.nodes=mk('g',{},svg);
+  // center
+  const c=mk('g',{class:'node center',tabindex:'0',role:'button','aria-label':'AWS overview','data-k':'center'},L.nodes);
+  mk('ellipse',{cx:0,cy:0,rx:96,ry:52,class:'bg'},c);
+  const ce=mk('g',{style:'color:var(--ink)'},c);rough('ellipse',[0,0,196,108],{strokeWidth:2.4},ce);
+  const t1=mk('text',{class:'nm','text-anchor':'middle',y:-2,'font-size':34},c);t1.textContent='AWS';
+  const t2=mk('text',{class:'tg','text-anchor':'middle',y:24,'font-size':14},c);t2.textContent='the rentable city';
+  // branches + leaves
+  BR.forEach(b=>node(b,'branch'));
+  SV.forEach(s=>node(s,'leaf'));
+  relax();
+  [...BR,...SV].forEach(d=>nodeEl(d.id).setAttribute('transform',`translate(${d.x.toFixed(1)},${d.y.toFixed(1)})`));
+  edges();
+  let x0=-110,x1=110,y0=-70,y1=70;
+  [...BR,...SV].forEach(d=>{x0=Math.min(x0,d.x-d.w/2);x1=Math.max(x1,d.x+d.w/2);y0=Math.min(y0,d.y-d.h/2-40);y1=Math.max(y1,d.y+d.h/2)});
+  const m2=24;svg.setAttribute('viewBox',`${(x0-m2).toFixed(0)} ${(y0-m2).toFixed(0)} ${(x1-x0+2*m2).toFixed(0)} ${(y1-y0+2*m2).toFixed(0)}`);
+}
+function relax(){
+  const all=[{x:0,y:0,w:200,h:110,fixed:true},...BR.map(b=>Object.assign(b,{fixed:true})),...SV];const pad=10;
+  const hit=(a,b)=>Math.abs(a.x-b.x)<(a.w+b.w)/2+pad&&Math.abs(a.y-b.y)<(a.h+b.h)/2+pad;
+  for(let it=0;it<400;it++){let moved=false;
+    for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){const a=all[i],b=all[j];if(!hit(a,b))continue;
+      // push the outer leaf outward along its own angle; if same ring, also nudge sideways
+      const ra=Math.hypot(a.x/1.4,a.y),rb=Math.hypot(b.x/1.4,b.y);
+      const o=a.fixed?b:b.fixed?a:(rb>=ra?b:a);
+      o.x+=Math.cos(o.a)*9*1.35;o.y+=Math.sin(o.a)*9;moved=true}
+    if(!moved)break}
+}
+function edges(){
+  // tree edges
+  BR.forEach(b=>{
+    const g=mk('g',{class:'tree c-'+b.id,'data-b':b.id},L.tree);
+    const cx=b.x*.45+Math.sin(b.a)*30,cy=b.y*.45-Math.cos(b.a)*30;
+    rough('path',[`M0,0 Q${cx},${cy} ${b.x},${b.y}`],{strokeWidth:3.2},g);
+    SV.filter(s=>s.b===b.id).forEach(s=>{
+      const g2=mk('g',{class:'tree c-'+b.id,'data-b':b.id,'data-s':s.id},L.tree);
+      const qx=b.x+(s.x-b.x)*.25+Math.cos(b.a)*70,qy=b.y+(s.y-b.y)*.25+Math.sin(b.a)*70;
+      rough('path',[`M${b.x},${b.y} Q${qx},${qy} ${s.x},${s.y}`],{strokeWidth:1.6,roughness:.9},g2);
+    });
+  });
+  ED.forEach(([a,b])=>{const A=byId[a],B=byId[b];const mx=(A.x+B.x)/2*.55,my=(A.y+B.y)/2*.55;
+    mk('path',{class:'xlink','data-a':a,'data-b':b,d:`M${A.x},${A.y} Q${mx},${my} ${B.x},${B.y}`},L.x)});
+}
+function node(d,kind){
+  const isB=kind==='branch';
+  const g=mk('g',{class:`node ${kind} c-${isB?d.id:d.b}`,transform:`translate(${d.x.toFixed(1)},${d.y.toFixed(1)})`,tabindex:'0',role:'button','aria-label':isB?`${d.name} district`:`${d.name}: ${d.tag}`,'data-k':kind,'data-id':d.id},L.nodes);
+  const hl=mk('rect',{class:'hl'},g),bg=mk('rect',{class:'bg'},g),ol=mk('g',{},g);
+  const nm=mk('text',{class:'nm','text-anchor':'middle',y:isB?-3:-3,'font-size':isB?24:19},g);nm.textContent=d.name;
+  const tg=mk('text',{class:'tg','text-anchor':'middle',y:isB?19:15,'font-size':isB?14:12.5},g);tg.textContent=isB?d.nick:d.tag;
+  let w=Math.max(nm.getBBox().width,tg.getBBox().width)+(isB?34:26),h=isB?58:48;
+  if(!isFinite(w)||w<40)w=(Math.max(d.name.length*10,(isB?d.nick:d.tag).length*7))+30;
+  bg.setAttribute('x',-w/2);bg.setAttribute('y',-h/2);bg.setAttribute('width',w);bg.setAttribute('height',h);bg.setAttribute('rx',12);
+  hl.setAttribute('x',-w/2-7);hl.setAttribute('y',-h/2+4);hl.setAttribute('width',w+14);hl.setAttribute('height',h);hl.setAttribute('rx',8);hl.setAttribute('transform','rotate(-1.5)');
+  rough('path',[rrect(w,h,12)],{strokeWidth:isB?2.6:1.7,roughness:isB?1.3:1},ol);
+  d.w=w;d.h=h;
+}
+
+// state
+let selected={k:'leaf',id:'s3'};
+function clear(){
+  svg.querySelectorAll('.sel,.rel,.dim,.on').forEach(e=>e.classList.remove('sel','rel','dim','on'));
+  L.trace.innerHTML='';
+}
+function nodeEl(id){return svg.querySelector(`.node[data-id="${id}"]`)}
+function edgesOf(id){return ED.filter(e=>e[0]===id||e[1]===id).map(e=>({o:e[0]===id?e[1]:e[0],why:e[2]}))}
+function dimAllExcept(keep){
+  svg.querySelectorAll('.node.leaf,.node.branch').forEach(n=>{if(!keep.has(n.dataset.id))n.classList.add('dim')});
+  svg.querySelectorAll('.tree').forEach(t=>{const s=t.dataset.s;if(s?!keep.has(s):!keep.has(t.dataset.b))t.classList.add('dim')});
+}
+function select(k,id,opts={}){
+  clear();selected={k,id};
+  if(k==='leaf'){
+    const s=byId[id],links=edgesOf(id);
+    nodeEl(id).classList.add('sel');
+    const keep=new Set([id,s.b]);
+    links.forEach(l=>{keep.add(l.o);keep.add(byId[l.o].b);nodeEl(l.o).classList.add('rel')});
+    svg.querySelectorAll('.xlink').forEach(x=>{if(x.dataset.a===id||x.dataset.b===id)x.classList.add('on')});
+    dimAllExcept(keep);renderService(s,links);
+  }else if(k==='branch'){
+    nodeEl(id).classList.add('sel');
+    const keep=new Set([id]);SV.filter(s=>s.b===id).forEach(s=>{keep.add(s.id);nodeEl(s.id).classList.add('rel')});
+    dimAllExcept(keep);renderBranch(brById[id]);
+  }else{renderOverview()}
+  if(opts.scroll)document.getElementById('mapsec').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+}
+function chip(id){const s=byId[id];return `<button class="chip c-${s.b}" type="button" data-go="${s.id}" style="color:var(--ink);border-color:var(--${s.b})">${esc(s.name)}</button>`}
+function renderService(s,links){
+  const b=brById[s.b];
+  panel.innerHTML=`<div class="eyebrow c-${b.id}" style="color:var(--${b.id})">${esc(b.name)} · ${esc(b.nick)}</div>
+  <h2>${esc(s.name)}</h2>
+  <p class="kid">${esc(s.kid)}</p>
+  <dl>
+   <div><dt>Analogy</dt><dd>${esc(s.an)}</dd></div>
+   <div><dt>Use it when</dt><dd>${esc(s.use)}</dd></div>
+   <div><dt>Memory hook</dt><dd class="hookbox c-${b.id}"><span style="color:var(--ink)">${esc(s.hook)}</span></dd></div>
+   <div><dt>Keyword triggers</dt><dd class="chips">${s.kw.map(k=>`<span class="chip">${esc(k)}</span>`).join('')}</dd></div>
+   <div><dt>Works with</dt><dd><ul class="links">${links.map(l=>`<li>${chip(l.o)}<span>${esc(l.why)}</span></li>`).join('')||'<li>Mostly stands alone.</li>'}</ul></dd></div>
+  </dl>`;
+}
+function renderBranch(b){
+  const L2=SV.filter(s=>s.b===b.id);
+  panel.innerHTML=`<div class="eyebrow" style="color:var(--${b.id})">District</div><h2>${esc(b.name)}: ${esc(b.nick)}</h2>
+  <p class="kid">${esc(b.analogy)}</p>
+  <dl><div><dt>Memory hook</dt><dd class="hookbox c-${b.id}"><span style="color:var(--ink)">${esc(b.hook)}</span></dd></div>
+  <div><dt>Who lives here</dt><dd><ul class="links">${L2.map(s=>`<li>${chip(s.id)}<span>${esc(s.tag)}</span></li>`).join('')}</ul></dd></div></dl>`;
+}
+function renderOverview(){
+  panel.innerHTML=`<div class="eyebrow">How to read this map</div><h2>Raul, start in the middle and work outward</h2>
+  <p class="kid">AWS sits in the center. Eight districts surround it. Each district has the services that live there.</p>
+  <dl><div><dt>Mental model</dt><dd>Ask three questions about any scenario: <b>Who does the work?</b> (Compute) <b>Where does the data sit?</b> (Storage / Database) <b>How do people reach it safely?</b> (Networking / Security). The messengers, CCTV and brains plug in around those.</dd></div>
+  <div><dt>Memory hook</dt><dd class="hookbox"><span>Work · Keep · Reach · Guard · Talk · Watch · Think</span></dd></div>
+  <div><dt>Try one</dt><dd class="chips">${['ec2','s3','lambda','iam','vpc','sqs'].map(chip).join('')}</dd></div></dl>`;
+}
+function traceFlow(f){
+  clear();selected={k:'flow',id:f.id};
+  const keep=new Set();f.steps.forEach(st=>st.s.forEach(id=>{keep.add(id);keep.add(byId[id].b);nodeEl(id).classList.add('rel')}));
+  dimAllExcept(keep);
+  const pts=f.steps.map(st=>byId[st.s[0]]);
+  for(let i=0;i<pts.length-1;i++){const A=pts[i],B=pts[i+1];
+    const dx=B.x-A.x,dy=B.y-A.y,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len;
+    const sx=A.x+ux*34,sy=A.y+uy*30,ex=B.x-ux*40,ey=B.y-uy*32;
+    const mx=(sx+ex)/2*.8,my=(sy+ey)/2*.8;
+    mk('path',{d:`M${sx},${sy} Q${mx},${my} ${ex},${ey}`,'marker-end':'url(#ah)'},L.trace)}
+  pts.forEach((p,i)=>{const g=mk('g',{transform:`translate(${p.x-6},${p.y-38})`},L.trace);
+    mk('circle',{r:14},g);const t=mk('text',{'text-anchor':'middle',y:5},g);t.textContent=i+1;});
+  panel.innerHTML=`<div class="eyebrow">Flow on the map</div><h2>${esc(f.name)}</h2><p class="kid">${esc(f.sum)}</p>
+  <ol class="steps">${f.steps.map(st=>`<li><div class="chips">${st.s.map(chip).join('')}</div><span>${esc(st.t)}</span></li>`).join('')}</ol>`;
+}
+
+// events
+svg.addEventListener('click',e=>{const n=e.target.closest('.node');if(!n)return;
+  const k=n.dataset.k;if(k==='center')select('center');else select(k,n.dataset.id)});
+svg.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;const n=e.target.closest('.node');if(!n)return;e.preventDefault();n.dispatchEvent(new MouseEvent('click',{bubbles:true}))});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(!b)return;
+  const inPanel=!!b.closest('#panel');select('leaf',b.dataset.go,{scroll:!inPanel})});
+const allx=document.getElementById('allx');
+allx.addEventListener('click',()=>{const on=allx.getAttribute('aria-pressed')!=='true';allx.setAttribute('aria-pressed',on);svg.classList.toggle('allx',on)});
+document.getElementById('reset').addEventListener('click',()=>{allx.setAttribute('aria-pressed','false');svg.classList.remove('allx');select('center')});
+
+// legend
+document.getElementById('legend').innerHTML=BR.map(b=>`<span class="c-${b.id}"><i></i><span style="color:var(--muted)">${esc(b.name)}</span></span>`).join('');
+
+// flows
+const tabs=document.getElementById('tabs'),fb=document.getElementById('flowbody');
+function showFlow(id){
+  const f=FLOWS.find(x=>x.id===id);
+  tabs.querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',b.dataset.f===id));
+  tabs.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===id));
+  fb.innerHTML=`<div class="flow"><div class="intro"><h3>${esc(f.name)}</h3><p class="lead">${esc(f.sum)}</p>
+   <div><button class="btn" type="button" id="tracebtn">Draw this flow on the map</button></div>
+   <p class="count">Tap a service name to open its card on the map.</p></div>
+   <ol class="steps">${f.steps.map(st=>`<li><div class="chips">${st.s.map(chip).join('')}</div><span>${esc(st.t)}</span></li>`).join('')}</ol></div>`;
+  document.getElementById('tracebtn').addEventListener('click',()=>{traceFlow(f);document.getElementById('mapsec').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'})});
+}
+tabs.innerHTML=FLOWS.map(f=>`<button class="btn" type="button" role="tab" data-f="${f.id}">${esc(f.name)}</button>`).join('');
+tabs.addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(b)showFlow(b.dataset.f)});
+showFlow('web');
+
+// ===== exam index =====
+const CATS=["Analytics","Application Integration","Business Applications","Cloud Financial Management","Compute","Containers","Customer Enablement","Database","Developer Tools","End User Computing","Front-End Web and Mobile","Internet of Things","Machine Learning","Management and Governance","Migration and Transfer","Networking and Content Delivery","Security, Identity, and Compliance","Serverless","Storage"];
+const CAT={ec2:"Compute",lambda:"Serverless",autoscaling:"Management and Governance",beanstalk:"Compute",fargate:"Containers",s3:"Storage",glacier:"Storage",ebs:"Storage",efs:"Storage",rds:"Database",aurora:"Database",dynamodb:"Database",elasticache:"Database",redshift:"Analytics",bedrock:"Machine Learning",sagemaker:"Machine Learning",rekognition:"Machine Learning",textract:"Machine Learning",sqs:"Application Integration",sns:"Application Integration",eventbridge:"Application Integration",stepfn:"Application Integration",cloudwatch:"Management and Governance",cloudtrail:"Management and Governance",cloudformation:"Management and Governance",budgets:"Cloud Financial Management",trustedadvisor:"Management and Governance",iam:"Security, Identity, and Compliance",kms:"Security, Identity, and Compliance",shield:"Security, Identity, and Compliance",waf:"Security, Identity, and Compliance",cognito:"Security, Identity, and Compliance",vpc:"Networking and Content Delivery",route53:"Networking and Content Delivery",cloudfront:"Networking and Content Delivery",elb:"Networking and Content Delivery",apigw:"Networking and Content Delivery"};
+const IDX=[
+["Analytics","Athena","Run SQL questions straight on files sitting in S3. Serverless, pay per query.","Asking a pile of files questions without moving them.","serverless SQL on S3 · query data in S3 · pay per query"],
+["Analytics","EMR","Rents big-data clusters that run Hadoop and Spark.","Renting a whole factory line to crunch data.","Hadoop · Spark · big data processing"],
+["Analytics","Glue","Serverless ETL: finds, cleans and moves data, and keeps a data catalog.","The prep crew that washes and chops ingredients before cooking.","ETL · data catalog · prepare data for analytics"],
+["Analytics","Kinesis","Collects and processes streaming data in real time.","A live CCTV feed instead of a photo album.","real-time streaming · clickstreams · telemetry"],
+["Analytics","OpenSearch Service","Search and analyze logs and text (Elasticsearch-style).","A search bar for mountains of logs.","full-text search · log analytics"],
+["Analytics","QuickSight","Business dashboards and charts from your data.","Turning numbers into charts for the boss.","business intelligence · dashboards · visualization"],
+["Business Applications","Connect","A cloud contact center for phone and chat support.","A call center in a box.","contact center · customer service calls"],
+["Business Applications","SES","Sends bulk and transactional emails.","A post office for emails.","email sending · marketing email · transactional email"],
+["Cloud Financial Management","Cost Explorer","Charts of what you spent, by service and time, plus a forecast.","Scrolling back through your spending history.","visualize costs · trends · forecast"],
+["Cloud Financial Management","Cost and Usage Report","The most detailed billing data, line by line, delivered to S3.","The itemized receipt, every single line.","most granular billing · hourly line items · CUR"],
+["Cloud Financial Management","Marketplace","A catalog to buy and run third-party software on AWS.","An app store for AWS software.","third-party software · buy licenses · AMIs"],
+["Cloud Financial Management","Pricing Calculator","Estimate what an architecture will cost before you build it. (Tested often, though it's a tool, not on the service list.)","Getting a quote before renovating.","estimate cost · before deployment"],
+["Compute","Batch","Runs huge numbers of batch jobs and picks the compute for you.","A laundromat running hundreds of loads overnight.","batch processing · job queues · HPC"],
+["Compute","Lightsail","Simple virtual server with a fixed monthly price.","A furnished studio unit with one fixed rent.","simple · predictable monthly price · small websites, WordPress"],
+["Compute","Outposts","AWS racks installed inside your own data center.","An AWS branch inside your building.","hybrid · on-premises · low latency to local systems"],
+["Containers","ECR","Stores your container images.","A yard of packed containers waiting to ship.","container image registry · Docker images"],
+["Containers","EKS","Managed Kubernetes to run containers.","ECS's cousin that speaks Kubernetes.","Kubernetes · open-source orchestration"],
+["Customer Enablement","AWS Support","Support plans: Basic, Developer, Business, Enterprise On-Ramp, Enterprise. See the look-alike group for differences.","Choosing how fast the help desk answers you.","support plans · TAM · response times"],
+["Database","DocumentDB","Document database that is MongoDB compatible.","A cabinet of folders, each one a JSON document.","MongoDB compatible · JSON documents"],
+["Database","Neptune","Graph database for highly connected data.","A who-knows-who friendship map.","graph · relationships · social networks · fraud detection"],
+["Developer Tools","AWS CLI","Control AWS by typing commands instead of clicking.","Texting commands instead of tapping buttons.","command line · scripting · automation"],
+["Developer Tools","CodeBuild","Compiles code and runs tests automatically.","An automatic taster checking every dish.","build · compile · run tests"],
+["Developer Tools","CodePipeline","Automates the release steps from code to production (CI/CD).","A conveyor belt from kitchen to customer.","CI/CD · automate releases"],
+["Developer Tools","X-Ray","Traces a request across services to find what's slow or broken.","An X-ray showing exactly where the bone is cracked.","tracing · debug distributed apps · bottlenecks"],
+["End User Computing","WorkSpaces","A full virtual desktop for each employee.","Your whole office PC, living in the cloud.","virtual desktop · DaaS · remote workers"],
+["End User Computing","AppStream 2.0","Streams one desktop application to a browser.","Netflix, but for a single app.","stream applications · no install"],
+["End User Computing","WorkSpaces Secure Browser","A locked-down browser for reaching internal websites safely.","A kiosk browser that can't leak data.","secure browser · internal web apps"],
+["Front-End Web and Mobile","Amplify","Build and host full-stack web and mobile apps fast.","A starter kit for app makers.","front-end developers · full-stack web and mobile · hosting"],
+["Front-End Web and Mobile","AppSync","Managed GraphQL APIs with real-time sync.","A smart waiter who brings exactly the dishes you named.","GraphQL · real-time data sync"],
+["Internet of Things","IoT Core","Connects billions of devices to the cloud securely.","A phone line for smart devices.","IoT devices · sensors · MQTT"],
+["Machine Learning","Amazon Q","Generative AI assistant for developers (Q Developer) and businesses (Q Business).","A smart coworker who knows AWS and your company docs.","generative AI assistant · Q Developer · Q Business"],
+["Machine Learning","Comprehend","Finds meaning in text: sentiment, key phrases, entities.","A reader who tells you if a review is happy or angry.","NLP · sentiment analysis · entities"],
+["Machine Learning","Kendra","Intelligent search across company documents.","A librarian who finds the exact answer.","enterprise search · natural-language questions"],
+["Machine Learning","Lex","Builds chatbots and voice bots.","The brain behind Alexa.","chatbot · conversational interface"],
+["Machine Learning","Polly","Turns text into lifelike speech.","A parrot that reads text aloud.","text-to-speech · voice"],
+["Machine Learning","Transcribe","Turns speech into text.","A court stenographer.","speech-to-text · captions · call transcripts"],
+["Machine Learning","Translate","Translates text between languages.","An interpreter.","language translation · localization"],
+["Management and Governance","Compute Optimizer","Recommends the right size for EC2, Lambda and more, based on real usage.","A tailor saying your shirt is two sizes too big.","right-sizing · over-provisioned · ML recommendations"],
+["Management and Governance","Config","Records how every resource is configured over time and checks it against rules.","Before-and-after photos of every room.","configuration history · compliance rules · what changed"],
+["Management and Governance","Control Tower","Sets up a secure multi-account environment with guardrails.","A subdivision developer's master plan.","landing zone · multi-account setup · guardrails"],
+["Management and Governance","Health Dashboard","Shows AWS service events and issues affecting your account.","The weather advisory, but for AWS.","service health · events affecting you · scheduled changes"],
+["Management and Governance","License Manager","Tracks software licenses like Microsoft and Oracle.","A logbook of who's using which license.","manage licenses · BYOL"],
+["Management and Governance","Management Console","The web interface for AWS.","The dashboard of the car.","web-based UI"],
+["Management and Governance","Organizations","Manages many AWS accounts centrally with one bill and SCP rules.","A parent company with many branches and one bill.","multiple accounts · consolidated billing · SCPs · volume discounts"],
+["Management and Governance","Service Catalog","A menu of approved products teams can launch themselves.","The company's approved menu.","approved products · governance · self-service"],
+["Management and Governance","Service Quotas","See and request increases to service limits.","Asking the bank to raise your credit limit.","limits · quota increase"],
+["Management and Governance","Systems Manager","Manage, patch and run commands on fleets of servers, cloud or on-prem. Includes Parameter Store.","A remote control for all your servers.","patching · run commands · fleet management · hybrid"],
+["Management and Governance","Well-Architected Tool","Reviews a workload against the six Well-Architected pillars.","A report card for your architecture.","six pillars · workload review"],
+["Migration and Transfer","Application Discovery Service","Inventories on-premises servers and how they depend on each other.","Making an inventory before moving house.","discover on-prem · plan migration"],
+["Migration and Transfer","Application Migration Service","Lifts and shifts servers to AWS as-is.","Movers carrying furniture without repainting it.","lift and shift · rehost"],
+["Migration and Transfer","DMS","Migrates databases to AWS with minimal downtime.","Moving the ledgers while the shop stays open.","database migration · minimal downtime"],
+["Migration and Transfer","Schema Conversion Tool","Converts a database schema from one engine to another, like Oracle to Aurora.","Translating the ledger's format into a new language.","heterogeneous migration · convert schema"],
+["Migration and Transfer","Migration Evaluator","Builds the business case and cost estimate for moving to AWS.","A financial adviser's moving budget.","business case · TCO"],
+["Migration and Transfer","Migration Hub","One place to track all migration progress.","The moving-day checklist board.","track migrations"],
+["Migration and Transfer","Snow Family","Physical devices (Snowcone, Snowball) that carry huge data offline, with edge compute.","A sealed delivery truck full of hard drives.","petabytes · offline transfer · limited bandwidth · edge computing"],
+["Networking and Content Delivery","Direct Connect","A private, dedicated line from your data center to AWS.","A private expressway, no public traffic.","dedicated connection · consistent performance · not over the internet"],
+["Networking and Content Delivery","Global Accelerator","Sends users over AWS's private backbone to the best endpoint, using static IPs.","An express lane on AWS's private highway.","static anycast IPs · non-HTTP · global performance"],
+["Networking and Content Delivery","PrivateLink","Reach services privately without going over the internet.","A private hallway between two buildings.","private connectivity · VPC endpoints"],
+["Networking and Content Delivery","Transit Gateway","A hub that connects many VPCs and on-premises networks.","The central bus terminal.","hub-and-spoke · connect many VPCs"],
+["Networking and Content Delivery","Site-to-Site VPN","An encrypted tunnel from your office network to your VPC over the internet.","An armored van on the public road.","encrypted · over the internet · quick setup"],
+["Networking and Content Delivery","Client VPN","Lets individual users connect securely from their laptops.","A personal pass for remote staff.","remote users · laptops"],
+["Security, Identity, and Compliance","Artifact","Download AWS's compliance reports and agreements.","The certificates framed in the lobby.","compliance reports · SOC · ISO · PCI"],
+["Security, Identity, and Compliance","Audit Manager","Continuously collects evidence for your own audits.","An assistant filling your audit binder.","audit evidence · assess compliance"],
+["Security, Identity, and Compliance","Certificate Manager","Free SSL/TLS certificates for HTTPS.","The padlock in the browser bar.","SSL/TLS · HTTPS · certificates"],
+["Security, Identity, and Compliance","CloudHSM","A dedicated hardware security module where only you control the keys.","Your own private vault instead of a shared cabinet.","dedicated hardware · customer-controlled keys"],
+["Security, Identity, and Compliance","Detective","Investigates the root cause of security findings.","The detective who arrives after the alarm.","investigate · root cause"],
+["Security, Identity, and Compliance","Directory Service","Managed Microsoft Active Directory.","The company phonebook of staff logins.","Active Directory"],
+["Security, Identity, and Compliance","Firewall Manager","Manages WAF and Shield rules across all accounts at once.","One remote for every building's alarm.","central firewall rules · across accounts"],
+["Security, Identity, and Compliance","GuardDuty","Watches logs with ML to detect threats and suspicious activity.","A guard watching the CCTV for anything odd.","threat detection · anomalies · malicious activity"],
+["Security, Identity, and Compliance","IAM Identity Center","Single sign-on for staff across many AWS accounts and apps.","One ID badge that opens every branch.","SSO · workforce users · multiple accounts"],
+["Security, Identity, and Compliance","Inspector","Scans EC2, containers and Lambda for software vulnerabilities.","A building inspector looking for cracks.","vulnerability scanning · CVEs"],
+["Security, Identity, and Compliance","Macie","Finds sensitive data like personal info in S3.","A sniffer dog for personal data.","PII · sensitive data in S3 · data privacy"],
+["Security, Identity, and Compliance","Resource Access Manager","Shares resources such as subnets across accounts.","Lending the neighbor your ladder.","share resources across accounts"],
+["Security, Identity, and Compliance","Secrets Manager","Stores secrets like database passwords and rotates them automatically.","A safe that changes its own combination.","rotate credentials · API keys · DB passwords"],
+["Security, Identity, and Compliance","Security Hub","One dashboard that collects security findings and checks.","The security command-center screen.","centralized findings · security posture"],
+["Storage","Backup","Central, policy-based backups across many services.","One babysitter for all your backups.","centralized backup · backup plans"],
+["Storage","Elastic Disaster Recovery","Keeps servers replicated to AWS so you can recover fast.","A spare house ready to move into.","disaster recovery · failover · RPO / RTO"],
+["Storage","FSx","Managed file systems for Windows (SMB) and high-performance computing (Lustre).","EFS's cousin for Windows and supercomputers.","Windows file server · Lustre · HPC"],
+["Storage","Storage Gateway","Lets on-premises apps use AWS storage through a local gateway.","A pick-up counter in your office for a cloud warehouse.","hybrid storage · on-premises access to cloud storage"]
+];
+// ===== look-alikes =====
+const LA=[
+{t:"The watchers",trick:"Watch = how it's performing. Trail = who did it. Config = what changed in the setup. X-Ray = where the request got slow.",r:[
+["CloudWatch","Metrics, logs and alarms","performance · CPU · alarm"],["CloudTrail","History of every API call and user action","who did what · audit"],["Config","Configuration history and rule checks","what changed · compliant?"],["X-Ray","Traces requests across services","bottleneck · tracing"]]},
+{t:"The messengers",trick:"SQS waits in line. SNS shouts to many. EventBridge routes by rule. Kinesis streams live. Step Functions follows the recipe.",r:[
+["SQS","Queue; workers pull messages","decouple · buffer · poll"],["SNS","Push one message to many subscribers","pub/sub · fan-out · notify"],["EventBridge","Routes events by rules; schedules","event bus · cron · SaaS events"],["Kinesis","Real-time streaming data","real time · clickstream"],["Step Functions","Ordered workflow of steps","orchestrate · state machine"]]},
+{t:"Storage types",trick:"Object = S3. Block = EBS. Shared Linux files = EFS. Windows or HPC files = FSx. Frozen archive = Glacier. On-prem bridge = Storage Gateway.",r:[
+["S3","Object storage, any file, via URL","bucket · 11 nines · static website"],["EBS","Block disk for one EC2, one AZ","boot volume · snapshots"],["EFS","Shared Linux file system for many EC2s","NFS · shared"],["FSx","Windows (SMB) or Lustre file systems","Windows · HPC"],["S3 Glacier","Cheap archive, slow retrieval","archive · retention"],["Storage Gateway","On-prem access to cloud storage","hybrid storage"],["Instance Store","Temporary disk physically on the host; lost when stopped","ephemeral · temporary"]]},
+{t:"The databases",trick:"Tables = RDS. Faster tables = Aurora. Key lookup = DynamoDB. JSON docs = DocumentDB. Relationships = Neptune. Memory cache = ElastiCache. Big reports = Redshift.",r:[
+["RDS","Managed relational SQL","MySQL · PostgreSQL · Multi-AZ"],["Aurora","AWS high-performance relational","MySQL/PostgreSQL compatible"],["DynamoDB","Serverless NoSQL key-value","millisecond · NoSQL"],["DocumentDB","Document database","MongoDB compatible"],["Neptune","Graph database","relationships · social graph"],["ElastiCache","In-memory cache","Redis · Memcached"],["Redshift","Data warehouse","OLAP · analytics"]]},
+{t:"The analytics crew",trick:"Athena asks S3 with SQL. Redshift stores and crunches. EMR runs Spark. Glue cleans. Kinesis streams. QuickSight draws charts. OpenSearch searches logs.",r:[
+["Athena","SQL on S3, no servers","query S3"],["Redshift","Data warehouse","OLAP"],["EMR","Hadoop / Spark clusters","big data"],["Glue","ETL + data catalog","transform"],["Kinesis","Streaming ingest","real time"],["QuickSight","Dashboards","BI"],["OpenSearch","Search and log analytics","search"]]},
+{t:"Threat guards",trick:"Shield = floods (DDoS). WAF = bad web requests. GuardDuty = suspicious activity. Inspector = holes in your software. Macie = personal data in S3. Detective = investigate after. Security Hub = all findings on one screen.",r:[
+["Shield","DDoS protection","DDoS · Standard is free"],["WAF","Layer 7 web request filtering","SQL injection · XSS"],["Firewall Manager","Manage WAF/Shield rules across accounts","central rules"],["GuardDuty","ML threat detection from logs","threat · anomaly"],["Inspector","Vulnerability scans","CVE · patches"],["Macie","Find PII in S3","sensitive data"],["Detective","Investigate root cause","investigation"],["Security Hub","Aggregated security findings","single view · posture"]]},
+{t:"Keys, secrets & certificates",trick:"KMS = AWS-managed key cabinet. CloudHSM = your own dedicated vault. Secrets Manager = passwords that auto-rotate. Parameter Store = cheaper config storage. ACM = HTTPS certificates.",r:[
+["KMS","Create and manage encryption keys","encryption at rest"],["CloudHSM","Dedicated hardware module you control","dedicated · compliance"],["Secrets Manager","Store and auto-rotate secrets","rotate passwords"],["SSM Parameter Store","Store config values and secrets, no auto-rotation","config · cheaper"],["Certificate Manager","SSL/TLS certificates","HTTPS"]]},
+{t:"Who are you?",trick:"IAM = people and services inside an account. Identity Center = staff single sign-on across accounts. Cognito = your app's customers. Organizations = manage the accounts themselves. Directory Service = Microsoft AD.",r:[
+["IAM","Users, groups, roles, policies","least privilege · MFA"],["IAM Identity Center","SSO for workforce","single sign-on"],["Cognito","Sign-up/sign-in for app users","customers · social login"],["Organizations","Multi-account management, SCPs","consolidated billing"],["Directory Service","Managed Active Directory","AD"]]},
+{t:"Connecting to AWS",trick:"VPN = encrypted over the internet (fast to set up). Direct Connect = private line (consistent, takes weeks). Transit Gateway = hub for many networks. Peering = one-to-one VPC link. PrivateLink = private access to a service.",r:[
+["Site-to-Site VPN","Office network ↔ VPC over internet","encrypted · quick"],["Client VPN","Single user ↔ AWS","remote laptop"],["Direct Connect","Dedicated private line","consistent · not internet"],["Transit Gateway","Hub connecting many VPCs and on-prem","hub-and-spoke"],["VPC Peering","Direct link between two VPCs","one-to-one · not transitive"],["PrivateLink","Private endpoint to a service","no internet exposure"]]},
+{t:"Speed for global users",trick:"Route 53 gives directions. CloudFront keeps copies nearby (caching). Global Accelerator gives a faster road and static IPs, without caching.",r:[
+["Route 53","DNS: name → address","DNS · routing policies"],["CloudFront","CDN, caches content at edges","static content · caching"],["Global Accelerator","AWS backbone + static IPs","no caching · TCP/UDP"]]},
+{t:"Inside the VPC",trick:"Security Group = door lock on each instance (stateful, allow rules only). NACL = subnet gate (stateless, allow AND deny). Internet Gateway = front gate to the internet. NAT Gateway = private servers go out, nobody comes in.",r:[
+["Security Group","Instance-level firewall","stateful · allow only"],["Network ACL","Subnet-level firewall","stateless · allow and deny"],["Internet Gateway","Connects VPC to internet","public subnet"],["NAT Gateway","Outbound internet for private subnets","outbound only"]]},
+{t:"Money tools",trick:"Calculator = before you build. Cost Explorer = look back. Budgets = warn ahead. Cost and Usage Report = the most detail. Organizations = one combined bill.",r:[
+["Pricing Calculator","Estimate cost before building","estimate"],["Cost Explorer","Visualize past spend, forecast","trends"],["Budgets","Alerts when cost or usage passes a threshold","alert"],["Cost and Usage Report","Most granular billing data","line items"],["Organizations","Consolidated billing, volume discounts","one bill"],["Cost allocation tags","Label resources to split costs","by project · by team"]]},
+{t:"Advisors & check-ups",trick:"Trusted Advisor = account-wide checklist. Compute Optimizer = right-size your servers. Well-Architected Tool = review one workload against six pillars. Health Dashboard = AWS issues affecting you.",r:[
+["Trusted Advisor","Checks across cost, security, performance, fault tolerance, limits","best practices"],["Compute Optimizer","Right-sizing recommendations","over-provisioned"],["Well-Architected Tool","Workload review, six pillars","pillars"],["Health Dashboard","AWS events affecting your resources","outage · maintenance"]]},
+{t:"Build & deploy",trick:"CloudFormation = infra from a template. Beanstalk = upload code, infra appears. CodeBuild = build and test. CodePipeline = the whole release conveyor. Systems Manager = operate servers after they run.",r:[
+["CloudFormation","Infrastructure as code","templates · stacks"],["Elastic Beanstalk","PaaS for web apps","just upload code"],["CodeBuild","Compile and test","build"],["CodePipeline","CI/CD orchestration","release automation"],["Systems Manager","Patch and run commands on fleets","operations"],["Service Catalog","Approved product menu","governance"]]},
+{t:"Compute choices",trick:"EC2 = full control. Lightsail = simple fixed price. Lambda = code per event, max 15 min. Fargate = containers without servers. Batch = many jobs. Beanstalk = PaaS.",r:[
+["EC2","Virtual servers","full control · IaaS"],["Lightsail","Simple VPS bundles","predictable price"],["Lambda","Serverless functions","event-driven · 15 min"],["Fargate","Serverless containers","no servers"],["Batch","Batch job scheduling","HPC · jobs"],["Elastic Beanstalk","Managed app platform","PaaS"]]},
+{t:"Containers",trick:"ECR stores the image. ECS or EKS runs it (ECS = AWS's way, EKS = Kubernetes). Fargate or EC2 is where it runs.",r:[
+["ECR","Image registry","store images"],["ECS","AWS container orchestration","Docker"],["EKS","Managed Kubernetes","Kubernetes"],["Fargate","Serverless launch type","no servers to manage"]]},
+{t:"EC2 pricing models",trick:"On-Demand = no commitment. Reserved / Savings Plans = commit 1 or 3 years, save a lot. Spot = spare capacity, cheapest, can be taken back. Dedicated Host = a whole physical server for licenses.",r:[
+["On-Demand","Pay by the second/hour, no commitment","short-term · unpredictable"],["Reserved Instances","1 or 3-year commitment on instance type","steady state"],["Savings Plans","1 or 3-year spend commitment, flexible","flexible commitment"],["Spot Instances","Spare capacity, up to ~90% off, can be interrupted","fault-tolerant · flexible"],["Dedicated Hosts","Whole physical server for you","BYOL · per-socket licenses"],["Dedicated Instances","Instances on hardware not shared with others","isolation"]]},
+{t:"Migration tools",trick:"Discover first (Discovery Service), estimate (Migration Evaluator), track (Migration Hub). Move servers (Application Migration Service), move databases (DMS + SCT), move huge data offline (Snow Family).",r:[
+["Application Discovery Service","Inventory on-prem servers","discover"],["Migration Evaluator","Business case","TCO"],["Migration Hub","Track progress","dashboard"],["Application Migration Service","Lift-and-shift servers","rehost"],["DMS","Migrate databases","minimal downtime"],["Schema Conversion Tool","Convert DB schema","heterogeneous"],["Snow Family","Offline data transfer devices","petabytes · no bandwidth"]]},
+{t:"AI that sounds alike",trick:"Transcribe = ears (speech → text). Polly = mouth (text → speech). Translate = languages. Comprehend = meaning. Lex = chatbot. Textract = reads documents. Rekognition = sees images. Kendra = finds answers. Q = AI assistant. SageMaker = build your own.",r:[
+["Transcribe","Speech → text","captions"],["Polly","Text → speech","voice"],["Translate","Language translation","localize"],["Comprehend","Sentiment and entities in text","NLP"],["Lex","Chatbots","conversational"],["Textract","Text and tables from documents","OCR+"],["Rekognition","Image and video analysis","faces · objects"],["Kendra","Enterprise search","find answers"],["Amazon Q","Generative AI assistant","assistant"],["SageMaker AI","Build, train, deploy ML","custom models"]]},
+{t:"Where AWS lives",trick:"Region = city. AZ = separate building. Edge location = corner store for caching. Local Zone = a mini-AWS in a big metro. Wavelength = AWS inside 5G networks. Outposts = AWS inside YOUR building.",r:[
+["Region","Geographic area with 3+ AZs","data residency"],["Availability Zone","Isolated data centers in a Region","high availability"],["Edge location","CloudFront/Route 53 points of presence","caching"],["Local Zones","AWS compute close to big cities","single-digit ms latency"],["Wavelength","AWS in telecom 5G networks","mobile · 5G"],["Outposts","AWS racks on-premises","hybrid"]]},
+{t:"Compliance & audit",trick:"Artifact = AWS's compliance papers for you to download. Audit Manager = gathers YOUR evidence. Config = checks resource rules. CloudTrail = API history.",r:[
+["Artifact","AWS compliance reports","SOC · ISO · PCI"],["Audit Manager","Collects audit evidence","assessments"],["Config","Resource compliance rules","drift"],["CloudTrail","API activity log","who did what"]]},
+{t:"Desktops & front-end",trick:"WorkSpaces = whole desktop. AppStream = one app streamed. Secure Browser = safe browser only. Amplify = build/host apps. AppSync = GraphQL. API Gateway = REST/WebSocket front door.",r:[
+["WorkSpaces","Virtual desktop","DaaS"],["AppStream 2.0","Stream a single app","app streaming"],["WorkSpaces Secure Browser","Secure browser access","internal sites"],["Amplify","Full-stack web/mobile","front-end devs"],["AppSync","GraphQL APIs","real-time sync"],["API Gateway","REST and WebSocket APIs","front door"]]},
+{t:"Support plans",trick:"Basic = free self-help. Developer = business-hours email. Business = 24/7 phone + full Trusted Advisor. Enterprise On-Ramp = pool of TAMs. Enterprise = your own designated TAM. Check AWS's site for current plans before exam day.",r:[
+["Basic","Docs, forums, Health Dashboard, core Trusted Advisor checks","free"],["Developer","Business-hours email support","testing · dev"],["Business","24/7 phone/chat, full Trusted Advisor, <1 hr prod down","production"],["Enterprise On-Ramp","Pool of TAMs, <30 min business-critical","growing business"],["Enterprise","Designated TAM, <15 min business-critical, concierge","mission-critical"]]},
+{t:"Shared responsibility",trick:"AWS = security OF the cloud (hardware, facilities, global network, managed service internals). You = security IN the cloud (data, IAM, OS patching on EC2, security groups, encryption choices).",r:[
+["AWS","Physical security, hardware, host OS, network","OF the cloud"],["Customer","Data, IAM, guest OS on EC2, firewall config","IN the cloud"],["Shared","Patch management, config management, awareness training","both"]]}
+];
+const PLAN=[
+["Thu Oct 30","Cloud concepts","6 advantages of cloud, Well-Architected's 6 pillars, CAF perspectives, 7 Rs of migration."],
+["Fri Oct 31","Global infra + compute","Regions, AZs, edge. EC2, Lambda, containers. Look-alikes: Where AWS lives, Compute, Containers, EC2 pricing."],
+["Sat Nov 1","Storage","S3 classes, EBS, EFS, FSx, Glacier, Storage Gateway, Backup. Look-alike: Storage types."],
+["Sun Nov 2","Databases + analytics","RDS to Redshift, then Athena, Glue, EMR, Kinesis, QuickSight. Two look-alike groups."],
+["Mon Nov 3","Networking","VPC parts, Route 53, CloudFront, Global Accelerator, VPN vs Direct Connect. Three look-alike groups."],
+["Tue Nov 4","Shared responsibility + identity","Who secures what. IAM, Identity Center, Cognito, Organizations, MFA, least privilege."],
+["Wed Nov 5","Security services","Threat guards, keys and secrets, Artifact vs Audit Manager. Biggest domain (30%)."],
+["Thu Nov 6","Practice exam #1","Full 65 questions, timed. Write down every wrong answer's service."],
+["Fri Nov 7","Integration + monitoring","SQS/SNS/EventBridge, the watchers, Systems Manager, CloudFormation, advisors."],
+["Sat Nov 8","AI, migration, the rest","AI look-alikes, migration tools, WorkSpaces, Amplify, IoT Core, Connect, SES."],
+["Sun Nov 9","Billing, pricing, support","Pricing models, money tools, support plans, Organizations billing."],
+["Mon Nov 10","Practice exam #2","Retake under time. Re-study only your weak groups."],
+["Tue Nov 11","Look-alike drill","Go through every 'Don't mix these up' group and the keyword finder."],
+["Wed Nov 12","Practice exam #3 + light review","Memory hooks only. Sleep early before exam day."]
+];
+// render look-alikes
+const lagrid=document.getElementById('lagrid'),laq=document.getElementById('laq');
+function renderLA(){const v=laq.value.trim().toLowerCase();
+  const r=LA.filter(g=>!v||(g.t+' '+g.trick+' '+g.r.flat().join(' ')).toLowerCase().includes(v));
+  lagrid.innerHTML=r.map(g=>`<details class="la"${v?' open':''}><summary><h3>${esc(g.t)}</h3><p><span class="trick">${esc(g.trick)}</span></p></summary><div class="tw"><table><thead><tr><th>Service</th><th>What it really does</th><th>Trigger words</th></tr></thead><tbody>${g.r.map(x=>`<tr><td>${esc(x[0])}</td><td>${esc(x[1])}</td><td>${esc(x[2])}</td></tr>`).join('')}</tbody></table></div></details>`).join('')||'<p class="count">No group matches.</p>';
+  document.getElementById('lacount').textContent=`${r.length} of ${LA.length} groups`}
+laq.addEventListener('input',renderLA);renderLA();
+document.getElementById('laopen').addEventListener('click',e=>{const ds=[...lagrid.querySelectorAll('details')];const open=ds.some(d=>!d.open);ds.forEach(d=>d.open=open);e.target.textContent=open?'Close all':'Open all'});
+// render index
+const ALL=[...SV.filter(s=>CAT[s.id]).map(s=>({c:CAT[s.id],n:s.name,d:s.kid,a:s.an,t:s.kw.join(' · '),id:s.id,bonus:s.id==='bedrock'})),...IDX.map(x=>({c:x[0],n:x[1],d:x[2],a:x[3],t:x[4]}))];
+ALL.forEach((x,i)=>x.key='ix'+i);
+let curCat='All';
+const cats=document.getElementById('cats'),ixq=document.getElementById('ixq'),ixgrid=document.getElementById('ixgrid');
+cats.innerHTML=['All',...CATS].map(c=>`<button class="chip" type="button" data-cat="${esc(c)}" aria-pressed="${c==='All'}">${esc(c)}</button>`).join('');
+cats.addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;curCat=b.dataset.cat;cats.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderIX()});
+function renderIX(){const v=ixq.value.trim().toLowerCase();let html='',n=0;
+  CATS.forEach(c=>{if(curCat!=='All'&&curCat!==c)return;
+    const items=ALL.filter(x=>x.c===c&&(!v||(x.n+' '+x.d+' '+x.t+' '+x.a).toLowerCase().includes(v))).sort((a,b)=>a.n.localeCompare(b.n));
+    if(!items.length)return;n+=items.length;
+    html+=`<div class="ixhead">${esc(c)}</div>`+items.map(x=>`<article class="ix" id="${x.key}"><h3><span>${esc(x.n)}</span>${x.id?`<button class="onmap" type="button" data-go="${x.id}">on map</button>`:''}</h3><p>${esc(x.d)}</p><p class="an">${esc(x.a)}</p><p class="tr">${esc(x.t)}</p>${x.bonus?'<p class="cat">Bonus: not on the CLF-C02 list</p>':''}</article>`).join('')});
+  ixgrid.innerHTML=html||'<p class="count">No service matches.</p>';
+  document.getElementById('ixcount').textContent=`${n} services`}
+ixq.addEventListener('input',renderIX);renderIX();
+// plan
+const pl=document.getElementById('planlist');let done={};try{done=JSON.parse(localStorage.getItem('raul-clf-plan')||'{}')}catch(e){}
+pl.innerHTML=PLAN.map((p,i)=>`<li class="${/Practice/.test(p[1])?'exam ':''}${done[i]?'done':''}"><input type="checkbox" id="pd${i}" ${done[i]?'checked':''} aria-label="Day ${i+1} done"><label for="pd${i}"><span class="d">Day ${i+1} · ${esc(p[0])}</span><br><span class="f">${esc(p[1])}</span></label><span class="w">${esc(p[2])}</span></li>`).join('');
+pl.addEventListener('change',e=>{const i=+e.target.id.slice(2);done[i]=e.target.checked;e.target.closest('li').classList.toggle('done',e.target.checked);try{localStorage.setItem('raul-clf-plan',JSON.stringify(done))}catch(err){}});
+
+// keyword finder
+const KW=[];SV.forEach(s=>s.kw.forEach(k=>KW.push({k,n:s.name,b:'var(--'+s.b+')',go:s.id})));IDX.forEach((x,i)=>x[4].split(' · ').forEach(k=>{const a=ALL.find(y=>y.n===x[1]&&!y.id);KW.push({k,n:x[1],b:'var(--ink)',ix:a.key})}));KW.sort((a,b)=>a.k.localeCompare(b.k));
+const grid=document.getElementById('kwgrid'),q=document.getElementById('kwq'),cnt=document.getElementById('kwcount');
+function renderKW(){const v=q.value.trim().toLowerCase();
+  const r=KW.filter(x=>!v||x.k.toLowerCase().includes(v)||x.n.toLowerCase().includes(v));
+  grid.innerHTML=r.map(x=>`<button class="kw" type="button" ${x.go?`data-go="${x.go}"`:`data-ix="${x.ix}"`}><span class="kwt">${esc(x.k)}</span><span class="kws" style="color:${x.b}">${esc(x.n)}</span></button>`).join('')||'<p class="count">No match. Try a shorter word.</p>';
+  cnt.textContent=`${r.length} of ${KW.length} triggers`}
+q.addEventListener('input',renderKW);renderKW();
+grid.addEventListener('click',e=>{const b=e.target.closest('[data-ix]');if(!b)return;curCat='All';cats.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cat==='All'));ixq.value='';renderIX();const el=document.getElementById(b.dataset.ix);if(el){el.scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});el.style.outline='3px solid var(--network)';setTimeout(()=>el.style.outline='',1800)}});
+
+// boot after fonts so labels measure correctly
+function boot(){draw();select(selected.k,selected.id)}
+renderService(byId.s3,edgesOf('s3'));
+(document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]):Promise.resolve()).then(boot);
+</script>
+
+</body>
+</html>
