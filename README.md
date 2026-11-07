@@ -11,6 +11,14 @@ A hand-drawn, clickable mind map for reviewing the **AWS Certified Cloud Practit
 - **Keyword finder**: type an exam phrase, get the service.
 - **14-day review plan** with tick boxes saved in your browser.
 
+## AWS Architecture Atlas (`/atlas`)
+
+A companion study page in the [`atlas/`](atlas/) folder: five real-world system designs (typhoon alerts, clinic records, delivery tracking, real estate, OFW remittance) built from interconnected AWS services. Each design has a numbered architecture diagram, a 4-domain map, decision records (chosen service vs. closest distractor) and practice questions. It also has a searchable trigger-word and memory-hook table and a CLF-C02 coverage check.
+
+These are design-only case studies for exam review; nothing in them is deployed.
+
+Live: `https://rmctech-ai.github.io/aws-city-map/atlas/`
+
 ## Run it
 
 Open `index.html` in any browser. No build step. It loads Google Fonts and rough.js from a CDN for the hand-drawn look.

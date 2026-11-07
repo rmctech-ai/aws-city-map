@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AWS Architecture Atlas: 3 Real-World Systems Across the 4 CLF-C02 Domains</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f8fa;--fg:#1b2230;--muted:#5d6676;--card:#ffffff;--line:#dfe3ea;--grp:#eef1f6;
+ --d1:#0f9d8a;--d2:#d14343;--d3:#3566d6;--d4:#c27f05;--ai:#7c4ddb}
+@media (prefers-color-scheme:dark){:root{--bg:#11151c;--fg:#e7ebf2;--muted:#9aa4b5;--card:#1a2029;--line:#2c3542;--grp:#161c25;
+ --d1:#2cc4ae;--d2:#f06b6b;--d3:#6e96f2;--d4:#e5a531;--ai:#a483f0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 Inter,system-ui,sans-serif}
+main{max-width:1240px;margin:0 auto;padding:32px 20px 64px}
+header h1{font-size:28px;line-height:1.25;margin:0 0 8px}
+header p{color:var(--muted);margin:0 0 18px;max-width:780px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}
+.lg{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px}
+.chip{display:inline-block;font-size:11px;font-weight:700;color:#fff;border-radius:5px;padding:1px 6px;margin-right:6px}
+.chip.d1{background:var(--d1)}.chip.d2{background:var(--d2)}.chip.d3{background:var(--d3)}.chip.d4{background:var(--d4)}.chip.ai{background:var(--ai)}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 8px}
+nav a{text-decoration:none;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:13.5px;font-weight:500}
+nav a:hover{border-color:var(--d3)}
+section{margin-top:44px;padding-top:8px;border-top:1px solid var(--line)}
+.sh{display:flex;gap:14px;align-items:center;margin-top:18px}
+.num{flex:none;width:40px;height:40px;border-radius:10px;background:var(--fg);color:var(--bg);display:grid;place-items:center;font-weight:700;font-size:18px}
+h2{font-size:22px;margin:0;line-height:1.3} .shape{margin:2px 0 0;color:var(--muted);font-size:14px}
+h3{font-size:16px;margin:26px 0 10px}
+.problem{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--fg);border-radius:10px;padding:12px 16px;margin:16px 0}
+.problem span{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)} .problem p{margin:4px 0 0}
+figure{margin:16px 0 0;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.scroll{overflow-x:auto} .scroll svg{display:block;min-width:960px;width:100%;height:auto;color:var(--fg)}
+figcaption{font-size:13px;color:var(--muted);padding:8px 4px 0}
+.grp{fill:var(--grp);stroke:var(--line);stroke-dasharray:5 4} .grpl{font-size:11.5px;font-weight:600;fill:var(--muted)}
+.edge{fill:none;stroke:currentColor;stroke-width:1.5;opacity:.7} .edge.async{stroke-dasharray:6 4}
+.node rect{fill:var(--card);stroke:var(--line);stroke-width:1.2}
+.node .bar{stroke:none} .node.d1 .bar{fill:var(--d1)} .node.d2 .bar{fill:var(--d2)} .node.d3 .bar{fill:var(--d3)} .node.d4 .bar{fill:var(--d4)}
+.node.d2 rect:first-child{stroke:var(--d2)} .node.d4 rect:first-child{stroke:var(--d4)}
+.nl{font-size:13px;font-weight:600;fill:currentColor} .ns{font-size:10.5px;fill:var(--muted)}
+.nt{font-size:9.5px;font-weight:700;fill:var(--muted)}
+.node.d2 .nt{fill:var(--d2)} .node.d3 .nt{fill:var(--d3)} .node.d4 .nt{fill:var(--d4)}
+.node .aitag{fill:var(--ai);stroke:none} .aitxt{font-size:9px;font-weight:700;fill:#fff}
+.badge circle{fill:var(--fg)} .badge text{font-size:10.5px;font-weight:700;fill:var(--bg)}
+.pill rect{fill:none;stroke:var(--d1);stroke-width:1.4} .pt{font-size:12px;font-weight:700;fill:var(--d1)} .ps{font-size:10.5px;fill:var(--muted)}
+.cols{display:grid;grid-template-columns:1.1fr 1fr;gap:28px} @media(max-width:860px){.cols{grid-template-columns:1fr}}
+.steps{margin:0;padding-left:26px} .steps li{margin:0 0 6px;font-size:14px} .steps li::marker{font-weight:700}
+.dmap{display:grid;gap:10px} .dm{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;border-left:4px solid}
+.dm.d1{border-left-color:var(--d1)}.dm.d2{border-left-color:var(--d2)}.dm.d3{border-left-color:var(--d3)}.dm.d4{border-left-color:var(--d4)}
+.dm h4{margin:0 0 4px;font-size:13.5px} .dm p{margin:0;font-size:13.5px;color:var(--fg)}
+.tw{overflow-x:auto} table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--card);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top} th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.quiz{display:grid;gap:8px} details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+summary{cursor:pointer;font-weight:500} .q{font-weight:700;color:var(--d3)} details p{margin:8px 0 2px;font-size:14px}
+.node.beyond rect:first-child{stroke-dasharray:5 3}
+.dashbox{display:inline-block;width:18px;height:12px;border:1.5px dashed var(--muted);border-radius:3px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 6px}
+#q{flex:1 1 320px;font:inherit;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
+.fb button{font:inherit;font-size:13px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+.fb button.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.count{font-size:12.5px;color:var(--muted);margin:4px 0 8px} .cat{font-size:11.5px;color:var(--muted)}
+.hook{font-style:italic} .bx{margin-left:6px;font-size:10.5px;border:1px dashed var(--muted);border-radius:4px;padding:0 4px;color:var(--muted)}
+.note{font-size:13.5px;color:var(--muted)} .ok{color:var(--d1);font-weight:600;white-space:nowrap} .lst{color:var(--d4);font-weight:600;white-space:nowrap}
+.also{columns:2 360px;column-gap:28px;padding-left:18px;font-size:14px} .also li{break-inside:avoid;margin:0 0 6px}
+.foot{margin-top:44px;font-size:13px;color:var(--muted)}
+</style></head><body><main>
+<header>
+<h1>AWS Architecture Atlas: 5 real-world systems, 4 exam domains</h1>
+<p>Five complete designs built from interconnected AWS services, each solving a real problem. Follow the numbered arrows, see where each service sits, and read why it beat its closest distractor. Study material for CLF-C02; nothing here needs to be deployed.</p>
+<div class="legend">
+<span class="lg"><span class="chip d1">D1</span>Cloud Concepts 24%</span>
+<span class="lg"><span class="chip d2">D2</span>Security &amp; Compliance 30%</span>
+<span class="lg"><span class="chip d3">D3</span>Technology &amp; Services 34%</span>
+<span class="lg"><span class="chip d4">D4</span>Billing, Pricing &amp; Support 12%</span>
+<span class="lg"><span class="chip ai">AI</span>AI/ML service</span><span class="lg"><span class="dashbox"></span>Beyond exam scope</span>
+</div>
+<nav><a href="#design-1">1 · BagyoAlert PH (serverless)</a><a href="#design-2">2 · KlinikaCloud (containers + Multi-AZ)</a><a href="#design-3">3 · PadalaTrack (streaming + ML + migration)</a><a href="#design-4">4 · BahayHub (real estate)</a><a href="#design-5">5 · RemitKo (fintech)</a><a href="#cheat-sheet">★ Trigger words</a><a href="#coverage">✓ Exam coverage</a></nav>
+</header>
+
+<section id="design-1">
+  <div class="sh"><span class="num">1</span><div><h2>BagyoAlert PH — typhoon alert &amp; relief platform</h2><p class="shape">Serverless + event-driven + multi-Region DR</p></div></div>
+  <div class="problem"><span>Real-world problem</span><p>Every typhoon season, a local government's website crashes exactly when residents need it most. Traffic jumps 50× for a few days, then drops to almost nothing. Relief requests get lost, alerts only go out in English, and there's no backup if the data center floods.</p></div>
+  <figure>
+    <div class="scroll"><svg viewBox="0 0 1212 696" role="img" aria-label="Serverless typhoon alert and relief architecture: Route 53, CloudFront, WAF, API Gateway, Lambda, SQS, DynamoDB Global Tables, SNS alerts and Bedrock, Translate and Rekognition AI services." xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="ah-bagyo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<rect class="grp" x="420" y="60" width="372" height="90" rx="10"/>
+<text class="grpl" x="430" y="74">Edge locations</text>
+<rect class="grp" x="820" y="390" width="172" height="90" rx="10"/>
+<text class="grpl" x="830" y="404">Secondary Region</text>
+<rect class="grp" x="20" y="500" width="1172" height="90" rx="10"/>
+<text class="grpl" x="30" y="514">Operate · Secure · Govern</text>
+<polyline class="edge" points="182,112.0 230,112.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge" points="382,112.0 430,112.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge" points="582,112.0 630,112.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge" points="782,112.0 830,112.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge" points="706.0,140 706.0,194" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge" points="382,222.0 630,222.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge" points="706.0,250 706.0,304" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge async" points="782,332.0 830,332.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge async" points="982,332.0 1030,332.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge" points="1106.0,360 1106.0,414" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge async" points="1030,442.0 982,442.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge" points="706.0,360 706.0,442.0 582,442.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge async" points="430,442.0 382,442.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge" points="630,332.0 582,332.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge" points="430,332.0 382,332.0" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge async" points="1106.0,194 1106.0,140" marker-end="url(#ah-bagyo)"/>
+<polyline class="edge async" points="1106.0,84 1106.0,54 106.0,54 106.0,84" marker-end="url(#ah-bagyo)"/>
+<g class="node d3"><rect x="30" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="110">Residents</text>
+<text class="ns" x="44" y="127">web · mobile · SMS</text>
+<text class="nt" x="175" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="110">Route 53</text>
+<text class="ns" x="244" y="127">DNS + failover routing</text>
+<text class="nt" x="375" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="430" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="110">CloudFront</text>
+<text class="ns" x="444" y="127">edge cache absorbs spikes</text>
+<text class="nt" x="575" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d2"><rect x="630" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="110">WAF + Shield</text>
+<text class="ns" x="644" y="127">bots · SQLi · DDoS</text>
+<text class="nt" x="775" y="96" text-anchor="end">D2</text>
+</g>
+<g class="node d3"><rect x="830" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="110">S3 (website)</text>
+<text class="ns" x="844" y="127">static site + advisories</text>
+<text class="nt" x="975" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="1030" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="110">SNS</text>
+<text class="ns" x="1044" y="127">SMS · push · email fan-out</text>
+<text class="nt" x="1175" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d2"><rect x="230" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="220">Cognito</text>
+<text class="ns" x="244" y="237">responder sign-in</text>
+<text class="nt" x="375" y="206" text-anchor="end">D2</text>
+</g>
+<g class="node d3"><rect x="630" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="220">API Gateway</text>
+<text class="ns" x="644" y="237">auth + throttling</text>
+<text class="nt" x="775" y="206" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="1030" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="220">EventBridge</text>
+<text class="ns" x="1044" y="237">new PAGASA bulletin</text>
+<text class="nt" x="1175" y="206" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="330">Translate + Polly</text>
+<text class="ns" x="244" y="347">local languages + voice</text>
+<text class="nt" x="375" y="316" text-anchor="end">D3</text>
+<rect class="aitag" x="334" y="307" width="20" height="11" rx="3"/><text class="aitxt" x="344" y="315.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d3"><rect x="430" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="330">Bedrock</text>
+<text class="ns" x="444" y="347">evacuation Q&amp;A (RAG)</text>
+<text class="nt" x="575" y="316" text-anchor="end">D3</text>
+<rect class="aitag" x="534" y="307" width="20" height="11" rx="3"/><text class="aitxt" x="544" y="315.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d3"><rect x="630" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="330">Lambda</text>
+<text class="ns" x="644" y="347">relief request + chat</text>
+<text class="nt" x="775" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="830" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="330">SQS + DLQ</text>
+<text class="ns" x="844" y="347">buffers the surge</text>
+<text class="nt" x="975" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="1030" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="330">Lambda worker</text>
+<text class="ns" x="1044" y="347">idempotent processing</text>
+<text class="nt" x="1175" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="440">Rekognition</text>
+<text class="ns" x="244" y="457">labels damage photos</text>
+<text class="nt" x="375" y="426" text-anchor="end">D3</text>
+<rect class="aitag" x="334" y="417" width="20" height="11" rx="3"/><text class="aitxt" x="344" y="425.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d3"><rect x="430" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="440">S3 (uploads)</text>
+<text class="ns" x="444" y="457">damage photos</text>
+<text class="nt" x="575" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="830" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="440">DynamoDB replica</text>
+<text class="ns" x="844" y="457">2nd Region (DR)</text>
+<text class="nt" x="975" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="1030" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="440">DynamoDB</text>
+<text class="ns" x="1044" y="457">Global Tables, on-demand</text>
+<text class="nt" x="1175" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="30" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="550">CloudWatch</text>
+<text class="ns" x="44" y="567">alarms on queue depth</text>
+<text class="nt" x="175" y="536" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="550">X-Ray</text>
+<text class="ns" x="244" y="567">trace slow requests</text>
+<text class="nt" x="375" y="536" text-anchor="end">D3</text>
+</g>
+<g class="node d2"><rect x="430" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="550">CloudTrail</text>
+<text class="ns" x="444" y="567">who changed what</text>
+<text class="nt" x="575" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="630" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="550">AWS Config</text>
+<text class="ns" x="644" y="567">buckets private?</text>
+<text class="nt" x="775" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d4"><rect x="830" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="550">AWS Budgets</text>
+<text class="ns" x="844" y="567">alert on spend</text>
+<text class="nt" x="975" y="536" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="1030" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="550">Cost Explorer</text>
+<text class="ns" x="1044" y="567">cost per typhoon event</text>
+<text class="nt" x="1175" y="536" text-anchor="end">D4</text>
+</g>
+<g class="badge"><circle cx="206.0" cy="112.0" r="9.5"/><text x="206.0" y="115.8" text-anchor="middle">1</text></g>
+<g class="badge"><circle cx="406.0" cy="112.0" r="9.5"/><text x="406.0" y="115.8" text-anchor="middle">2</text></g>
+<g class="badge"><circle cx="606.0" cy="112.0" r="9.5"/><text x="606.0" y="115.8" text-anchor="middle">3</text></g>
+<g class="badge"><circle cx="806.0" cy="112.0" r="9.5"/><text x="806.0" y="115.8" text-anchor="middle">4</text></g>
+<g class="badge"><circle cx="706.0" cy="167.0" r="9.5"/><text x="706.0" y="170.8" text-anchor="middle">5</text></g>
+<g class="badge"><circle cx="506.0" cy="222.0" r="9.5"/><text x="506.0" y="225.8" text-anchor="middle">6</text></g>
+<g class="badge"><circle cx="706.0" cy="277.0" r="9.5"/><text x="706.0" y="280.8" text-anchor="middle">7</text></g>
+<g class="badge"><circle cx="806.0" cy="332.0" r="9.5"/><text x="806.0" y="335.8" text-anchor="middle">8</text></g>
+<g class="badge"><circle cx="1006.0" cy="332.0" r="9.5"/><text x="1006.0" y="335.8" text-anchor="middle">9</text></g>
+<g class="badge"><circle cx="1106.0" cy="387.0" r="9.5"/><text x="1106.0" y="390.8" text-anchor="middle">10</text></g>
+<g class="badge"><circle cx="1006.0" cy="442.0" r="9.5"/><text x="1006.0" y="445.8" text-anchor="middle">11</text></g>
+<g class="badge"><circle cx="644.0" cy="442.0" r="9.5"/><text x="644.0" y="445.8" text-anchor="middle">12</text></g>
+<g class="badge"><circle cx="406.0" cy="442.0" r="9.5"/><text x="406.0" y="445.8" text-anchor="middle">13</text></g>
+<g class="badge"><circle cx="606.0" cy="332.0" r="9.5"/><text x="606.0" y="335.8" text-anchor="middle">14</text></g>
+<g class="badge"><circle cx="406.0" cy="332.0" r="9.5"/><text x="406.0" y="335.8" text-anchor="middle">15</text></g>
+<g class="badge"><circle cx="1106.0" cy="167.0" r="9.5"/><text x="1106.0" y="170.8" text-anchor="middle">16</text></g>
+<g class="badge"><circle cx="606.0" cy="54.0" r="9.5"/><text x="606.0" y="57.8" text-anchor="middle">17</text></g>
+<g class="pill"><rect x="30.0" y="640" width="279.0" height="44" rx="22"/><text class="pt" x="169.5" y="658" text-anchor="middle">Elasticity</text><text class="ps" x="169.5" y="674" text-anchor="middle">0 → surge → 0, automatically</text></g>
+<g class="pill"><rect x="321.0" y="640" width="279.0" height="44" rx="22"/><text class="pt" x="460.5" y="658" text-anchor="middle">Pay-as-you-go</text><text class="ps" x="460.5" y="674" text-anchor="middle">no idle servers between storms</text></g>
+<g class="pill"><rect x="612.0" y="640" width="279.0" height="44" rx="22"/><text class="pt" x="751.5" y="658" text-anchor="middle">High availability + DR</text><text class="ps" x="751.5" y="674" text-anchor="middle">multi-AZ + 2nd Region</text></g>
+<g class="pill"><rect x="903.0" y="640" width="279.0" height="44" rx="22"/><text class="pt" x="1042.5" y="658" text-anchor="middle">Go global in minutes</text><text class="ps" x="1042.5" y="674" text-anchor="middle">edge locations near users</text></g>
+</svg></div>
+    <figcaption>Numbers on the arrows match the walkthrough below. Solid = request path, dashed = async/event. The colored bar and tag on each box show its exam domain; the bottom pills are the Domain 1 principles the design demonstrates. A dashed box is useful in real builds but not on the CLF-C02 in-scope list.</figcaption>
+  </figure>
+  <div class="cols">
+    <div><h3>Walk the request</h3><ol class='steps'><li>Resident opens the site. <b>Route 53</b> resolves the domain; failover routing can point to a second Region if a health check fails.</li><li><b>CloudFront</b> serves pages from the nearest edge location, so the surge never reaches the origin.</li><li><b>WAF</b> blocks bots and SQL injection; <b>Shield Standard</b> absorbs DDoS automatically, free.</li><li>On a cache miss, CloudFront fetches the static site and advisories from <b>S3</b>.</li><li>API calls (submit request, ask a question) go to <b>API Gateway</b>, which throttles abusive traffic.</li><li>Responders sign in with <b>Cognito</b>; API Gateway checks their token.</li><li><b>Lambda</b> runs only when a request arrives, scaling from zero to thousands in parallel.</li><li>Requests are dropped into <b>SQS</b>, so none are lost while the backend catches up; repeated failures go to a dead-letter queue.</li><li>Worker Lambdas pull from the queue. They're idempotent, so a duplicate message never creates a duplicate relief ticket.</li><li><b>DynamoDB</b> (on-demand) stores relief requests and evacuation-center capacity.</li><li>Global Tables replicate the data to a second Region for disaster recovery.</li><li>Damage photos upload straight to <b>S3</b> with a presigned URL.</li><li><b>Rekognition</b> labels each photo (flooded road, damaged house) so responders can prioritize.</li><li>Chat questions go to <b>Bedrock</b> with the LGU's advisories as a knowledge base. The app, not the model, reads the database.</li><li><b>Translate</b> turns replies into Filipino or Cebuano; <b>Polly</b> reads alerts aloud for radio and hotlines.</li><li><b>EventBridge</b> fires when a new weather bulletin is published.</li><li><b>SNS</b> sends one alert to every subscriber at once by SMS, push and email.</li></ol></div>
+    <div><h3>4-domain map</h3><div class='dmap'><div class='dm d1'><h4><span class='chip d1'>D1</span>Cloud Concepts · 24%</h4><p>Elasticity (scale to zero and back), pay-as-you-go instead of servers sitting idle between storms, high availability (managed services span AZs) plus multi-Region DR, edge locations. Well-Architected: Reliability and Cost Optimization.</p></div><div class='dm d2'><h4><span class='chip d2'>D2</span>Security & Compliance · 30%</h4><p>WAF, Shield Standard, Cognito, least-privilege IAM roles for each Lambda, encryption at rest by default (S3, DynamoDB), CloudTrail, Config. Shared responsibility: with serverless, AWS patches the OS and runtime; the LGU owns data, IAM and WAF rules.</p></div><div class='dm d3'><h4><span class='chip d3'>D3</span>Technology & Services · 34%</h4><p>Route 53, CloudFront, S3, API Gateway, Lambda, SQS, DynamoDB, EventBridge, SNS, CloudWatch, X-Ray. AI/ML: Bedrock, Rekognition, Translate, Polly.</p></div><div class='dm d4'><h4><span class='chip d4'>D4</span>Billing, Pricing & Support · 12%</h4><p>Lambda and DynamoDB on-demand bill per request, so quiet months cost almost nothing. Budgets alerts, Cost Explorer, cost allocation tags. Shield Advanced is a paid upgrade (DDoS response team + cost protection).</p></div></div></div>
+  </div>
+  <h3>Decision records: why this service, not the distractor</h3>
+  <div class='tw'><table><thead><tr><th>Requirement</th><th>Chosen</th><th>Closest distractor</th><th>Why the distractor loses</th></tr></thead><tbody><tr><td>Unpredictable spikes, idle most of the year</td><td><b>Lambda</b></td><td>EC2 Reserved Instances</td><td>RIs are a 1–3 year commitment for steady load; you'd pay for idle capacity</td></tr><tr><td>Never lose a request when overloaded</td><td><b>SQS</b></td><td>SNS</td><td>SNS pushes and doesn't hold messages for a slow consumer</td></tr><tr><td>One alert to many channels at once</td><td><b>SNS</b></td><td>SQS</td><td>SQS is one queue, one consumer group: pull, not fan-out</td></tr><tr><td>Simple key lookups, huge write bursts, multi-Region</td><td><b>DynamoDB Global Tables</b></td><td>RDS</td><td>Relational joins aren't needed; RDS is regional and scales writes vertically</td></tr><tr><td>Answer questions with a ready-made model</td><td><b>Bedrock</b></td><td>SageMaker</td><td>SageMaker is for building and training your own model</td></tr><tr><td>DDoS protection on a budget</td><td><b>Shield Standard</b></td><td>Shield Advanced</td><td>Advanced costs extra; Standard is automatic and free</td></tr></tbody></table></div>
+  <h3>Test yourself</h3>
+  <div class='quiz'><details><summary><span class='q'>Q1.</span> A site must handle 50× traffic for a few days a year and cost almost nothing otherwise. Which compute fits?</summary><p><b>AWS Lambda</b> — serverless, scales automatically, pay per invocation. Reserved Instances would waste money.</p></details><details><summary><span class='q'>Q2.</span> Relief requests must not be lost when the backend can't keep up. What decouples them?</summary><p><b>Amazon SQS</b> — it stores messages until workers process them. SNS doesn't hold messages.</p></details><details><summary><span class='q'>Q3.</span> Send one typhoon alert to SMS, email and mobile push simultaneously.</summary><p><b>Amazon SNS</b> — publish once, many subscribers receive it (pub/sub fan-out).</p></details></div>
+</section>
+<section id="design-2">
+  <div class="sh"><span class="num">2</span><div><h2>KlinikaCloud — patient records &amp; telehealth for a clinic chain</h2><p class="shape">Containers in private subnets + Multi-AZ database + security tooling</p></div></div>
+  <div class="problem"><span>Real-world problem</span><p>A chain of clinics keeps patient records on one server in a back office. If it fails, doctors can't see charts. Lab results arrive as scanned paper, nobody knows who accessed what, and auditors keep asking for proof of security controls.</p></div>
+  <figure>
+    <div class="scroll"><svg viewBox="0 0 1212 806" role="img" aria-label="Clinic patient-records architecture: CloudFront and WAF, ALB in public subnets, ECS on Fargate and Multi-AZ RDS in private subnets, S3 records feeding Textract, Comprehend Medical and Bedrock, with security and cost services." xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="ah-klinika" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<rect class="grp" x="406" y="156" width="400" height="338" rx="10"/>
+<text class="grpl" x="522.0" y="170">VPC (private network)</text>
+<rect class="grp" x="422" y="172" width="368" height="86" rx="10"/>
+<text class="grpl" x="522.0" y="186">Public subnets</text>
+<rect class="grp" x="422" y="282" width="368" height="86" rx="10"/>
+<text class="grpl" x="522.0" y="296">Private app subnets</text>
+<rect class="grp" x="422" y="392" width="368" height="86" rx="10"/>
+<text class="grpl" x="522.0" y="406">Private DB subnets (2 AZs)</text>
+<rect class="grp" x="20" y="500" width="1172" height="200" rx="10"/>
+<text class="grpl" x="30" y="514">Security, compliance &amp; cost</text>
+<polyline class="edge" points="182,112.0 230,112.0" marker-end="url(#ah-klinika)"/>
+<polyline class="edge" points="382,112.0 430,112.0" marker-end="url(#ah-klinika)"/>
+<polyline class="edge" points="506.0,140 506.0,194" marker-end="url(#ah-klinika)"/>
+<polyline class="edge" points="430,222.0 382,222.0" marker-end="url(#ah-klinika)"/>
+<polyline class="edge" points="506.0,250 506.0,304" marker-end="url(#ah-klinika)"/>
+<polyline class="edge" points="506.0,360 506.0,414" marker-end="url(#ah-klinika)"/>
+<polyline class="edge async" points="582,442.0 630,442.0" marker-end="url(#ah-klinika)"/>
+<polyline class="edge" points="582,320.0 706.0,320.0 706.0,250" marker-end="url(#ah-klinika)"/>
+<polyline class="edge" points="582,344.0 830,344.0" marker-end="url(#ah-klinika)"/>
+<polyline class="edge async" points="982,332.0 1030,332.0" marker-end="url(#ah-klinika)"/>
+<polyline class="edge async" points="1106.0,360 1106.0,414" marker-end="url(#ah-klinika)"/>
+<polyline class="edge async" points="1030,442.0 982,442.0" marker-end="url(#ah-klinika)"/>
+<polyline class="edge" points="430,332.0 382,332.0" marker-end="url(#ah-klinika)"/>
+<g class="node d3"><rect x="30" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="110">Patients &amp; doctors</text>
+<text class="ns" x="44" y="127">portal + telehealth</text>
+<text class="nt" x="175" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="110">Route 53</text>
+<text class="ns" x="244" y="127">DNS</text>
+<text class="nt" x="375" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d2"><rect x="430" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="110">CloudFront + WAF</text>
+<text class="ns" x="444" y="127">HTTPS via ACM</text>
+<text class="nt" x="575" y="96" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="230" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="220">Cognito</text>
+<text class="ns" x="244" y="237">MFA for doctors</text>
+<text class="nt" x="375" y="206" text-anchor="end">D2</text>
+</g>
+<g class="node d3"><rect x="430" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="220">ALB</text>
+<text class="ns" x="444" y="237">/records · /appointments</text>
+<text class="nt" x="575" y="206" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="630" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="220">NAT Gateway</text>
+<text class="ns" x="644" y="237">outbound only</text>
+<text class="nt" x="775" y="206" text-anchor="end">D3</text>
+</g>
+<g class="node d2"><rect x="230" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="330">Secrets Mgr + KMS</text>
+<text class="ns" x="244" y="347">DB password, keys</text>
+<text class="nt" x="375" y="316" text-anchor="end">D2</text>
+</g>
+<g class="node d3"><rect x="430" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="330">ECS on Fargate</text>
+<text class="ns" x="444" y="347">2 AZs, images in ECR</text>
+<text class="nt" x="575" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="830" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="330">S3 (records)</text>
+<text class="ns" x="844" y="347">SSE-KMS, presigned URLs</text>
+<text class="nt" x="975" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="1030" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="330">Textract</text>
+<text class="ns" x="1044" y="347">read scanned lab forms</text>
+<text class="nt" x="1175" y="316" text-anchor="end">D3</text>
+<rect class="aitag" x="1134" y="307" width="20" height="11" rx="3"/><text class="aitxt" x="1144" y="315.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d3"><rect x="430" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="440">RDS primary</text>
+<text class="ns" x="444" y="457">AZ-a, encrypted</text>
+<text class="nt" x="575" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="630" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="440">RDS standby</text>
+<text class="ns" x="644" y="457">AZ-b, auto failover</text>
+<text class="nt" x="775" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="830" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="440">Bedrock</text>
+<text class="ns" x="844" y="457">visit summary draft</text>
+<text class="nt" x="975" y="426" text-anchor="end">D3</text>
+<rect class="aitag" x="934" y="417" width="20" height="11" rx="3"/><text class="aitxt" x="944" y="425.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d3 beyond"><rect x="1030" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="440">Comprehend Medical</text>
+<text class="ns" x="1044" y="457">meds, conditions, PHI</text>
+<text class="nt" x="1175" y="426" text-anchor="end">D3</text>
+<rect class="aitag" x="1134" y="417" width="20" height="11" rx="3"/><text class="aitxt" x="1144" y="425.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d2"><rect x="30" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="550">GuardDuty</text>
+<text class="ns" x="44" y="567">threat detection</text>
+<text class="nt" x="175" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="230" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="550">Inspector</text>
+<text class="ns" x="244" y="567">scan ECR images</text>
+<text class="nt" x="375" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="430" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="550">Macie</text>
+<text class="ns" x="444" y="567">PHI in S3</text>
+<text class="nt" x="575" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="630" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="550">Security Hub</text>
+<text class="ns" x="644" y="567">one security view</text>
+<text class="nt" x="775" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="830" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="550">CloudTrail + Config</text>
+<text class="ns" x="844" y="567">audit + compliance</text>
+<text class="nt" x="975" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="1030" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="550">AWS Artifact</text>
+<text class="ns" x="1044" y="567">SOC / ISO reports</text>
+<text class="nt" x="1175" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d3"><rect x="30" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="660">AWS Backup</text>
+<text class="ns" x="44" y="677">daily, cross-Region</text>
+<text class="nt" x="175" y="646" text-anchor="end">D3</text>
+</g>
+<g class="node d4"><rect x="230" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="660">Savings Plans</text>
+<text class="ns" x="244" y="677">steady Fargate usage</text>
+<text class="nt" x="375" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="430" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="660">RDS Reserved</text>
+<text class="ns" x="444" y="677">1-yr, 24/7 database</text>
+<text class="nt" x="575" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="630" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="660">Budgets + CE</text>
+<text class="ns" x="644" y="677">NAT/ALB hourly costs</text>
+<text class="nt" x="775" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="830" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="660">Business Support</text>
+<text class="ns" x="844" y="677">24/7 for production</text>
+<text class="nt" x="975" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="1030" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="660">Trusted Advisor</text>
+<text class="ns" x="1044" y="677">best-practice checks</text>
+<text class="nt" x="1175" y="646" text-anchor="end">D4</text>
+</g>
+<g class="badge"><circle cx="206.0" cy="112.0" r="9.5"/><text x="206.0" y="115.8" text-anchor="middle">1</text></g>
+<g class="badge"><circle cx="406.0" cy="112.0" r="9.5"/><text x="406.0" y="115.8" text-anchor="middle">2</text></g>
+<g class="badge"><circle cx="506.0" cy="167.0" r="9.5"/><text x="506.0" y="170.8" text-anchor="middle">3</text></g>
+<g class="badge"><circle cx="406.0" cy="222.0" r="9.5"/><text x="406.0" y="225.8" text-anchor="middle">4</text></g>
+<g class="badge"><circle cx="506.0" cy="277.0" r="9.5"/><text x="506.0" y="280.8" text-anchor="middle">5</text></g>
+<g class="badge"><circle cx="506.0" cy="387.0" r="9.5"/><text x="506.0" y="390.8" text-anchor="middle">6</text></g>
+<g class="badge"><circle cx="606.0" cy="442.0" r="9.5"/><text x="606.0" y="445.8" text-anchor="middle">7</text></g>
+<g class="badge"><circle cx="644.0" cy="320.0" r="9.5"/><text x="644.0" y="323.8" text-anchor="middle">8</text></g>
+<g class="badge"><circle cx="706.0" cy="344.0" r="9.5"/><text x="706.0" y="347.8" text-anchor="middle">9</text></g>
+<g class="badge"><circle cx="1006.0" cy="332.0" r="9.5"/><text x="1006.0" y="335.8" text-anchor="middle">10</text></g>
+<g class="badge"><circle cx="1106.0" cy="387.0" r="9.5"/><text x="1106.0" y="390.8" text-anchor="middle">11</text></g>
+<g class="badge"><circle cx="1006.0" cy="442.0" r="9.5"/><text x="1006.0" y="445.8" text-anchor="middle">12</text></g>
+<g class="badge"><circle cx="406.0" cy="332.0" r="9.5"/><text x="406.0" y="335.8" text-anchor="middle">13</text></g>
+<g class="pill"><rect x="30.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="169.5" y="768" text-anchor="middle">High availability</text><text class="ps" x="169.5" y="784" text-anchor="middle">Multi-AZ RDS + 2-AZ Fargate</text></g>
+<g class="pill"><rect x="321.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="460.5" y="768" text-anchor="middle">Shared responsibility</text><text class="ps" x="460.5" y="784" text-anchor="middle">AWS patches hosts + DB engine</text></g>
+<g class="pill"><rect x="612.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="751.5" y="768" text-anchor="middle">Security pillar</text><text class="ps" x="751.5" y="784" text-anchor="middle">least privilege, encrypt all</text></g>
+<g class="pill"><rect x="903.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="1042.5" y="768" text-anchor="middle">7 Rs: Replatform</text><text class="ps" x="1042.5" y="784" text-anchor="middle">clinic server → RDS</text></g>
+</svg></div>
+    <figcaption>Numbers on the arrows match the walkthrough below. Solid = request path, dashed = async/event. The colored bar and tag on each box show its exam domain; the bottom pills are the Domain 1 principles the design demonstrates. A dashed box is useful in real builds but not on the CLF-C02 in-scope list.</figcaption>
+  </figure>
+  <div class="cols">
+    <div><h3>Walk the request</h3><ol class='steps'><li>Patient or doctor opens the portal; <b>Route 53</b> resolves it.</li><li><b>CloudFront + WAF</b> filter traffic; an <b>ACM</b> certificate gives HTTPS.</li><li>Requests go to the <b>ALB</b> in the public subnets.</li><li>The ALB sends users to <b>Cognito</b> to sign in (MFA required for doctors).</li><li>Layer-7 path routing sends /records and /appointments to <b>ECS services on Fargate</b> in private subnets across 2 AZs. Security group: only the ALB may connect.</li><li>The app talks to <b>RDS</b> over TLS. Security group: only the app tier may connect. Storage encrypted with KMS.</li><li>RDS replicates synchronously to a <b>standby in a second AZ</b> and fails over automatically.</li><li>The app calls a third-party payment API out through the <b>NAT Gateway</b>. Outbound only; the internet can't reach in.</li><li>Scans and lab results are stored in <b>S3</b> (SSE-KMS, Block Public Access, presigned URLs) through a VPC endpoint.</li><li><b>Textract</b> pulls text and tables out of scanned lab forms.</li><li><b>Comprehend Medical</b> picks out medications, conditions and protected health info.</li><li><b>Bedrock</b> drafts a visit summary that the doctor reviews and approves.</li><li>At startup the ECS task role fetches the database password from <b>Secrets Manager</b>. Nothing is hard-coded.</li></ol></div>
+    <div><h3>4-domain map</h3><div class='dmap'><div class='dm d1'><h4><span class='chip d1'>D1</span>Cloud Concepts · 24%</h4><p>High availability (Multi-AZ RDS, Fargate in 2 AZs). Migration: Replatform the clinic server to RDS (7 Rs). Shared responsibility: AWS runs Fargate hosts and patches the RDS engine; the clinic owns data, IAM, security groups and encryption settings. Well-Architected: Security and Reliability.</p></div><div class='dm d2'><h4><span class='chip d2'>D2</span>Security & Compliance · 30%</h4><p>Cognito MFA, IAM task roles, security groups, private subnets, NAT outbound-only, KMS, Secrets Manager, ACM, WAF, GuardDuty, Inspector, Macie, Security Hub, CloudTrail, Config rules, AWS Artifact for auditors.</p></div><div class='dm d3'><h4><span class='chip d3'>D3</span>Technology & Services · 34%</h4><p>Route 53, CloudFront, ALB, VPC, ECS, Fargate, ECR, RDS, S3, AWS Backup. AI/ML: Textract, Comprehend Medical, Bedrock.</p></div><div class='dm d4'><h4><span class='chip d4'>D4</span>Billing, Pricing & Support · 12%</h4><p>Compute Savings Plans for steady Fargate; RDS Reserved Instances for a 24/7 database; Budgets and Cost Explorer (NAT Gateway and ALB bill by the hour); Business Support for 24/7 production help; Trusted Advisor.</p></div></div></div>
+  </div>
+  <h3>Decision records: why this service, not the distractor</h3>
+  <div class='tw'><table><thead><tr><th>Requirement</th><th>Chosen</th><th>Closest distractor</th><th>Why the distractor loses</th></tr></thead><tbody><tr><td>HTTP web app with path-based routing</td><td><b>ALB</b></td><td>NLB</td><td>NLB is layer 4 (TCP/UDP) and can't read URL paths</td></tr><tr><td>Run containers without managing servers</td><td><b>ECS on Fargate</b></td><td>EKS</td><td>EKS adds Kubernetes complexity the clinic doesn't need</td></tr><tr><td>Automatic DB failover if an AZ fails</td><td><b>RDS Multi-AZ</b></td><td>Read replicas</td><td>Read replicas scale reads; Multi-AZ provides failover</td></tr><tr><td>Find patient data sitting in S3</td><td><b>Macie</b></td><td>GuardDuty</td><td>GuardDuty detects threats, not sensitive data</td></tr><tr><td>Scan container images for vulnerabilities</td><td><b>Inspector</b></td><td>Trusted Advisor</td><td>Trusted Advisor gives account best-practice checks, not CVE scans</td></tr><tr><td>Steady 24/7 workload, cheaper</td><td><b>Savings Plans / RIs</b></td><td>Spot</td><td>Spot can be interrupted, which is unacceptable for patient care</td></tr></tbody></table></div>
+  <h3>Test yourself</h3>
+  <div class='quiz'><details><summary><span class='q'>Q1.</span> A clinic's database must keep running if an Availability Zone fails. What should they enable?</summary><p><b>RDS Multi-AZ</b> — synchronous standby with automatic failover. Read replicas don't fail over automatically.</p></details><details><summary><span class='q'>Q2.</span> Which service finds personal health data accidentally stored in S3?</summary><p><b>Amazon Macie</b> — ML-based sensitive data discovery for S3.</p></details><details><summary><span class='q'>Q3.</span> An auditor wants AWS's SOC and ISO compliance reports.</summary><p><b>AWS Artifact</b> — self-service portal for AWS compliance reports. CloudTrail logs API activity instead.</p></details></div>
+</section>
+<section id="design-3">
+  <div class="sh"><span class="num">3</span><div><h2>PadalaTrack — delivery fleet tracking, analytics &amp; migration</h2><p class="shape">Streaming + data lake + ML + hybrid migration</p></div></div>
+  <div class="problem"><span>Real-world problem</span><p>A courier company can't tell customers where their parcel is, plans routes by hand every night, and runs its warehouse on an aging on-prem Oracle database. Management wants dashboards and delivery-time predictions without buying more servers.</p></div>
+  <figure>
+    <div class="scroll"><svg viewBox="0 0 1212 806" role="img" aria-label="Logistics tracking architecture: IoT Core into Kinesis, Lambda, DynamoDB and Amazon Location geofences triggering SNS alerts; Firehose to an S3 data lake with Glue, Athena, QuickSight and SageMaker; hybrid migration via VPN and DMS to Aurora." xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="ah-padala" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<rect class="grp" x="220" y="60" width="972" height="200" rx="10"/>
+<text class="grpl" x="230" y="74">Real-time tracking</text>
+<rect class="grp" x="220" y="280" width="972" height="200" rx="10"/>
+<text class="grpl" x="230" y="294">Analytics, ML &amp; batch</text>
+<rect class="grp" x="20" y="500" width="172" height="90" rx="10"/>
+<text class="grpl" x="30" y="514">On-premises</text>
+<rect class="grp" x="220" y="500" width="572" height="90" rx="10"/>
+<text class="grpl" x="230" y="514">Hybrid link + migration</text>
+<rect class="grp" x="20" y="610" width="1172" height="90" rx="10"/>
+<text class="grpl" x="30" y="624">Governance &amp; cost</text>
+<polyline class="edge" points="182,112.0 230,112.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="382,112.0 430,112.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="582,112.0 630,112.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="782,112.0 830,112.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="1030,112.0 982,112.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="706.0,140 706.0,194" marker-end="url(#ah-padala)"/>
+<polyline class="edge async" points="782,222.0 830,222.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge async" points="982,222.0 1030,222.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge async" points="1106.0,194 1106.0,140" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="506.0,140 506.0,304" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="582,332.0 630,332.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="782,332.0 830,332.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="982,332.0 1030,332.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="1106.0,360 1106.0,414" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="706.0,360 706.0,414" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="382,442.0 430,442.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="182,552.0 230,552.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="382,552.0 430,552.0" marker-end="url(#ah-padala)"/>
+<polyline class="edge" points="582,552.0 630,552.0" marker-end="url(#ah-padala)"/>
+<g class="node d3"><rect x="30" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="110">Delivery trucks</text>
+<text class="ns" x="44" y="127">GPS devices (MQTT)</text>
+<text class="nt" x="175" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="110">IoT Core</text>
+<text class="ns" x="244" y="127">X.509 device certs</text>
+<text class="nt" x="375" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="430" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="110">Kinesis Data Streams</text>
+<text class="ns" x="444" y="127">real-time, replayable</text>
+<text class="nt" x="575" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="630" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="110">Lambda</text>
+<text class="ns" x="644" y="127">process positions</text>
+<text class="nt" x="775" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="830" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="110">DynamoDB</text>
+<text class="ns" x="844" y="127">latest truck position</text>
+<text class="nt" x="975" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="1030" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="110">Customers</text>
+<text class="ns" x="1044" y="127">track my parcel</text>
+<text class="nt" x="1175" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3 beyond"><rect x="630" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="220">Amazon Location</text>
+<text class="ns" x="644" y="237">maps + geofences</text>
+<text class="nt" x="775" y="206" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="830" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="220">EventBridge</text>
+<text class="ns" x="844" y="237">geofence entered</text>
+<text class="nt" x="975" y="206" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="1030" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="220">SNS</text>
+<text class="ns" x="1044" y="237">&quot;10 mins away&quot; SMS</text>
+<text class="nt" x="1175" y="206" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="430" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="330">Data Firehose</text>
+<text class="ns" x="444" y="347">batch to S3</text>
+<text class="nt" x="575" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="630" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="330">S3 data lake</text>
+<text class="ns" x="644" y="347">lifecycle → Glacier</text>
+<text class="nt" x="775" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="830" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="330">Glue</text>
+<text class="ns" x="844" y="347">data catalog</text>
+<text class="nt" x="975" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="1030" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="330">Athena</text>
+<text class="ns" x="1044" y="347">SQL on S3, per query</text>
+<text class="nt" x="1175" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="440">Step Functions</text>
+<text class="ns" x="244" y="457">nightly workflow</text>
+<text class="nt" x="375" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="430" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="440">EC2 Spot + ASG</text>
+<text class="ns" x="444" y="457">route optimization</text>
+<text class="nt" x="575" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="630" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="440">SageMaker</text>
+<text class="ns" x="644" y="457">train ETA model</text>
+<text class="nt" x="775" y="426" text-anchor="end">D3</text>
+<rect class="aitag" x="734" y="417" width="20" height="11" rx="3"/><text class="aitxt" x="744" y="425.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d3"><rect x="1030" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="440">QuickSight</text>
+<text class="ns" x="1044" y="457">BI dashboards</text>
+<text class="nt" x="1175" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="30" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="550">Warehouse DB</text>
+<text class="ns" x="44" y="567">on-prem Oracle</text>
+<text class="nt" x="175" y="536" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="550">Site-to-Site VPN</text>
+<text class="ns" x="244" y="567">or Direct Connect</text>
+<text class="nt" x="375" y="536" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="430" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="550">DMS + SCT</text>
+<text class="ns" x="444" y="567">data + schema</text>
+<text class="nt" x="575" y="536" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="630" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="550">Aurora PostgreSQL</text>
+<text class="ns" x="644" y="567">orders, inventory</text>
+<text class="nt" x="775" y="536" text-anchor="end">D3</text>
+</g>
+<g class="node d2"><rect x="30" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="660">Organizations</text>
+<text class="ns" x="44" y="677">SCPs + Control Tower</text>
+<text class="nt" x="175" y="646" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="230" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="660">IAM roles</text>
+<text class="ns" x="244" y="677">least privilege</text>
+<text class="nt" x="375" y="646" text-anchor="end">D2</text>
+</g>
+<g class="node d3"><rect x="430" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="660">CloudWatch</text>
+<text class="ns" x="444" y="677">fleet health alarms</text>
+<text class="nt" x="575" y="646" text-anchor="end">D3</text>
+</g>
+<g class="node d4"><rect x="630" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="660">Compute Optimizer</text>
+<text class="ns" x="644" y="677">rightsize EC2</text>
+<text class="nt" x="775" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="830" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="660">Cost Explorer</text>
+<text class="ns" x="844" y="677">tags: cost per branch</text>
+<text class="nt" x="975" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="1030" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="660">Consolidated billing</text>
+<text class="ns" x="1044" y="677">volume discounts</text>
+<text class="nt" x="1175" y="646" text-anchor="end">D4</text>
+</g>
+<g class="badge"><circle cx="206.0" cy="112.0" r="9.5"/><text x="206.0" y="115.8" text-anchor="middle">1</text></g>
+<g class="badge"><circle cx="406.0" cy="112.0" r="9.5"/><text x="406.0" y="115.8" text-anchor="middle">2</text></g>
+<g class="badge"><circle cx="606.0" cy="112.0" r="9.5"/><text x="606.0" y="115.8" text-anchor="middle">3</text></g>
+<g class="badge"><circle cx="806.0" cy="112.0" r="9.5"/><text x="806.0" y="115.8" text-anchor="middle">4</text></g>
+<g class="badge"><circle cx="1006.0" cy="112.0" r="9.5"/><text x="1006.0" y="115.8" text-anchor="middle">5</text></g>
+<g class="badge"><circle cx="706.0" cy="167.0" r="9.5"/><text x="706.0" y="170.8" text-anchor="middle">6</text></g>
+<g class="badge"><circle cx="806.0" cy="222.0" r="9.5"/><text x="806.0" y="225.8" text-anchor="middle">7</text></g>
+<g class="badge"><circle cx="1006.0" cy="222.0" r="9.5"/><text x="1006.0" y="225.8" text-anchor="middle">8</text></g>
+<g class="badge"><circle cx="1106.0" cy="167.0" r="9.5"/><text x="1106.0" y="170.8" text-anchor="middle">9</text></g>
+<g class="badge"><circle cx="506.0" cy="222.0" r="9.5"/><text x="506.0" y="225.8" text-anchor="middle">10</text></g>
+<g class="badge"><circle cx="606.0" cy="332.0" r="9.5"/><text x="606.0" y="335.8" text-anchor="middle">11</text></g>
+<g class="badge"><circle cx="806.0" cy="332.0" r="9.5"/><text x="806.0" y="335.8" text-anchor="middle">12</text></g>
+<g class="badge"><circle cx="1006.0" cy="332.0" r="9.5"/><text x="1006.0" y="335.8" text-anchor="middle">13</text></g>
+<g class="badge"><circle cx="1106.0" cy="387.0" r="9.5"/><text x="1106.0" y="390.8" text-anchor="middle">14</text></g>
+<g class="badge"><circle cx="706.0" cy="387.0" r="9.5"/><text x="706.0" y="390.8" text-anchor="middle">15</text></g>
+<g class="badge"><circle cx="406.0" cy="442.0" r="9.5"/><text x="406.0" y="445.8" text-anchor="middle">16</text></g>
+<g class="badge"><circle cx="206.0" cy="552.0" r="9.5"/><text x="206.0" y="555.8" text-anchor="middle">17</text></g>
+<g class="badge"><circle cx="406.0" cy="552.0" r="9.5"/><text x="406.0" y="555.8" text-anchor="middle">18</text></g>
+<g class="badge"><circle cx="606.0" cy="552.0" r="9.5"/><text x="606.0" y="555.8" text-anchor="middle">19</text></g>
+<g class="pill"><rect x="30.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="169.5" y="768" text-anchor="middle">7 Rs: Replatform</text><text class="ps" x="169.5" y="784" text-anchor="middle">Oracle → Aurora PostgreSQL</text></g>
+<g class="pill"><rect x="321.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="460.5" y="768" text-anchor="middle">Elasticity</text><text class="ps" x="460.5" y="784" text-anchor="middle">Spot fleet runs only at night</text></g>
+<g class="pill"><rect x="612.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="751.5" y="768" text-anchor="middle">CapEx → OpEx</text><text class="ps" x="751.5" y="784" text-anchor="middle">no on-prem analytics servers</text></g>
+<g class="pill"><rect x="903.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="1042.5" y="768" text-anchor="middle">Hybrid deployment</text><text class="ps" x="1042.5" y="784" text-anchor="middle">warehouse stays on-prem</text></g>
+</svg></div>
+    <figcaption>Numbers on the arrows match the walkthrough below. Solid = request path, dashed = async/event. The colored bar and tag on each box show its exam domain; the bottom pills are the Domain 1 principles the design demonstrates. A dashed box is useful in real builds but not on the CLF-C02 in-scope list.</figcaption>
+  </figure>
+  <div class="cols">
+    <div><h3>Walk the request</h3><ol class='steps'><li>GPS devices on each truck publish location every few seconds over MQTT to <b>IoT Core</b>, each authenticated by its own X.509 certificate.</li><li>An IoT rule streams the messages into <b>Kinesis Data Streams</b>.</li><li><b>Lambda</b> processes the stream in near real time.</li><li>The latest position per truck is written to <b>DynamoDB</b>.</li><li>Customers' "track my parcel" screen reads that position.</li><li>Positions are checked against geofences in <b>Amazon Location Service</b>.</li><li>"Truck entered customer's barangay" becomes an event on <b>EventBridge</b>.</li><li>An EventBridge rule routes it to <b>SNS</b>.</li><li>The customer gets an SMS: "Your parcel is 10 minutes away."</li><li>The same stream is also delivered by <b>Data Firehose</b>.</li><li>...into the <b>S3 data lake</b>, with lifecycle rules moving old data to Glacier.</li><li>A <b>Glue</b> crawler builds the data catalog.</li><li><b>Athena</b> runs SQL directly on S3, billed per data scanned.</li><li><b>QuickSight</b> turns the queries into dashboards for operations managers.</li><li><b>SageMaker</b> trains a delivery-time (ETA) model on the company's own history.</li><li><b>Step Functions</b> orchestrates nightly route optimization on <b>EC2 Spot</b> instances in an Auto Scaling group.</li><li>The warehouse connects securely through <b>Site-to-Site VPN</b> (or Direct Connect for dedicated bandwidth).</li><li><b>DMS</b> copies the data while <b>SCT</b> converts the Oracle schema to PostgreSQL.</li><li>Orders and inventory now live in <b>Aurora PostgreSQL</b>. That's Replatform.</li></ol></div>
+    <div><h3>4-domain map</h3><div class='dmap'><div class='dm d1'><h4><span class='chip d1'>D1</span>Cloud Concepts · 24%</h4><p>Migration (7 Rs): Replatform Oracle → Aurora, Retire the old reporting server. Hybrid deployment model. Elasticity (Spot fleet only at night), trading CapEx for OpEx, economies of scale. Well-Architected: Performance Efficiency and Cost Optimization.</p></div><div class='dm d2'><h4><span class='chip d2'>D2</span>Security & Compliance · 30%</h4><p>IoT device certificates, IAM roles with least privilege, Organizations SCPs + Control Tower guardrails across accounts, encrypted VPN tunnel, KMS on the data lake.</p></div><div class='dm d3'><h4><span class='chip d3'>D3</span>Technology & Services · 34%</h4><p>IoT Core, Kinesis, Firehose, Lambda, DynamoDB, Amazon Location, EventBridge, SNS, S3, Glue, Athena, Step Functions, EC2 + Auto Scaling, VPN/Direct Connect, DMS, SCT, Aurora, CloudWatch. Analytics: Glue, Athena, QuickSight. AI/ML: SageMaker.</p></div><div class='dm d4'><h4><span class='chip d4'>D4</span>Billing, Pricing & Support · 12%</h4><p>Spot for interruptible batch (up to 90% off), Reserved Instances for always-on Aurora, consolidated billing volume discounts, cost allocation tags per branch, Compute Optimizer rightsizing, Athena pay-per-query, S3 lifecycle to Glacier.</p></div></div></div>
+  </div>
+  <h3>Decision records: why this service, not the distractor</h3>
+  <div class='tw'><table><thead><tr><th>Requirement</th><th>Chosen</th><th>Closest distractor</th><th>Why the distractor loses</th></tr></thead><tbody><tr><td>Real-time ordered stream, multiple readers, replay</td><td><b>Kinesis Data Streams</b></td><td>SQS</td><td>SQS deletes messages once processed: no replay, no multiple independent readers</td></tr><tr><td>Ad-hoc SQL on files in S3, no servers</td><td><b>Athena</b></td><td>Redshift</td><td>Redshift is a provisioned data warehouse: more power, more cost and setup</td></tr><tr><td>Predict delivery times from our own data</td><td><b>SageMaker</b></td><td>Bedrock</td><td>Bedrock uses pre-trained foundation models; it doesn't train on your tabular history</td></tr><tr><td>Nightly batch that can tolerate interruption</td><td><b>EC2 Spot</b></td><td>On-Demand</td><td>On-Demand costs far more for work that can restart</td></tr><tr><td>Convert Oracle schema to PostgreSQL</td><td><b>SCT</b></td><td>DMS</td><td>DMS moves the data; SCT converts the schema for different engines</td></tr><tr><td>Private, consistent, dedicated bandwidth</td><td><b>Direct Connect</b></td><td>Site-to-Site VPN</td><td>VPN runs over the public internet; quick to set up but less consistent</td></tr></tbody></table></div>
+  <h3>Test yourself</h3>
+  <div class='quiz'><details><summary><span class='q'>Q1.</span> A company needs to run a fault-tolerant nightly batch job at the lowest possible cost.</summary><p><b>EC2 Spot Instances</b> — up to 90% off, and the job can tolerate interruption.</p></details><details><summary><span class='q'>Q2.</span> Analysts want to query log files in S3 with standard SQL without managing infrastructure.</summary><p><b>Amazon Athena</b> — serverless, pay per query.</p></details><details><summary><span class='q'>Q3.</span> Migrating Oracle to Aurora PostgreSQL: which tool converts the database schema?</summary><p><b>AWS Schema Conversion Tool (SCT)</b> — DMS moves the data; SCT handles the heterogeneous schema conversion.</p></details></div>
+</section>
+<section id="design-4">
+  <div class="sh"><span class="num">4</span><div><h2>BahayHub PH — real-estate listings, leads &amp; title documents</h2><p class="shape">Managed platform (PaaS) + search + contact center + offline data migration</p></div></div>
+  <div class="problem"><span>Real-world problem</span><p>Brokers post the same property on five different sites, buyers can't search by budget and location in one place, phone leads go unrecorded, and 40 TB of scanned land titles sit on one office file server with slow internet and no backup.</p></div>
+  <figure>
+    <div class="scroll"><svg viewBox="0 0 1212 806" role="img" aria-label="Real-estate marketplace architecture: Amplify front end, Cognito, Elastic Beanstalk API, OpenSearch, Aurora, Redshift, EventBridge and SES, Amazon Connect with Lex and Transcribe, and a Snowball migration of scanned titles into S3 searched by Kendra." xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="ah-bahay" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<rect class="grp" x="20" y="390" width="172" height="90" rx="10"/>
+<text class="grpl" x="30" y="404">Broker office</text>
+<rect class="grp" x="220" y="390" width="572" height="90" rx="10"/>
+<text class="grpl" x="230" y="404">Migration + document search</text>
+<rect class="grp" x="20" y="500" width="1172" height="200" rx="10"/>
+<text class="grpl" x="30" y="514">Security, operations &amp; cost</text>
+<polyline class="edge" points="182,112.0 230,112.0" marker-end="url(#ah-bahay)"/>
+<polyline class="edge" points="382,112.0 430,112.0" marker-end="url(#ah-bahay)"/>
+<polyline class="edge" points="582,112.0 630,112.0" marker-end="url(#ah-bahay)"/>
+<polyline class="edge" points="506.0,140 506.0,194" marker-end="url(#ah-bahay)"/>
+<polyline class="edge" points="582,222.0 630,222.0" marker-end="url(#ah-bahay)"/>
+<polyline class="edge" points="566.0,250 566.0,264 906.0,264 906.0,250" marker-end="url(#ah-bahay)"/>
+<polyline class="edge" points="506.0,250 506.0,304" marker-end="url(#ah-bahay)"/>
+<polyline class="edge async" points="430,332.0 382,332.0" marker-end="url(#ah-bahay)"/>
+<polyline class="edge async" points="542.0,250 542.0,282 706.0,282 706.0,304" marker-end="url(#ah-bahay)"/>
+<polyline class="edge async" points="782,332.0 830,332.0" marker-end="url(#ah-bahay)"/>
+<polyline class="edge" points="182,222.0 230,222.0" marker-end="url(#ah-bahay)"/>
+<polyline class="edge" points="382,222.0 430,222.0" marker-end="url(#ah-bahay)"/>
+<polyline class="edge async" points="106.0,250 106.0,304" marker-end="url(#ah-bahay)"/>
+<polyline class="edge" points="182,442.0 230,442.0" marker-end="url(#ah-bahay)"/>
+<polyline class="edge" points="382,442.0 430,442.0" marker-end="url(#ah-bahay)"/>
+<polyline class="edge" points="582,442.0 630,442.0" marker-end="url(#ah-bahay)"/>
+<g class="node d3"><rect x="30" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="110">Home buyers</text>
+<text class="ns" x="44" y="127">web + mobile</text>
+<text class="nt" x="175" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="110">Route 53</text>
+<text class="ns" x="244" y="127">DNS</text>
+<text class="nt" x="375" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="430" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="110">Amplify Hosting</text>
+<text class="ns" x="444" y="127">React site + CI/CD</text>
+<text class="nt" x="575" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d2"><rect x="630" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="110">Cognito</text>
+<text class="ns" x="644" y="127">Google/Facebook login</text>
+<text class="nt" x="775" y="96" text-anchor="end">D2</text>
+</g>
+<g class="node d3"><rect x="30" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="220">Amazon Connect</text>
+<text class="ns" x="44" y="237">broker hotline</text>
+<text class="nt" x="175" y="206" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="220">Lex</text>
+<text class="ns" x="244" y="237">voice/chat bot</text>
+<text class="nt" x="375" y="206" text-anchor="end">D3</text>
+<rect class="aitag" x="334" y="197" width="20" height="11" rx="3"/><text class="aitxt" x="344" y="205.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d3"><rect x="430" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="220">Elastic Beanstalk</text>
+<text class="ns" x="444" y="237">EC2 + EBS + ALB + ASG</text>
+<text class="nt" x="575" y="206" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="630" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="220">OpenSearch</text>
+<text class="ns" x="644" y="237">search by price, map</text>
+<text class="nt" x="775" y="206" text-anchor="end">D3</text>
+</g>
+<g class="node d3 beyond"><rect x="830" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="220">Personalize</text>
+<text class="ns" x="844" y="237">homes you may like</text>
+<text class="nt" x="975" y="206" text-anchor="end">D3</text>
+<rect class="aitag" x="934" y="197" width="20" height="11" rx="3"/><text class="aitxt" x="944" y="205.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d3"><rect x="30" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="330">Transcribe</text>
+<text class="ns" x="44" y="347">call → text</text>
+<text class="nt" x="175" y="316" text-anchor="end">D3</text>
+<rect class="aitag" x="134" y="307" width="20" height="11" rx="3"/><text class="aitxt" x="144" y="315.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d3"><rect x="230" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="330">Redshift</text>
+<text class="ns" x="244" y="347">price-trend warehouse</text>
+<text class="nt" x="375" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="430" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="330">Aurora Serverless v2</text>
+<text class="ns" x="444" y="347">listings, leads</text>
+<text class="nt" x="575" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="630" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="330">EventBridge</text>
+<text class="ns" x="644" y="347">NewListing event</text>
+<text class="nt" x="775" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="830" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="330">SES</text>
+<text class="ns" x="844" y="347">matching-home emails</text>
+<text class="nt" x="975" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="30" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="440">Office file server</text>
+<text class="ns" x="44" y="457">40 TB scanned titles</text>
+<text class="nt" x="175" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="440">Snowball Edge</text>
+<text class="ns" x="244" y="457">offline bulk transfer</text>
+<text class="nt" x="375" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="430" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="440">S3 + Deep Archive</text>
+<text class="ns" x="444" y="457">title documents</text>
+<text class="nt" x="575" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="630" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="440">Kendra</text>
+<text class="ns" x="644" y="457">Q&amp;A inside documents</text>
+<text class="nt" x="775" y="426" text-anchor="end">D3</text>
+<rect class="aitag" x="734" y="417" width="20" height="11" rx="3"/><text class="aitxt" x="744" y="425.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d2"><rect x="30" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="550">WAF + Shield</text>
+<text class="ns" x="44" y="567">protect the site</text>
+<text class="nt" x="175" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="230" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="550">IAM Identity Center</text>
+<text class="ns" x="244" y="567">staff single sign-on</text>
+<text class="nt" x="375" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="430" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="550">Systems Manager</text>
+<text class="ns" x="444" y="567">patch EC2 (your job)</text>
+<text class="nt" x="575" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="630" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="550">Detective</text>
+<text class="ns" x="644" y="567">investigate findings</text>
+<text class="nt" x="775" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d3"><rect x="830" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="550">CloudFormation</text>
+<text class="ns" x="844" y="567">infrastructure as code</text>
+<text class="nt" x="975" y="536" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="1030" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="550">WorkSpaces</text>
+<text class="ns" x="1044" y="567">brokers&#x27; cloud desktops</text>
+<text class="nt" x="1175" y="536" text-anchor="end">D3</text>
+</g>
+<g class="node d4"><rect x="30" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="660">Pricing Calculator</text>
+<text class="ns" x="44" y="677">estimate before build</text>
+<text class="nt" x="175" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="230" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="660">Reserved Instances</text>
+<text class="ns" x="244" y="677">steady EC2 baseline</text>
+<text class="nt" x="375" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="430" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="660">AWS Marketplace</text>
+<text class="ns" x="444" y="677">buy e-sign software</text>
+<text class="nt" x="575" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="630" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="660">AWS Budgets</text>
+<text class="ns" x="644" y="677">alert on spend</text>
+<text class="nt" x="775" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="830" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="660">Free Tier</text>
+<text class="ns" x="844" y="677">12-mo · always · trials</text>
+<text class="nt" x="975" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="1030" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="660">Business Support</text>
+<text class="ns" x="1044" y="677">24/7 production help</text>
+<text class="nt" x="1175" y="646" text-anchor="end">D4</text>
+</g>
+<g class="badge"><circle cx="206.0" cy="112.0" r="9.5"/><text x="206.0" y="115.8" text-anchor="middle">1</text></g>
+<g class="badge"><circle cx="406.0" cy="112.0" r="9.5"/><text x="406.0" y="115.8" text-anchor="middle">2</text></g>
+<g class="badge"><circle cx="606.0" cy="112.0" r="9.5"/><text x="606.0" y="115.8" text-anchor="middle">3</text></g>
+<g class="badge"><circle cx="506.0" cy="167.0" r="9.5"/><text x="506.0" y="170.8" text-anchor="middle">4</text></g>
+<g class="badge"><circle cx="606.0" cy="222.0" r="9.5"/><text x="606.0" y="225.8" text-anchor="middle">5</text></g>
+<g class="badge"><circle cx="736.0" cy="264.0" r="9.5"/><text x="736.0" y="267.8" text-anchor="middle">6</text></g>
+<g class="badge"><circle cx="506.0" cy="277.0" r="9.5"/><text x="506.0" y="280.8" text-anchor="middle">7</text></g>
+<g class="badge"><circle cx="406.0" cy="332.0" r="9.5"/><text x="406.0" y="335.8" text-anchor="middle">8</text></g>
+<g class="badge"><circle cx="624.0" cy="282.0" r="9.5"/><text x="624.0" y="285.8" text-anchor="middle">9</text></g>
+<g class="badge"><circle cx="806.0" cy="332.0" r="9.5"/><text x="806.0" y="335.8" text-anchor="middle">10</text></g>
+<g class="badge"><circle cx="206.0" cy="222.0" r="9.5"/><text x="206.0" y="225.8" text-anchor="middle">11</text></g>
+<g class="badge"><circle cx="406.0" cy="222.0" r="9.5"/><text x="406.0" y="225.8" text-anchor="middle">12</text></g>
+<g class="badge"><circle cx="106.0" cy="277.0" r="9.5"/><text x="106.0" y="280.8" text-anchor="middle">13</text></g>
+<g class="badge"><circle cx="206.0" cy="442.0" r="9.5"/><text x="206.0" y="445.8" text-anchor="middle">14</text></g>
+<g class="badge"><circle cx="406.0" cy="442.0" r="9.5"/><text x="406.0" y="445.8" text-anchor="middle">15</text></g>
+<g class="badge"><circle cx="606.0" cy="442.0" r="9.5"/><text x="606.0" y="445.8" text-anchor="middle">16</text></g>
+<g class="pill"><rect x="30.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="169.5" y="768" text-anchor="middle">Stop guessing capacity</text><text class="ps" x="169.5" y="784" text-anchor="middle">Auto Scaling behind Beanstalk</text></g>
+<g class="pill"><rect x="321.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="460.5" y="768" text-anchor="middle">Operational excellence</text><text class="ps" x="460.5" y="784" text-anchor="middle">IaC + managed platform</text></g>
+<g class="pill"><rect x="612.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="751.5" y="768" text-anchor="middle">CAF: People</text><text class="ps" x="751.5" y="784" text-anchor="middle">train brokers on new tools</text></g>
+<g class="pill"><rect x="903.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="1042.5" y="768" text-anchor="middle">Sustainability</text><text class="ps" x="1042.5" y="784" text-anchor="middle">Aurora scales down when idle</text></g>
+</svg></div>
+    <figcaption>Numbers on the arrows match the walkthrough below. Solid = request path, dashed = async/event. The colored bar and tag on each box show its exam domain; the bottom pills are the Domain 1 principles the design demonstrates. A dashed box is useful in real builds but not on the CLF-C02 in-scope list.</figcaption>
+  </figure>
+  <div class="cols">
+    <div><h3>Walk the request</h3><ol class='steps'><li>A buyer opens the site; <b>Route 53</b> resolves the domain.</li><li><b>Amplify Hosting</b> serves the React site on a global CDN and redeploys on every Git push.</li><li>Buyers sign in with <b>Cognito</b> (Google or Facebook login) to save searches.</li><li>The site calls the listings API on <b>Elastic Beanstalk</b>, which created the EC2 instances (with EBS volumes), the ALB and the Auto Scaling group for us.</li><li><b>OpenSearch</b> handles searches like "3BR near MRT under ₱8M" with full-text and map filters.</li><li><b>Personalize</b> ranks "homes you may like" from browsing history (useful for real builds, not on the exam list).</li><li>Listings, leads and viewing schedules live in <b>Aurora Serverless v2</b>, which scales capacity with demand.</li><li>A zero-ETL integration copies data into <b>Redshift</b> for price-trend analytics.</li><li>When a broker publishes a listing, the app sends a NewListing event to <b>EventBridge</b>.</li><li>EventBridge triggers <b>SES</b> to email buyers whose saved searches match.</li><li>Callers reach the broker hotline on <b>Amazon Connect</b>.</li><li>A <b>Lex</b> bot answers FAQs and books viewings through the listings API.</li><li>Calls are recorded and <b>Transcribe</b> turns them into text for lead notes and coaching.</li><li>The 40 TB of scanned titles would take weeks over the office internet, so they're copied onto a <b>Snowball Edge</b> device.</li><li>AWS loads the device into <b>S3</b>; lifecycle rules move old titles to Glacier Deep Archive.</li><li><b>Kendra</b> lets staff ask "Which titles list a mortgage annotation?" and finds the answer inside the documents.</li></ol></div>
+    <div><h3>4-domain map</h3><div class='dmap'><div class='dm d1'><h4><span class='chip d1'>D1</span>Cloud Concepts · 24%</h4><p>Stop guessing capacity (Auto Scaling, Aurora Serverless). CAF People and Business perspectives (train brokers, measure lead conversion). Data migration with the Snow Family. Well-Architected: Operational Excellence (CloudFormation, managed platform updates) and Sustainability (capacity follows demand).</p></div><div class='dm d2'><h4><span class='chip d2'>D2</span>Security & Compliance · 30%</h4><p>Cognito social login, IAM Identity Center for staff SSO, WAF + Shield, KMS encryption on S3/Aurora and on the Snowball device, Detective. Shared responsibility: even under Beanstalk, the guest OS on EC2 is the customer's job, so patch it (Systems Manager or managed platform updates).</p></div><div class='dm d3'><h4><span class='chip d3'>D3</span>Technology & Services · 34%</h4><p>Route 53, Amplify, Elastic Beanstalk (EC2, EBS, ALB, Auto Scaling), OpenSearch, Aurora, Redshift, EventBridge, SES, Amazon Connect, Snowball Edge, S3 + Glacier Deep Archive, CloudFormation, Systems Manager, WorkSpaces. AI/ML: Lex, Transcribe, Kendra (Personalize beyond exam).</p></div><div class='dm d4'><h4><span class='chip d4'>D4</span>Billing, Pricing & Support · 12%</h4><p>Elastic Beanstalk has no extra charge (you pay for the EC2, ALB and so on it creates). Reserved Instances for the steady baseline, Aurora Serverless billed for capacity used, Pricing Calculator, AWS Marketplace for e-signature software, Free Tier, Business Support.</p></div></div></div>
+  </div>
+  <h3>Decision records: why this service, not the distractor</h3>
+  <div class='tw'><table><thead><tr><th>Requirement</th><th>Chosen</th><th>Closest distractor</th><th>Why the distractor loses</th></tr></thead><tbody><tr><td>Deploy code; let AWS provision servers, load balancing and scaling</td><td><b>Elastic Beanstalk</b></td><td>CloudFormation</td><td>CloudFormation is templates you write for any resource; Beanstalk is a ready platform for apps</td></tr><tr><td>One broker's simple site at a fixed monthly price</td><td><b>Lightsail</b></td><td>EC2</td><td>EC2 makes you assemble networking, storage and pricing yourself</td></tr><tr><td>Move 40 TB over a slow internet link</td><td><b>Snowball Edge</b></td><td>DataSync</td><td>DataSync is online; at low bandwidth the transfer takes weeks</td></tr><tr><td>Ask natural-language questions about documents</td><td><b>Kendra</b></td><td>OpenSearch</td><td>OpenSearch is keyword/log search you tune yourself</td></tr><tr><td>Years of price trends for analysis</td><td><b>Redshift</b></td><td>Aurora</td><td>Aurora is for transactions (OLTP), not large analytics (OLAP)</td></tr><tr><td>A phone bot that understands callers</td><td><b>Lex</b></td><td>Polly</td><td>Polly only speaks text aloud; it doesn't understand</td></tr></tbody></table></div>
+  <h3>Test yourself</h3>
+  <div class='quiz'><details><summary><span class='q'>Q1.</span> A company must move 40 TB to AWS but its internet connection would take weeks. What should it use?</summary><p><b>AWS Snowball Edge</b> — an offline device shipped to AWS; DataSync is the online option.</p></details><details><summary><span class='q'>Q2.</span> A developer wants to upload code and have AWS handle capacity, load balancing and auto scaling.</summary><p><b>AWS Elastic Beanstalk</b> — PaaS with no extra charge; you pay for the underlying resources.</p></details><details><summary><span class='q'>Q3.</span> Who is responsible for patching the guest OS on EC2 instances created by Elastic Beanstalk?</summary><p><b>The customer</b> — you can automate it with managed platform updates or Systems Manager, but the responsibility stays yours.</p></details></div>
+</section>
+<section id="design-5">
+  <div class="sh"><span class="num">5</span><div><h2>RemitKo — OFW remittance with KYC &amp; fraud detection</h2><p class="shape">Kubernetes microservices + saga workflow + exactly-once messaging + multi-Region ledger</p></div></div>
+  <div class="problem"><span>Real-world problem</span><p>Filipino workers abroad send money home. A transfer can never be posted twice or lost, the app must be fast from Dubai or Hong Kong, every new user needs identity checks, fraud must be caught in milliseconds, and auditors require PCI DSS evidence.</p></div>
+  <figure>
+    <div class="scroll"><svg viewBox="0 0 1212 806" role="img" aria-label="Remittance architecture: Global Accelerator, WAF and Shield Advanced, API Gateway, EKS microservices with Rekognition KYC and SageMaker fraud scoring, Step Functions saga with DynamoDB idempotency, SQS FIFO and PrivateLink to partner banks, Aurora Global Database with CloudHSM-backed keys." xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="ah-remit" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+<rect class="grp" x="420" y="390" width="172" height="90" rx="10"/>
+<text class="grpl" x="430" y="404">Secondary Region</text>
+<rect class="grp" x="20" y="500" width="1172" height="90" rx="10"/>
+<text class="grpl" x="30" y="514">Security &amp; compliance</text>
+<rect class="grp" x="20" y="610" width="1172" height="90" rx="10"/>
+<text class="grpl" x="30" y="624">Resilience &amp; cost</text>
+<polyline class="edge" points="182,112.0 230,112.0" marker-end="url(#ah-remit)"/>
+<polyline class="edge" points="382,112.0 430,112.0" marker-end="url(#ah-remit)"/>
+<polyline class="edge" points="582,112.0 630,112.0" marker-end="url(#ah-remit)"/>
+<polyline class="edge" points="706.0,140 706.0,194" marker-end="url(#ah-remit)"/>
+<polyline class="edge" points="630,222.0 582,222.0" marker-end="url(#ah-remit)"/>
+<polyline class="edge" points="782,222.0 830,222.0" marker-end="url(#ah-remit)"/>
+<polyline class="edge" points="706.0,250 706.0,304" marker-end="url(#ah-remit)"/>
+<polyline class="edge" points="630,332.0 582,332.0" marker-end="url(#ah-remit)"/>
+<polyline class="edge async" points="782,332.0 830,332.0" marker-end="url(#ah-remit)"/>
+<polyline class="edge async" points="982,332.0 1030,332.0" marker-end="url(#ah-remit)"/>
+<polyline class="edge" points="1106.0,304 1106.0,140" marker-end="url(#ah-remit)"/>
+<polyline class="edge" points="706.0,360 706.0,414" marker-end="url(#ah-remit)"/>
+<polyline class="edge async" points="630,442.0 582,442.0" marker-end="url(#ah-remit)"/>
+<polyline class="edge async" points="830,442.0 782,442.0" marker-end="url(#ah-remit)"/>
+<g class="node d3"><rect x="30" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="110">OFWs abroad</text>
+<text class="ns" x="44" y="127">app in UAE, HK, US</text>
+<text class="nt" x="175" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="110">Global Accelerator</text>
+<text class="ns" x="244" y="127">static IPs, AWS backbone</text>
+<text class="nt" x="375" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d2"><rect x="430" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="110">WAF + Shield Adv.</text>
+<text class="ns" x="444" y="127">bots, DDoS response</text>
+<text class="nt" x="575" y="96" text-anchor="end">D2</text>
+</g>
+<g class="node d3"><rect x="630" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="110">API Gateway</text>
+<text class="ns" x="644" y="127">rate limit per user</text>
+<text class="nt" x="775" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="1030" y="84" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="84" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="110">Family in PH</text>
+<text class="ns" x="1044" y="127">e-wallet / bank</text>
+<text class="nt" x="1175" y="96" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="430" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="220">Rekognition</text>
+<text class="ns" x="444" y="237">selfie ↔ ID (KYC)</text>
+<text class="nt" x="575" y="206" text-anchor="end">D3</text>
+<rect class="aitag" x="534" y="197" width="20" height="11" rx="3"/><text class="aitxt" x="544" y="205.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d3"><rect x="630" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="220">EKS</text>
+<text class="ns" x="644" y="237">transfer microservices</text>
+<text class="nt" x="775" y="206" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="830" y="194" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="194" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="220">SageMaker</text>
+<text class="ns" x="844" y="237">fraud score endpoint</text>
+<text class="nt" x="975" y="206" text-anchor="end">D3</text>
+<rect class="aitag" x="934" y="197" width="20" height="11" rx="3"/><text class="aitxt" x="944" y="205.5" text-anchor="middle">AI</text>
+</g>
+<g class="node d3"><rect x="430" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="330">DynamoDB</text>
+<text class="ns" x="444" y="347">idempotency keys</text>
+<text class="nt" x="575" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="630" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="330">Step Functions</text>
+<text class="ns" x="644" y="347">transfer saga + retries</text>
+<text class="nt" x="775" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="830" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="330">SQS FIFO</text>
+<text class="ns" x="844" y="347">in order, exactly once</text>
+<text class="nt" x="975" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="1030" y="304" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="304" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="330">PrivateLink</text>
+<text class="ns" x="1044" y="347">partner bank API</text>
+<text class="nt" x="1175" y="316" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="430" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="440">Aurora replica</text>
+<text class="ns" x="444" y="457">2nd Region</text>
+<text class="nt" x="575" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="630" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="440">Aurora Global DB</text>
+<text class="ns" x="644" y="457">ledger</text>
+<text class="nt" x="775" y="426" text-anchor="end">D3</text>
+</g>
+<g class="node d2"><rect x="830" y="414" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="414" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="440">KMS + CloudHSM</text>
+<text class="ns" x="844" y="457">single-tenant keys</text>
+<text class="nt" x="975" y="426" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="30" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="550">Firewall Manager</text>
+<text class="ns" x="44" y="567">rules across accounts</text>
+<text class="nt" x="175" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="230" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="550">Security Hub + Detective</text>
+<text class="ns" x="244" y="567">findings + root cause</text>
+<text class="nt" x="375" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="430" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="550">Audit Manager</text>
+<text class="ns" x="444" y="567">collect PCI evidence</text>
+<text class="nt" x="575" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="630" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="550">AWS Artifact</text>
+<text class="ns" x="644" y="567">AWS PCI DSS report</text>
+<text class="nt" x="775" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="830" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="550">Directory Service</text>
+<text class="ns" x="844" y="567">staff Active Directory</text>
+<text class="nt" x="975" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d2"><rect x="1030" y="524" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="524" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="550">Client VPN</text>
+<text class="ns" x="1044" y="567">remote staff access</text>
+<text class="nt" x="1175" y="536" text-anchor="end">D2</text>
+</g>
+<g class="node d3"><rect x="30" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="30" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="44" y="660">CloudWatch + X-Ray</text>
+<text class="ns" x="44" y="677">latency per hop</text>
+<text class="nt" x="175" y="646" text-anchor="end">D3</text>
+</g>
+<g class="node d3"><rect x="230" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="230" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="244" y="660">Elastic Disaster Rec.</text>
+<text class="ns" x="244" y="677">legacy core servers</text>
+<text class="nt" x="375" y="646" text-anchor="end">D3</text>
+</g>
+<g class="node d4"><rect x="430" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="430" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="444" y="660">Savings Plans</text>
+<text class="ns" x="444" y="677">steady EKS nodes</text>
+<text class="nt" x="575" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="630" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="630" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="644" y="660">Enterprise Support</text>
+<text class="ns" x="644" y="677">designated TAM</text>
+<text class="nt" x="775" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="830" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="830" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="844" y="660">Cost Anomaly Detect.</text>
+<text class="ns" x="844" y="677">ML spots odd spend</text>
+<text class="nt" x="975" y="646" text-anchor="end">D4</text>
+</g>
+<g class="node d4"><rect x="1030" y="634" width="152" height="56" rx="8"/>
+<rect class="bar" x="1030" y="634" width="5" height="56" rx="2"/>
+<text class="nl" x="1044" y="660">Cost &amp; Usage Report</text>
+<text class="ns" x="1044" y="677">line-item detail</text>
+<text class="nt" x="1175" y="646" text-anchor="end">D4</text>
+</g>
+<g class="badge"><circle cx="206.0" cy="112.0" r="9.5"/><text x="206.0" y="115.8" text-anchor="middle">1</text></g>
+<g class="badge"><circle cx="406.0" cy="112.0" r="9.5"/><text x="406.0" y="115.8" text-anchor="middle">2</text></g>
+<g class="badge"><circle cx="606.0" cy="112.0" r="9.5"/><text x="606.0" y="115.8" text-anchor="middle">3</text></g>
+<g class="badge"><circle cx="706.0" cy="167.0" r="9.5"/><text x="706.0" y="170.8" text-anchor="middle">4</text></g>
+<g class="badge"><circle cx="606.0" cy="222.0" r="9.5"/><text x="606.0" y="225.8" text-anchor="middle">5</text></g>
+<g class="badge"><circle cx="806.0" cy="222.0" r="9.5"/><text x="806.0" y="225.8" text-anchor="middle">6</text></g>
+<g class="badge"><circle cx="706.0" cy="277.0" r="9.5"/><text x="706.0" y="280.8" text-anchor="middle">7</text></g>
+<g class="badge"><circle cx="606.0" cy="332.0" r="9.5"/><text x="606.0" y="335.8" text-anchor="middle">8</text></g>
+<g class="badge"><circle cx="806.0" cy="332.0" r="9.5"/><text x="806.0" y="335.8" text-anchor="middle">9</text></g>
+<g class="badge"><circle cx="1006.0" cy="332.0" r="9.5"/><text x="1006.0" y="335.8" text-anchor="middle">10</text></g>
+<g class="badge"><circle cx="1106.0" cy="222.0" r="9.5"/><text x="1106.0" y="225.8" text-anchor="middle">11</text></g>
+<g class="badge"><circle cx="706.0" cy="387.0" r="9.5"/><text x="706.0" y="390.8" text-anchor="middle">12</text></g>
+<g class="badge"><circle cx="606.0" cy="442.0" r="9.5"/><text x="606.0" y="445.8" text-anchor="middle">13</text></g>
+<g class="badge"><circle cx="806.0" cy="442.0" r="9.5"/><text x="806.0" y="445.8" text-anchor="middle">14</text></g>
+<g class="pill"><rect x="30.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="169.5" y="768" text-anchor="middle">7 Rs: Refactor</text><text class="ps" x="169.5" y="784" text-anchor="middle">monolith → microservices</text></g>
+<g class="pill"><rect x="321.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="460.5" y="768" text-anchor="middle">Fault tolerance</text><text class="ps" x="460.5" y="784" text-anchor="middle">saga + retries + 2 Regions</text></g>
+<g class="pill"><rect x="612.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="751.5" y="768" text-anchor="middle">Go global in minutes</text><text class="ps" x="751.5" y="784" text-anchor="middle">AWS backbone to OFWs</text></g>
+<g class="pill"><rect x="903.0" y="750" width="279.0" height="44" rx="22"/><text class="pt" x="1042.5" y="768" text-anchor="middle">Security pillar</text><text class="ps" x="1042.5" y="784" text-anchor="middle">encrypt, trace, least privilege</text></g>
+</svg></div>
+    <figcaption>Numbers on the arrows match the walkthrough below. Solid = request path, dashed = async/event. The colored bar and tag on each box show its exam domain; the bottom pills are the Domain 1 principles the design demonstrates. A dashed box is useful in real builds but not on the CLF-C02 in-scope list.</figcaption>
+  </figure>
+  <div class="cols">
+    <div><h3>Walk the request</h3><ol class='steps'><li>An OFW in Dubai opens the app. <b>Global Accelerator</b> gives fixed IP addresses and carries traffic over the AWS global network to the nearest healthy endpoint.</li><li><b>WAF</b> blocks bots and credential stuffing; <b>Shield Advanced</b> adds a DDoS response team and cost protection.</li><li><b>API Gateway</b> validates tokens and rate-limits each user.</li><li>Transfer microservices run on <b>EKS</b>, because the company already standardized on Kubernetes.</li><li>New users pass KYC: <b>Rekognition</b> compares a selfie with the ID photo.</li><li>Every transfer gets a fraud score from a <b>SageMaker</b> endpoint trained on past transactions.</li><li>Approved transfers start a <b>Step Functions</b> workflow (debit → FX → payout) with retries and compensating steps if one fails.</li><li>A <b>DynamoDB</b> idempotency key guarantees a retried request never sends money twice.</li><li>Payout instructions go into <b>SQS FIFO</b>: strict order, exactly-once processing.</li><li>Payouts reach partner banks and e-wallets over <b>PrivateLink</b>, never the public internet.</li><li>The family in the Philippines receives the money.</li><li>Every movement is posted to the ledger in <b>Aurora Global Database</b>.</li><li>Aurora replicates to a second Region, typically in under a second, for disaster recovery.</li><li>Encryption keys live in <b>KMS</b> with a custom key store backed by <b>CloudHSM</b>, a single-tenant HSM the company controls.</li></ol></div>
+    <div><h3>4-domain map</h3><div class='dmap'><div class='dm d1'><h4><span class='chip d1'>D1</span>Cloud Concepts · 24%</h4><p>Fault tolerance (saga, retries, idempotency, 2 Regions) vs. plain high availability. 7 Rs: Refactor the old monolith into microservices. Go global in minutes over the AWS backbone. Well-Architected: Reliability and Security.</p></div><div class='dm d2'><h4><span class='chip d2'>D2</span>Security & Compliance · 30%</h4><p>WAF, Shield Advanced, Firewall Manager, KMS + CloudHSM, Security Hub, Detective, Audit Manager (your PCI evidence), Artifact (AWS's PCI DSS report), Organizations SCPs, Directory Service, Client VPN, least-privilege IAM. Shared responsibility: AWS runs the EKS control plane; the company secures worker nodes, containers and data.</p></div><div class='dm d3'><h4><span class='chip d3'>D3</span>Technology & Services · 34%</h4><p>Global Accelerator, API Gateway, EKS, ECR, Step Functions, DynamoDB, SQS FIFO, PrivateLink, Aurora Global Database, CloudWatch, X-Ray, Elastic Disaster Recovery. AI/ML: SageMaker, Rekognition.</p></div><div class='dm d4'><h4><span class='chip d4'>D4</span>Billing, Pricing & Support · 12%</h4><p>Compute Savings Plans for steady EKS nodes, Enterprise Support with a designated TAM, Cost Anomaly Detection, Cost and Usage Report, Shield Advanced cost protection against DDoS-driven scaling charges, consolidated billing.</p></div></div></div>
+  </div>
+  <h3>Decision records: why this service, not the distractor</h3>
+  <div class='tw'><table><thead><tr><th>Requirement</th><th>Chosen</th><th>Closest distractor</th><th>Why the distractor loses</th></tr></thead><tbody><tr><td>Fast global access for non-cached API traffic, static IPs</td><td><b>Global Accelerator</b></td><td>CloudFront</td><td>CloudFront caches content; transfers can't be cached</td></tr><tr><td>Process payouts in exact order, exactly once</td><td><b>SQS FIFO</b></td><td>SQS Standard</td><td>Standard can deliver twice and out of order</td></tr><tr><td>Single-tenant hardware, company controls keys</td><td><b>CloudHSM</b></td><td>KMS alone</td><td>KMS is AWS-managed and multi-tenant</td></tr><tr><td>Company already runs Kubernetes everywhere</td><td><b>EKS</b></td><td>ECS</td><td>ECS is AWS-specific orchestration; no Kubernetes portability</td></tr><tr><td>Reach one partner service privately</td><td><b>PrivateLink</b></td><td>VPC peering</td><td>Peering joins whole networks; PrivateLink exposes only one service</td></tr><tr><td>Collect our own evidence for a PCI audit</td><td><b>Audit Manager</b></td><td>Artifact</td><td>Artifact only provides AWS's reports, not yours</td></tr></tbody></table></div>
+  <h3>Test yourself</h3>
+  <div class='quiz'><details><summary><span class='q'>Q1.</span> Messages must be processed exactly once, in the order they were sent.</summary><p><b>SQS FIFO queue</b> — Standard queues are at-least-once with best-effort ordering.</p></details><details><summary><span class='q'>Q2.</span> A regulator requires dedicated hardware for encryption keys that only the company controls.</summary><p><b>AWS CloudHSM</b> — single-tenant HSM; KMS is a managed multi-tenant service.</p></details><details><summary><span class='q'>Q3.</span> Improve performance for global users of a TCP/UDP application that needs static IP addresses.</summary><p><b>AWS Global Accelerator</b> — anycast static IPs routed over the AWS network; CloudFront is for cacheable HTTP content.</p></details></div>
+</section>
+
+<section id="cheat-sheet">
+  <div class="sh"><span class="num">★</span><div><h2>Trigger words &amp; memory hooks: 119 entries</h2><p class="shape">Every service in the five designs, plus the core concepts. Read the trigger words, recall the hook, then eliminate the look-alike.</p></div></div>
+  <div class="filters">
+    <input id="q" type="search" placeholder="Search a service or a keyword, e.g. 'exactly once' or 'PII'" aria-label="Search the cheat sheet">
+    <div class="fb"><button data-f="all" class="on">All</button><button data-f="1">D1</button><button data-f="2">D2</button><button data-f="3">D3</button><button data-f="4">D4</button></div>
+  </div>
+  <p class="count" id="count"></p>
+  <div class="tw"><table id="cheat"><thead><tr><th>Service / concept</th><th>Domain</th><th>Trigger words in the question</th><th>Memory hook</th><th>Don't confuse with</th></tr></thead><tbody><tr data-d='1' data-t='capex → opex upfront hardware purchase, data center investment, variable expense, pay as you go buy the car (capex) vs. ride grab (opex): cloud turns big upfront costs into monthly usage costs economies of scale (aws&#x27;s lower prices from huge volume) concepts'><td><b>CapEx → OpEx</b><div class='cat'>Concepts</div></td><td><span class='chip d1'>D1</span></td><td>upfront hardware purchase, data center investment, variable expense, pay as you go</td><td class='hook'>Buy the car (CapEx) vs. ride Grab (OpEx): cloud turns big upfront costs into monthly usage costs</td><td>Economies of scale (AWS&#x27;s lower prices from huge volume)</td></tr><tr data-d='1' data-t='economies of scale lower prices because aws buys at massive volume, aggregated usage from many customers costco effect: bulk buying makes every unit cheaper capex → opex concepts'><td><b>Economies of scale</b><div class='cat'>Concepts</div></td><td><span class='chip d1'>D1</span></td><td>lower prices because AWS buys at massive volume, aggregated usage from many customers</td><td class='hook'>Costco effect: bulk buying makes every unit cheaper</td><td>CapEx → OpEx</td></tr><tr data-d='1' data-t='stop guessing capacity don&#x27;t over-provision or under-provision, scale to actual demand no more buying servers &#x27;just in case&#x27; elasticity (the mechanism) concepts'><td><b>Stop guessing capacity</b><div class='cat'>Concepts</div></td><td><span class='chip d1'>D1</span></td><td>don&#x27;t over-provision or under-provision, scale to actual demand</td><td class='hook'>No more buying servers &#x27;just in case&#x27;</td><td>Elasticity (the mechanism)</td></tr><tr data-d='1' data-t='elasticity automatically scale out and in with demand, spiky traffic rubber band: stretches and snaps back scalability (only the ability to grow) concepts'><td><b>Elasticity</b><div class='cat'>Concepts</div></td><td><span class='chip d1'>D1</span></td><td>automatically scale out AND in with demand, spiky traffic</td><td class='hook'>Rubber band: stretches and snaps back</td><td>Scalability (only the ability to grow)</td></tr><tr data-d='1' data-t='high availability vs. fault tolerance ha = minimal downtime, multiple azs; ft = zero interruption even when a part fails ha: spare tire, you stop briefly. ft: run-flat tire, you never stop disaster recovery (recovering after a region-level event) concepts'><td><b>High availability vs. fault tolerance</b><div class='cat'>Concepts</div></td><td><span class='chip d1'>D1</span></td><td>HA = minimal downtime, multiple AZs; FT = zero interruption even when a part fails</td><td class='hook'>HA: spare tire, you stop briefly. FT: run-flat tire, you never stop</td><td>Disaster recovery (recovering after a Region-level event)</td></tr><tr data-d='1' data-t='agility / speed experiment quickly, resources in minutes, faster time to market from weeks of procurement to minutes in the console elasticity concepts'><td><b>Agility / speed</b><div class='cat'>Concepts</div></td><td><span class='chip d1'>D1</span></td><td>experiment quickly, resources in minutes, faster time to market</td><td class='hook'>From weeks of procurement to minutes in the console</td><td>Elasticity</td></tr><tr data-d='1' data-t='go global in minutes deploy in multiple regions, low latency for global users open a branch abroad without building it edge locations (caching only) concepts'><td><b>Go global in minutes</b><div class='cat'>Concepts</div></td><td><span class='chip d1'>D1</span></td><td>deploy in multiple Regions, low latency for global users</td><td class='hook'>Open a branch abroad without building it</td><td>Edge locations (caching only)</td></tr><tr data-d='2' data-t='shared responsibility security of the cloud (aws) vs. in the cloud (customer), patching guest os, customer data aws secures the building; you lock your own apartment more managed service = less customer responsibility concepts'><td><b>Shared responsibility</b><div class='cat'>Concepts</div></td><td><span class='chip d2'>D2</span></td><td>security OF the cloud (AWS) vs. IN the cloud (customer), patching guest OS, customer data</td><td class='hook'>AWS secures the building; you lock your own apartment</td><td>More managed service = less customer responsibility</td></tr><tr data-d='1' data-t='well-architected: 6 pillars operational excellence, security, reliability, performance efficiency, cost optimization, sustainability &#x27;o-s-r-p-c-s&#x27;: only smart robots plan cost savings caf perspectives concepts'><td><b>Well-Architected: 6 pillars</b><div class='cat'>Concepts</div></td><td><span class='chip d1'>D1</span></td><td>operational excellence, security, reliability, performance efficiency, cost optimization, sustainability</td><td class='hook'>&#x27;O-S-R-P-C-S&#x27;: Only Smart Robots Plan Cost Savings</td><td>CAF perspectives</td></tr><tr data-d='1' data-t='caf: 6 perspectives business, people, governance (business); platform, security, operations (technical) &#x27;bpg&#x27; = business side, &#x27;pso&#x27; = tech side well-architected pillars concepts'><td><b>CAF: 6 perspectives</b><div class='cat'>Concepts</div></td><td><span class='chip d1'>D1</span></td><td>Business, People, Governance (business); Platform, Security, Operations (technical)</td><td class='hook'>&#x27;BPG&#x27; = business side, &#x27;PSO&#x27; = tech side</td><td>Well-Architected pillars</td></tr><tr data-d='1' data-t='7 rs of migration rehost, replatform, refactor, repurchase, retire, retain, relocate lift-and-shift / lift-tinker-shift / rebuild / buy saas / delete / keep / move vmware migration tools (dms, snowball, mgn) concepts'><td><b>7 Rs of migration</b><div class='cat'>Concepts</div></td><td><span class='chip d1'>D1</span></td><td>rehost, replatform, refactor, repurchase, retire, retain, relocate</td><td class='hook'>Lift-and-shift / lift-tinker-shift / rebuild / buy SaaS / delete / keep / move VMware</td><td>Migration tools (DMS, Snowball, MGN)</td></tr><tr data-d='3' data-t='route 53 dns, domain registration, routing policies (latency, failover, geolocation, weighted), health checks port 53 = dns: the internet&#x27;s phone book cloudfront (delivers content; route 53 only resolves names) networking'><td><b>Route 53</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>DNS, domain registration, routing policies (latency, failover, geolocation, weighted), health checks</td><td class='hook'>Port 53 = DNS: the internet&#x27;s phone book</td><td>CloudFront (delivers content; Route 53 only resolves names)</td></tr><tr data-d='3' data-t='cloudfront cdn, cache, edge locations, low latency for static files and video worldwide copies of your files parked at the edge global accelerator (no caching) networking'><td><b>CloudFront</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>CDN, cache, edge locations, low latency for static files and video worldwide</td><td class='hook'>Copies of your files parked at the edge</td><td>Global Accelerator (no caching)</td></tr><tr data-d='3' data-t='global accelerator static anycast ips, tcp/udp, non-http, gaming, voip, fast regional failover express lane on aws&#x27;s private highway cloudfront (caches http content) networking'><td><b>Global Accelerator</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>static anycast IPs, TCP/UDP, non-HTTP, gaming, VoIP, fast Regional failover</td><td class='hook'>Express lane on AWS&#x27;s private highway</td><td>CloudFront (caches HTTP content)</td></tr><tr data-d='3' data-t='vpc logically isolated private network, cidr range, subnets your own office building inside aws region / az (physical) networking'><td><b>VPC</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>logically isolated private network, CIDR range, subnets</td><td class='hook'>Your own office building inside AWS</td><td>Region / AZ (physical)</td></tr><tr data-d='3' data-t='public vs. private subnet public = route to internet gateway; private = no direct internet route lobby vs. back office security group networking'><td><b>Public vs. private subnet</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>public = route to internet gateway; private = no direct internet route</td><td class='hook'>Lobby vs. back office</td><td>Security group</td></tr><tr data-d='3' data-t='internet gateway connect a vpc to the internet, two-way the building&#x27;s front door nat gateway (outbound only) networking'><td><b>Internet Gateway</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>connect a VPC to the internet, two-way</td><td class='hook'>The building&#x27;s front door</td><td>NAT Gateway (outbound only)</td></tr><tr data-d='3' data-t='nat gateway private subnet needs outbound internet (updates, apis) but no inbound one-way exit door internet gateway networking'><td><b>NAT Gateway</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>private subnet needs outbound internet (updates, APIs) but no inbound</td><td class='hook'>One-way exit door</td><td>Internet Gateway</td></tr><tr data-d='2' data-t='security group instance-level firewall, stateful, allow rules only bodyguard for each instance nacl networking'><td><b>Security group</b><div class='cat'>Networking</div></td><td><span class='chip d2'>D2</span></td><td>instance-level firewall, stateful, allow rules only</td><td class='hook'>Bodyguard for each instance</td><td>NACL</td></tr><tr data-d='2' data-t='network acl subnet-level firewall, stateless, allow and deny rules guard at the subnet gate who checks both ways security group networking'><td><b>Network ACL</b><div class='cat'>Networking</div></td><td><span class='chip d2'>D2</span></td><td>subnet-level firewall, stateless, allow AND deny rules</td><td class='hook'>Guard at the subnet gate who checks both ways</td><td>Security group</td></tr><tr data-d='3' data-t='alb http/https, layer 7, path- or host-based routing, microservices alb reads the address (url) nlb networking'><td><b>ALB</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>HTTP/HTTPS, layer 7, path- or host-based routing, microservices</td><td class='hook'>ALB reads the Address (URL)</td><td>NLB</td></tr><tr data-d='3' data-t='nlb tcp/udp, layer 4, extreme performance, millions of requests, static ip nlb = network numbers only (ip + port) alb networking'><td><b>NLB</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>TCP/UDP, layer 4, extreme performance, millions of requests, static IP</td><td class='hook'>NLB = Network numbers only (IP + port)</td><td>ALB</td></tr><tr data-d='3' data-t='api gateway create and publish rest, http and websocket apis, throttling, api keys front door for your apis alb networking'><td><b>API Gateway</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>create and publish REST, HTTP and WebSocket APIs, throttling, API keys</td><td class='hook'>Front door for your APIs</td><td>ALB</td></tr><tr data-d='3' data-t='site-to-site vpn encrypted tunnel over the public internet, quick hybrid setup secret tunnel on public roads direct connect networking'><td><b>Site-to-Site VPN</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>encrypted tunnel over the public internet, quick hybrid setup</td><td class='hook'>Secret tunnel on public roads</td><td>Direct Connect</td></tr><tr data-d='3' data-t='direct connect dedicated private physical connection, consistent bandwidth, not over the internet private toll road straight to aws site-to-site vpn networking'><td><b>Direct Connect</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>dedicated private physical connection, consistent bandwidth, not over the internet</td><td class='hook'>Private toll road straight to AWS</td><td>Site-to-Site VPN</td></tr><tr data-d='3' data-t='privatelink access a service privately from your vpc, no internet, igw or nat private hallway to one specific shop vpc peering (connects entire networks) networking'><td><b>PrivateLink</b><div class='cat'>Networking</div></td><td><span class='chip d3'>D3</span></td><td>access a service privately from your VPC, no internet, IGW or NAT</td><td class='hook'>Private hallway to one specific shop</td><td>VPC peering (connects entire networks)</td></tr><tr data-d='3' data-t='ec2 virtual server, full control of the os, choose instance type, lift-and-shift rent a computer by the second lambda (no server to manage) compute'><td><b>EC2</b><div class='cat'>Compute</div></td><td><span class='chip d3'>D3</span></td><td>virtual server, full control of the OS, choose instance type, lift-and-shift</td><td class='hook'>Rent a computer by the second</td><td>Lambda (no server to manage)</td></tr><tr data-d='3' data-t='auto scaling add/remove instances automatically, maintain capacity, scheduled scaling thermostat for servers load balancer (spreads traffic, doesn&#x27;t add servers) compute'><td><b>Auto Scaling</b><div class='cat'>Compute</div></td><td><span class='chip d3'>D3</span></td><td>add/remove instances automatically, maintain capacity, scheduled scaling</td><td class='hook'>Thermostat for servers</td><td>Load balancer (spreads traffic, doesn&#x27;t add servers)</td></tr><tr data-d='4' data-t='ec2 spot up to 90% off, can be interrupted, flexible start/end, fault-tolerant batch standby airline seat: cheap, but you can be bumped on-demand compute'><td><b>EC2 Spot</b><div class='cat'>Compute</div></td><td><span class='chip d4'>D4</span></td><td>up to 90% off, can be interrupted, flexible start/end, fault-tolerant batch</td><td class='hook'>Standby airline seat: cheap, but you can be bumped</td><td>On-Demand</td></tr><tr data-d='3' data-t='lambda serverless, event-driven, run code without servers, pay per ms, max 15 minutes light switch: runs only when flipped fargate (containers) compute'><td><b>Lambda</b><div class='cat'>Compute</div></td><td><span class='chip d3'>D3</span></td><td>serverless, event-driven, run code without servers, pay per ms, max 15 minutes</td><td class='hook'>Light switch: runs only when flipped</td><td>Fargate (containers)</td></tr><tr data-d='3' data-t='ecs run docker containers, aws-native container orchestration conductor for your containers eks compute'><td><b>ECS</b><div class='cat'>Compute</div></td><td><span class='chip d3'>D3</span></td><td>run Docker containers, AWS-native container orchestration</td><td class='hook'>Conductor for your containers</td><td>EKS</td></tr><tr data-d='3' data-t='fargate serverless compute for containers, no ec2 instances or clusters to manage far from servers ec2 launch type compute'><td><b>Fargate</b><div class='cat'>Compute</div></td><td><span class='chip d3'>D3</span></td><td>serverless compute for containers, no EC2 instances or clusters to manage</td><td class='hook'>FAR from servers</td><td>EC2 launch type</td></tr><tr data-d='3' data-t='eks kubernetes, open source, already standardized on k8s, portability k is for kubernetes ecs compute'><td><b>EKS</b><div class='cat'>Compute</div></td><td><span class='chip d3'>D3</span></td><td>Kubernetes, open source, already standardized on K8s, portability</td><td class='hook'>K is for Kubernetes</td><td>ECS</td></tr><tr data-d='3' data-t='ecr store, manage and deploy docker container images github for container images s3 compute'><td><b>ECR</b><div class='cat'>Compute</div></td><td><span class='chip d3'>D3</span></td><td>store, manage and deploy Docker container images</td><td class='hook'>GitHub for container images</td><td>S3</td></tr><tr data-d='3' data-t='elastic beanstalk upload code, aws provisions capacity, load balancing and scaling; paas; no extra charge upload and forget: plant the bean, the stalk grows itself cloudformation (iac you write for any resource) compute'><td><b>Elastic Beanstalk</b><div class='cat'>Compute</div></td><td><span class='chip d3'>D3</span></td><td>upload code, AWS provisions capacity, load balancing and scaling; PaaS; no extra charge</td><td class='hook'>Upload and forget: plant the bean, the stalk grows itself</td><td>CloudFormation (IaC you write for any resource)</td></tr><tr data-d='3' data-t='lightsail simple virtual private server, low predictable monthly price, small website, beginners lightweight + light on the wallet ec2 compute'><td><b>Lightsail</b><div class='cat'>Compute</div></td><td><span class='chip d3'>D3</span></td><td>simple virtual private server, low predictable monthly price, small website, beginners</td><td class='hook'>Lightweight + light on the wallet</td><td>EC2</td></tr><tr data-d='3' data-t='amplify host front-end/mobile web apps with built-in ci/cd, full-stack amplify your front end elastic beanstalk compute'><td><b>Amplify</b><div class='cat'>Compute</div></td><td><span class='chip d3'>D3</span></td><td>host front-end/mobile web apps with built-in CI/CD, full-stack</td><td class='hook'>Amplify your front end</td><td>Elastic Beanstalk</td></tr><tr data-d='3' data-t='s3 object storage, unlimited, 11 nines durability, static website, data lake simple storage service: a bottomless bucket of objects ebs (block disk) storage'><td><b>S3</b><div class='cat'>Storage</div></td><td><span class='chip d3'>D3</span></td><td>object storage, unlimited, 11 nines durability, static website, data lake</td><td class='hook'>Simple Storage Service: a bottomless bucket of objects</td><td>EBS (block disk)</td></tr><tr data-d='3' data-t='s3 glacier / deep archive archive, long-term retention, retrieval in minutes to hours (deep archive up to ~12–48 h), lowest cost glacier = frozen data, slow to thaw s3 standard-ia (instant access) storage'><td><b>S3 Glacier / Deep Archive</b><div class='cat'>Storage</div></td><td><span class='chip d3'>D3</span></td><td>archive, long-term retention, retrieval in minutes to hours (Deep Archive up to ~12–48 h), lowest cost</td><td class='hook'>Glacier = frozen data, slow to thaw</td><td>S3 Standard-IA (instant access)</td></tr><tr data-d='3' data-t='ebs block storage volume attached to one ec2 instance, az-scoped, snapshots external hard drive plugged into one ec2 efs (shared) storage'><td><b>EBS</b><div class='cat'>Storage</div></td><td><span class='chip d3'>D3</span></td><td>block storage volume attached to one EC2 instance, AZ-scoped, snapshots</td><td class='hook'>External hard drive plugged into one EC2</td><td>EFS (shared)</td></tr><tr data-d='3' data-t='efs shared file system, many linux instances at once, nfs, multi-az shared network drive for everyone ebs storage'><td><b>EFS</b><div class='cat'>Storage</div></td><td><span class='chip d3'>D3</span></td><td>shared file system, many Linux instances at once, NFS, multi-AZ</td><td class='hook'>Shared network drive for everyone</td><td>EBS</td></tr><tr data-d='3' data-t='snowball edge terabytes to petabytes, limited bandwidth, offline transfer, rugged device, edge compute ship a hard drive by courier datasync (online) storage'><td><b>Snowball Edge</b><div class='cat'>Storage</div></td><td><span class='chip d3'>D3</span></td><td>terabytes to petabytes, limited bandwidth, offline transfer, rugged device, edge compute</td><td class='hook'>Ship a hard drive by courier</td><td>DataSync (online)</td></tr><tr data-d='3' data-t='aws backup centralized, policy-based backups across aws services one backup policy for everything manual snapshots storage'><td><b>AWS Backup</b><div class='cat'>Storage</div></td><td><span class='chip d3'>D3</span></td><td>centralized, policy-based backups across AWS services</td><td class='hook'>One backup policy for everything</td><td>Manual snapshots</td></tr><tr data-d='3' data-t='rds managed relational db, mysql/postgresql/sql server/oracle, transactions, multi-az relational database service: aws patches the engine dynamodb database'><td><b>RDS</b><div class='cat'>Database</div></td><td><span class='chip d3'>D3</span></td><td>managed relational DB, MySQL/PostgreSQL/SQL Server/Oracle, transactions, Multi-AZ</td><td class='hook'>Relational Database Service: AWS patches the engine</td><td>DynamoDB</td></tr><tr data-d='3' data-t='rds multi-az vs. read replica multi-az = ha + automatic failover; read replica = scale reads multi-az is the spare; replicas are extra cashiers each other (classic trap) database'><td><b>RDS Multi-AZ vs. read replica</b><div class='cat'>Database</div></td><td><span class='chip d3'>D3</span></td><td>Multi-AZ = HA + automatic failover; read replica = scale reads</td><td class='hook'>Multi-AZ is the spare; replicas are extra cashiers</td><td>Each other (classic trap)</td></tr><tr data-d='3' data-t='aurora mysql/postgresql-compatible, high performance, 6 copies across 3 azs, serverless v2, global database aws&#x27;s premium rds rds database'><td><b>Aurora</b><div class='cat'>Database</div></td><td><span class='chip d3'>D3</span></td><td>MySQL/PostgreSQL-compatible, high performance, 6 copies across 3 AZs, Serverless v2, Global Database</td><td class='hook'>AWS&#x27;s premium RDS</td><td>RDS</td></tr><tr data-d='3' data-t='dynamodb nosql key-value/document, single-digit ms, serverless, massive scale, global tables dynamo = dynamic speed at any size rds database'><td><b>DynamoDB</b><div class='cat'>Database</div></td><td><span class='chip d3'>D3</span></td><td>NoSQL key-value/document, single-digit ms, serverless, massive scale, Global Tables</td><td class='hook'>Dynamo = dynamic speed at any size</td><td>RDS</td></tr><tr data-d='3' data-t='elasticache in-memory cache, redis/valkey/memcached, microsecond reads, reduce db load short-term memory in front of the database dynamodb database'><td><b>ElastiCache</b><div class='cat'>Database</div></td><td><span class='chip d3'>D3</span></td><td>in-memory cache, Redis/Valkey/Memcached, microsecond reads, reduce DB load</td><td class='hook'>Short-term memory in front of the database</td><td>DynamoDB</td></tr><tr data-d='3' data-t='redshift data warehouse, olap, petabyte-scale analytics, bi reporting huge warehouse of reports rds (oltp), athena (query s3 directly) database'><td><b>Redshift</b><div class='cat'>Database</div></td><td><span class='chip d3'>D3</span></td><td>data warehouse, OLAP, petabyte-scale analytics, BI reporting</td><td class='hook'>Huge warehouse of reports</td><td>RDS (OLTP), Athena (query S3 directly)</td></tr><tr data-d='3' data-t='dms migrate databases with minimal downtime, source stays operational moving truck for your data sct database'><td><b>DMS</b><div class='cat'>Database</div></td><td><span class='chip d3'>D3</span></td><td>migrate databases with minimal downtime, source stays operational</td><td class='hook'>Moving truck for your data</td><td>SCT</td></tr><tr data-d='3' data-t='sct convert schema between different engines (oracle → postgresql) translator for schemas dms database'><td><b>SCT</b><div class='cat'>Database</div></td><td><span class='chip d3'>D3</span></td><td>convert schema between different engines (Oracle → PostgreSQL)</td><td class='hook'>Translator for schemas</td><td>DMS</td></tr><tr data-d='3' data-t='kinesis data streams real-time streaming, clickstream, iot telemetry, multiple consumers, replay kinetic = data in motion sqs (messages deleted after processing) analytics'><td><b>Kinesis Data Streams</b><div class='cat'>Analytics</div></td><td><span class='chip d3'>D3</span></td><td>real-time streaming, clickstream, IoT telemetry, multiple consumers, replay</td><td class='hook'>Kinetic = data in motion</td><td>SQS (messages deleted after processing)</td></tr><tr data-d='3' data-t='data firehose load streaming data into s3/redshift/opensearch with no code fire hose spraying data into storage kinesis data streams analytics'><td><b>Data Firehose</b><div class='cat'>Analytics</div></td><td><span class='chip d3'>D3</span></td><td>load streaming data into S3/Redshift/OpenSearch with no code</td><td class='hook'>Fire hose spraying data into storage</td><td>Kinesis Data Streams</td></tr><tr data-d='3' data-t='glue serverless etl, data catalog, crawlers glue sticks data sources together athena analytics'><td><b>Glue</b><div class='cat'>Analytics</div></td><td><span class='chip d3'>D3</span></td><td>serverless ETL, data catalog, crawlers</td><td class='hook'>Glue sticks data sources together</td><td>Athena</td></tr><tr data-d='3' data-t='athena query data in s3 with standard sql, serverless, pay per query ask athena, goddess of wisdom, about your s3 redshift analytics'><td><b>Athena</b><div class='cat'>Analytics</div></td><td><span class='chip d3'>D3</span></td><td>query data in S3 with standard SQL, serverless, pay per query</td><td class='hook'>Ask Athena, goddess of wisdom, about your S3</td><td>Redshift</td></tr><tr data-d='3' data-t='quicksight bi dashboards and visualizations a quick sight of your data cloudwatch dashboards (ops metrics) analytics'><td><b>QuickSight</b><div class='cat'>Analytics</div></td><td><span class='chip d3'>D3</span></td><td>BI dashboards and visualizations</td><td class='hook'>A quick sight of your data</td><td>CloudWatch dashboards (ops metrics)</td></tr><tr data-d='3' data-t='opensearch full-text search, log analytics, search box for an app search engine for your app kendra (natural-language document q&amp;a) analytics'><td><b>OpenSearch</b><div class='cat'>Analytics</div></td><td><span class='chip d3'>D3</span></td><td>full-text search, log analytics, search box for an app</td><td class='hook'>Search engine for your app</td><td>Kendra (natural-language document Q&amp;A)</td></tr><tr data-d='3' data-t='sqs decouple, queue, buffer, poll, at-least-once delivery (standard) queue at the bank counter sns integration'><td><b>SQS</b><div class='cat'>Integration</div></td><td><span class='chip d3'>D3</span></td><td>decouple, queue, buffer, poll, at-least-once delivery (standard)</td><td class='hook'>Queue at the bank counter</td><td>SNS</td></tr><tr data-d='3' data-t='sqs fifo first-in-first-out, exactly-once processing, strict ordering fifo = order matters sqs standard integration'><td><b>SQS FIFO</b><div class='cat'>Integration</div></td><td><span class='chip d3'>D3</span></td><td>first-in-first-out, exactly-once processing, strict ordering</td><td class='hook'>FIFO = order matters</td><td>SQS Standard</td></tr><tr data-d='3' data-t='sns pub/sub, fan-out, push notifications, sms, email megaphone: one shout, everyone hears sqs integration'><td><b>SNS</b><div class='cat'>Integration</div></td><td><span class='chip d3'>D3</span></td><td>pub/sub, fan-out, push notifications, SMS, email</td><td class='hook'>Megaphone: one shout, everyone hears</td><td>SQS</td></tr><tr data-d='3' data-t='eventbridge event bus, react to events from aws/saas, scheduled (cron) rules switchboard that routes events sns integration'><td><b>EventBridge</b><div class='cat'>Integration</div></td><td><span class='chip d3'>D3</span></td><td>event bus, react to events from AWS/SaaS, scheduled (cron) rules</td><td class='hook'>Switchboard that routes events</td><td>SNS</td></tr><tr data-d='3' data-t='step functions orchestrate multi-step workflows, state machine, retries, error handling step-by-step recipe sqs integration'><td><b>Step Functions</b><div class='cat'>Integration</div></td><td><span class='chip d3'>D3</span></td><td>orchestrate multi-step workflows, state machine, retries, error handling</td><td class='hook'>Step-by-step recipe</td><td>SQS</td></tr><tr data-d='3' data-t='ses send transactional or bulk email simple email service sns integration'><td><b>SES</b><div class='cat'>Integration</div></td><td><span class='chip d3'>D3</span></td><td>send transactional or bulk email</td><td class='hook'>Simple Email Service</td><td>SNS</td></tr><tr data-d='3' data-t='amazon connect cloud contact center, call center, customer service agents connects callers to agents lex (the bot inside it) integration'><td><b>Amazon Connect</b><div class='cat'>Integration</div></td><td><span class='chip d3'>D3</span></td><td>cloud contact center, call center, customer service agents</td><td class='hook'>Connects callers to agents</td><td>Lex (the bot inside it)</td></tr><tr data-d='2' data-t='iam user / group / role / policy user = person/app; group = many users; role = temporary credentials; policy = json permissions role = a hat you wear temporarily each other security'><td><b>IAM user / group / role / policy</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>user = person/app; group = many users; role = temporary credentials; policy = JSON permissions</td><td class='hook'>Role = a hat you wear temporarily</td><td>Each other</td></tr><tr data-d='2' data-t='root user close account, change support plan, change account settings; enable mfa, don&#x27;t use daily master key: lock it in a safe iam admin user security'><td><b>Root user</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>close account, change support plan, change account settings; enable MFA, don&#x27;t use daily</td><td class='hook'>Master key: lock it in a safe</td><td>IAM admin user</td></tr><tr data-d='2' data-t='iam identity center single sign-on for the workforce across multiple accounts one badge for every office cognito security'><td><b>IAM Identity Center</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>single sign-on for the workforce across multiple accounts</td><td class='hook'>One badge for every office</td><td>Cognito</td></tr><tr data-d='2' data-t='cognito sign-up/sign-in for your app&#x27;s customers, social login cognito recognizes your app&#x27;s users iam identity center security'><td><b>Cognito</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>sign-up/sign-in for YOUR app&#x27;s customers, social login</td><td class='hook'>Cognito recognizes your app&#x27;s users</td><td>IAM Identity Center</td></tr><tr data-d='2' data-t='kms create and manage encryption keys, encryption at rest, integrated with most services key management service cloudhsm security'><td><b>KMS</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>create and manage encryption keys, encryption at rest, integrated with most services</td><td class='hook'>Key Management Service</td><td>CloudHSM</td></tr><tr data-d='2' data-t='cloudhsm dedicated single-tenant hardware security module, you control the keys, strict compliance your own key vault hardware kms (aws-managed, multi-tenant) security'><td><b>CloudHSM</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>dedicated single-tenant hardware security module, you control the keys, strict compliance</td><td class='hook'>Your own key vault hardware</td><td>KMS (AWS-managed, multi-tenant)</td></tr><tr data-d='2' data-t='secrets manager store and automatically rotate db passwords and api keys password safe that changes the combination itself kms (keys, not secrets) security'><td><b>Secrets Manager</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>store and automatically rotate DB passwords and API keys</td><td class='hook'>Password safe that changes the combination itself</td><td>KMS (keys, not secrets)</td></tr><tr data-d='2' data-t='acm ssl/tls certificates, https, free public certificates certificates for the padlock icon kms security'><td><b>ACM</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>SSL/TLS certificates, HTTPS, free public certificates</td><td class='hook'>Certificates for the padlock icon</td><td>KMS</td></tr><tr data-d='2' data-t='waf sql injection, cross-site scripting, layer 7, block ips/countries, rate-based rules bouncer checking every http request shield (ddos) security'><td><b>WAF</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>SQL injection, cross-site scripting, layer 7, block IPs/countries, rate-based rules</td><td class='hook'>Bouncer checking every HTTP request</td><td>Shield (DDoS)</td></tr><tr data-d='2' data-t='shield ddos; standard is free and automatic; advanced is paid with a response team and cost protection shield against floods of traffic waf security'><td><b>Shield</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>DDoS; Standard is free and automatic; Advanced is paid with a response team and cost protection</td><td class='hook'>Shield against floods of traffic</td><td>WAF</td></tr><tr data-d='2' data-t='firewall manager centrally manage waf, shield and security group rules across accounts one remote control for every firewall waf security'><td><b>Firewall Manager</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>centrally manage WAF, Shield and security group rules across accounts</td><td class='hook'>One remote control for every firewall</td><td>WAF</td></tr><tr data-d='2' data-t='guardduty intelligent threat detection from cloudtrail, vpc flow logs and dns logs guard on duty watching the logs inspector security'><td><b>GuardDuty</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>intelligent threat detection from CloudTrail, VPC Flow Logs and DNS logs</td><td class='hook'>Guard on duty watching the logs</td><td>Inspector</td></tr><tr data-d='2' data-t='inspector automated vulnerability scanning of ec2, ecr images, lambda; cves inspector checks for weak spots guardduty security'><td><b>Inspector</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>automated vulnerability scanning of EC2, ECR images, Lambda; CVEs</td><td class='hook'>Inspector checks for weak spots</td><td>GuardDuty</td></tr><tr data-d='2' data-t='macie discover sensitive data/pii in s3 using ml macie finds the pii in s3 guardduty security'><td><b>Macie</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>discover sensitive data/PII in S3 using ML</td><td class='hook'>Macie finds the PII in S3</td><td>GuardDuty</td></tr><tr data-d='2' data-t='detective investigate the root cause of security findings detective solves the case after the alarm guardduty (raises the alarm) security'><td><b>Detective</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>investigate the root cause of security findings</td><td class='hook'>Detective solves the case after the alarm</td><td>GuardDuty (raises the alarm)</td></tr><tr data-d='2' data-t='security hub single view of security findings and compliance checks security dashboard trusted advisor security'><td><b>Security Hub</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>single view of security findings and compliance checks</td><td class='hook'>Security dashboard</td><td>Trusted Advisor</td></tr><tr data-d='2' data-t='audit manager continuously collect your evidence for audits (pci dss, hipaa) evidence binder for your auditor artifact security'><td><b>Audit Manager</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>continuously collect YOUR evidence for audits (PCI DSS, HIPAA)</td><td class='hook'>Evidence binder for your auditor</td><td>Artifact</td></tr><tr data-d='2' data-t='artifact download aws&#x27;s compliance reports (soc, pci, iso) and agreements aws&#x27;s official certificates audit manager security'><td><b>Artifact</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>download AWS&#x27;s compliance reports (SOC, PCI, ISO) and agreements</td><td class='hook'>AWS&#x27;s official certificates</td><td>Audit Manager</td></tr><tr data-d='2' data-t='directory service managed microsoft active directory active directory without the servers iam identity center security'><td><b>Directory Service</b><div class='cat'>Security</div></td><td><span class='chip d2'>D2</span></td><td>managed Microsoft Active Directory</td><td class='hook'>Active Directory without the servers</td><td>IAM Identity Center</td></tr><tr data-d='3' data-t='cloudwatch metrics, logs, alarms, dashboards, performance monitoring watch the cloud&#x27;s vital signs cloudtrail management'><td><b>CloudWatch</b><div class='cat'>Management</div></td><td><span class='chip d3'>D3</span></td><td>metrics, logs, alarms, dashboards, performance monitoring</td><td class='hook'>Watch the cloud&#x27;s vital signs</td><td>CloudTrail</td></tr><tr data-d='3' data-t='x-ray distributed tracing, find bottlenecks across microservices x-ray sees inside one request cloudwatch management'><td><b>X-Ray</b><div class='cat'>Management</div></td><td><span class='chip d3'>D3</span></td><td>distributed tracing, find bottlenecks across microservices</td><td class='hook'>X-ray sees inside one request</td><td>CloudWatch</td></tr><tr data-d='2' data-t='cloudtrail who did what and when, api call history, audit trail of footprints cloudwatch, config management'><td><b>CloudTrail</b><div class='cat'>Management</div></td><td><span class='chip d2'>D2</span></td><td>who did what and when, API call history, audit</td><td class='hook'>Trail of footprints</td><td>CloudWatch, Config</td></tr><tr data-d='2' data-t='config resource configuration history, compliance rules, drift configuration snapshots over time cloudtrail management'><td><b>Config</b><div class='cat'>Management</div></td><td><span class='chip d2'>D2</span></td><td>resource configuration history, compliance rules, drift</td><td class='hook'>Configuration snapshots over time</td><td>CloudTrail</td></tr><tr data-d='3' data-t='cloudformation infrastructure as code, json/yaml templates, stacks form your cloud from a template elastic beanstalk management'><td><b>CloudFormation</b><div class='cat'>Management</div></td><td><span class='chip d3'>D3</span></td><td>infrastructure as code, JSON/YAML templates, stacks</td><td class='hook'>Form your cloud from a template</td><td>Elastic Beanstalk</td></tr><tr data-d='3' data-t='systems manager patch, run commands, manage fleets of ec2 and on-prem servers remote control for all your servers config management'><td><b>Systems Manager</b><div class='cat'>Management</div></td><td><span class='chip d3'>D3</span></td><td>patch, run commands, manage fleets of EC2 and on-prem servers</td><td class='hook'>Remote control for all your servers</td><td>Config</td></tr><tr data-d='2' data-t='organizations multiple accounts, scps, consolidated billing parent company with subsidiaries control tower management'><td><b>Organizations</b><div class='cat'>Management</div></td><td><span class='chip d2'>D2</span></td><td>multiple accounts, SCPs, consolidated billing</td><td class='hook'>Parent company with subsidiaries</td><td>Control Tower</td></tr><tr data-d='2' data-t='control tower set up a governed multi-account landing zone with guardrails automatically airport control tower for accounts organizations management'><td><b>Control Tower</b><div class='cat'>Management</div></td><td><span class='chip d2'>D2</span></td><td>set up a governed multi-account landing zone with guardrails automatically</td><td class='hook'>Airport control tower for accounts</td><td>Organizations</td></tr><tr data-d='4' data-t='trusted advisor recommendations: cost, performance, security, fault tolerance, service limits advisor that inspects your whole account inspector management'><td><b>Trusted Advisor</b><div class='cat'>Management</div></td><td><span class='chip d4'>D4</span></td><td>recommendations: cost, performance, security, fault tolerance, service limits</td><td class='hook'>Advisor that inspects your whole account</td><td>Inspector</td></tr><tr data-d='4' data-t='compute optimizer rightsizing recommendations for ec2, lambda, ebs using ml tailor that resizes instances trusted advisor management'><td><b>Compute Optimizer</b><div class='cat'>Management</div></td><td><span class='chip d4'>D4</span></td><td>rightsizing recommendations for EC2, Lambda, EBS using ML</td><td class='hook'>Tailor that resizes instances</td><td>Trusted Advisor</td></tr><tr data-d='4' data-t='health dashboard aws events affecting your resources, scheduled maintenance weather report for your account cloudwatch management'><td><b>Health Dashboard</b><div class='cat'>Management</div></td><td><span class='chip d4'>D4</span></td><td>AWS events affecting YOUR resources, scheduled maintenance</td><td class='hook'>Weather report for your account</td><td>CloudWatch</td></tr><tr data-d='4' data-t='pricing calculator estimate cost before deploying quote before you buy cost explorer billing'><td><b>Pricing Calculator</b><div class='cat'>Billing</div></td><td><span class='chip d4'>D4</span></td><td>estimate cost BEFORE deploying</td><td class='hook'>Quote before you buy</td><td>Cost Explorer</td></tr><tr data-d='4' data-t='budgets alert when spend or usage crosses a threshold allowance alarm cost explorer billing'><td><b>Budgets</b><div class='cat'>Billing</div></td><td><span class='chip d4'>D4</span></td><td>alert when spend or usage crosses a threshold</td><td class='hook'>Allowance alarm</td><td>Cost Explorer</td></tr><tr data-d='4' data-t='cost explorer visualize past spend, trends, forecast bank statement with charts budgets billing'><td><b>Cost Explorer</b><div class='cat'>Billing</div></td><td><span class='chip d4'>D4</span></td><td>visualize past spend, trends, forecast</td><td class='hook'>Bank statement with charts</td><td>Budgets</td></tr><tr data-d='4' data-t='cost and usage report most detailed line-item billing data itemized receipt cost explorer billing'><td><b>Cost and Usage Report</b><div class='cat'>Billing</div></td><td><span class='chip d4'>D4</span></td><td>most detailed line-item billing data</td><td class='hook'>Itemized receipt</td><td>Cost Explorer</td></tr><tr data-d='4' data-t='cost anomaly detection ml detects unusual spend automatically fraud alert for your bill budgets (fixed thresholds) billing'><td><b>Cost Anomaly Detection</b><div class='cat'>Billing</div></td><td><span class='chip d4'>D4</span></td><td>ML detects unusual spend automatically</td><td class='hook'>Fraud alert for your bill</td><td>Budgets (fixed thresholds)</td></tr><tr data-d='4' data-t='savings plans commit to $/hour for 1 or 3 years, flexible across instance families, fargate, lambda commit to spend, use it flexibly reserved instances billing'><td><b>Savings Plans</b><div class='cat'>Billing</div></td><td><span class='chip d4'>D4</span></td><td>commit to $/hour for 1 or 3 years, flexible across instance families, Fargate, Lambda</td><td class='hook'>Commit to SPEND, use it flexibly</td><td>Reserved Instances</td></tr><tr data-d='4' data-t='reserved instances 1 or 3 years, steady-state, specific instance configuration reserve the same seat for a year savings plans billing'><td><b>Reserved Instances</b><div class='cat'>Billing</div></td><td><span class='chip d4'>D4</span></td><td>1 or 3 years, steady-state, specific instance configuration</td><td class='hook'>Reserve the same seat for a year</td><td>Savings Plans</td></tr><tr data-d='4' data-t='consolidated billing one bill for many accounts, volume discounts shared family plan cost allocation tags billing'><td><b>Consolidated billing</b><div class='cat'>Billing</div></td><td><span class='chip d4'>D4</span></td><td>one bill for many accounts, volume discounts shared</td><td class='hook'>Family plan</td><td>Cost allocation tags</td></tr><tr data-d='4' data-t='aws marketplace buy third-party software and saas that runs on aws app store for aws software partner network (consultants) billing'><td><b>AWS Marketplace</b><div class='cat'>Billing</div></td><td><span class='chip d4'>D4</span></td><td>buy third-party software and SaaS that runs on AWS</td><td class='hook'>App store for AWS software</td><td>Partner Network (consultants)</td></tr><tr data-d='4' data-t='free tier always free, 12 months free, short-term trials three kinds of free pricing calculator billing'><td><b>Free Tier</b><div class='cat'>Billing</div></td><td><span class='chip d4'>D4</span></td><td>always free, 12 months free, short-term trials</td><td class='hook'>Three kinds of free</td><td>Pricing Calculator</td></tr><tr data-d='4' data-t='support plans basic, developer, business, enterprise on-ramp, enterprise; tam business = 24/7 production; enterprise = designated tam trusted advisor billing'><td><b>Support plans</b><div class='cat'>Billing</div></td><td><span class='chip d4'>D4</span></td><td>Basic, Developer, Business, Enterprise On-Ramp, Enterprise; TAM</td><td class='hook'>Business = 24/7 production; Enterprise = designated TAM</td><td>Trusted Advisor</td></tr><tr data-d='3' data-t='bedrock generative ai, foundation models via api, chatbots, rag, agents, no ml infrastructure bedrock = foundation models ready to use sagemaker ai/ml'><td><b>Bedrock</b><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>generative AI, foundation models via API, chatbots, RAG, agents, no ML infrastructure</td><td class='hook'>Bedrock = foundation models ready to use</td><td>SageMaker</td></tr><tr data-d='3' data-t='sagemaker ai build, train and deploy your own ml models the sage who makes models bedrock ai/ml'><td><b>SageMaker AI</b><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>build, train and deploy YOUR OWN ML models</td><td class='hook'>The sage who makes models</td><td>Bedrock</td></tr><tr data-d='3' data-t='rekognition image/video analysis, faces, objects, content moderation recognize what&#x27;s in the picture textract ai/ml'><td><b>Rekognition</b><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>image/video analysis, faces, objects, content moderation</td><td class='hook'>Recognize what&#x27;s in the picture</td><td>Textract</td></tr><tr data-d='3' data-t='textract extract text, forms and tables from scanned documents text extract rekognition, comprehend ai/ml'><td><b>Textract</b><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>extract text, forms and tables from scanned documents</td><td class='hook'>Text extract</td><td>Rekognition, Comprehend</td></tr><tr data-d='3' data-t='comprehend nlp: sentiment, entities, key phrases, language of text comprehend = understand text textract ai/ml'><td><b>Comprehend</b><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>NLP: sentiment, entities, key phrases, language of text</td><td class='hook'>Comprehend = understand text</td><td>Textract</td></tr><tr data-d='3' data-t='translate translate text between languages — transcribe ai/ml'><td><b>Translate</b><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>translate text between languages</td><td class='hook'>—</td><td>Transcribe</td></tr><tr data-d='3' data-t='polly text-to-speech, lifelike voice polly the parrot talks transcribe ai/ml'><td><b>Polly</b><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>text-to-speech, lifelike voice</td><td class='hook'>Polly the parrot talks</td><td>Transcribe</td></tr><tr data-d='3' data-t='transcribe speech-to-text, call transcripts, subtitles transcribe what was said polly ai/ml'><td><b>Transcribe</b><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>speech-to-text, call transcripts, subtitles</td><td class='hook'>Transcribe what was said</td><td>Polly</td></tr><tr data-d='3' data-t='lex chatbots and voice bots, conversational interfaces lexicon for bots polly, connect ai/ml'><td><b>Lex</b><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>chatbots and voice bots, conversational interfaces</td><td class='hook'>Lexicon for bots</td><td>Polly, Connect</td></tr><tr data-d='3' data-t='kendra intelligent enterprise search, natural-language questions over documents kendra knows where it&#x27;s written opensearch ai/ml'><td><b>Kendra</b><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>intelligent enterprise search, natural-language questions over documents</td><td class='hook'>Kendra knows where it&#x27;s written</td><td>OpenSearch</td></tr><tr data-d='3' data-t='iot core connect devices securely, mqtt, telemetry the core for all your things kinesis ai/ml'><td><b>IoT Core</b><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>connect devices securely, MQTT, telemetry</td><td class='hook'>The core for all your things</td><td>Kinesis</td></tr><tr data-d='3' data-t='personalize real-time recommendations, &#x27;customers also viewed&#x27; personalized picks sagemaker ai/ml'><td><b>Personalize</b><span class="bx">beyond exam</span><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>real-time recommendations, &#x27;customers also viewed&#x27;</td><td class='hook'>Personalized picks</td><td>SageMaker</td></tr><tr data-d='3' data-t='amazon location service maps, geocoding, tracking, geofencing — route 53 (dns, not maps) ai/ml'><td><b>Amazon Location Service</b><span class="bx">beyond exam</span><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>maps, geocoding, tracking, geofencing</td><td class='hook'>—</td><td>Route 53 (DNS, not maps)</td></tr><tr data-d='3' data-t='comprehend medical medical entities and phi in clinical text — comprehend ai/ml'><td><b>Comprehend Medical</b><span class="bx">beyond exam</span><div class='cat'>AI/ML</div></td><td><span class='chip d3'>D3</span></td><td>medical entities and PHI in clinical text</td><td class='hook'>—</td><td>Comprehend</td></tr></tbody></table></div>
+  <p class="note">Exam questions won't always use these exact words. AWS rewrites scenarios, so treat trigger words as a shortlist and let the <i>condition</i> (cheapest, least overhead, exactly once, without servers) decide.</p>
+</section>
+
+<section id="coverage">
+  <div class="sh"><span class="num">✓</span><div><h2>CLF-C02 coverage check</h2><p class="shape">Every exam domain and where to study it on this page. Based on the official exam guide and in-scope service list; re-check those before exam day, as AWS updates them.</p></div></div>
+  <div class="tw"><table><thead><tr><th>Domain</th><th>Exam topic</th><th>Where it's covered</th><th>How</th></tr></thead><tbody><tr><td><span class='chip d1'>D1</span></td><td>Benefits of cloud: 6 advantages incl. CapEx → OpEx, economies of scale, global reach, HA, elasticity, agility</td><td>Pills in #1, #3, #4 · cheat sheet Concepts · concept grid §8</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d1'>D1</span></td><td>Well-Architected Framework: all 6 pillars</td><td>Every design's D1 card (#1 Reliability/Cost · #2 Security · #3 Performance · #4 OpEx/Sustainability · #5 Reliability/Security)</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d1'>D1</span></td><td>Migration: CAF perspectives, 7 Rs, Snow Family, DMS/SCT</td><td>#2 Replatform · #3 Replatform/Retire · #4 Snowball + CAF People · #5 Refactor</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d1'>D1</span></td><td>Migration tools: Application Migration Service, Discovery Service, Migration Hub, Migration Evaluator</td><td>Also-know list below</td><td><span class="lst">✓ list</span></td></tr><tr><td><span class='chip d1'>D1</span></td><td>Cloud economics: fixed vs. variable cost, licensing (BYOL, Dedicated Hosts), rightsizing, managed services</td><td>#3 Compute Optimizer · #4 Beanstalk/Lightsail · also-know list</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d2'>D2</span></td><td>Shared responsibility model (and how it shifts by service)</td><td>#1 serverless · #2 RDS/Fargate · #4 EC2 guest OS · #5 EKS</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d2'>D2</span></td><td>Security, governance & compliance services</td><td>#2 GuardDuty, Inspector, Macie, Security Hub, Artifact · #5 Audit Manager, Detective, Firewall Manager</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d2'>D2</span></td><td>Access management: root user, MFA, IAM users/groups/roles/policies, Identity Center, least privilege</td><td>#2, #4, #5 · cheat sheet · concept grid §10</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d2'>D2</span></td><td>Network protection: security groups vs. NACLs, WAF, Shield, Firewall Manager</td><td>#1, #2, #5 · NACL in the cheat sheet</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d2'>D2</span></td><td>Security help: Trusted Advisor, re:Post, Knowledge Center, Marketplace security products</td><td>#2 · also-know list</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d3'>D3</span></td><td>Ways to deploy: Console, CLI, SDKs, infrastructure as code</td><td>#4 CloudFormation · console/CLI/SDK in also-know</td><td><span class="lst">✓ list</span></td></tr><tr><td><span class='chip d3'>D3</span></td><td>Deployment models: cloud, hybrid, on-premises</td><td>#3 hybrid warehouse · #4 broker office</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d3'>D3</span></td><td>Global infrastructure: Regions, AZs, edge locations, Local Zones, Wavelength, Outposts</td><td>#1, #2, #5 · Local Zones/Wavelength/Outposts in also-know + concept grid §9</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d3'>D3</span></td><td>Compute: EC2, instance families, containers, serverless, Auto Scaling, load balancers, Lightsail, Batch</td><td>All five designs · instance families and Batch in also-know</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d3'>D3</span></td><td>Databases: RDS, Aurora, DynamoDB, ElastiCache, Redshift, Neptune, DocumentDB</td><td>#1–#5 · Neptune and DocumentDB in also-know</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d3'>D3</span></td><td>Networking: VPC, subnets, gateways, Route 53, VPN, Direct Connect, PrivateLink, Global Accelerator, Transit Gateway</td><td>#2, #3, #5 · Transit Gateway in also-know</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d3'>D3</span></td><td>Storage: S3 classes, EBS, EFS, FSx, Storage Gateway, Backup, instance store</td><td>#1–#4 · FSx, Storage Gateway, instance store in also-know</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d3'>D3</span></td><td>AI/ML and analytics: SageMaker, Bedrock, Lex, Kendra, Textract, Comprehend, Polly, Transcribe, Translate, Rekognition, Q; Athena, Kinesis, Glue, QuickSight, EMR, OpenSearch</td><td>#1–#5 · Amazon Q and EMR in also-know</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d3'>D3</span></td><td>Other categories: integration, Connect/SES, developer tools, WorkSpaces/AppStream, Amplify/AppSync, IoT</td><td>#1, #3, #4 · AppStream, AppSync, Secure Browser in also-know</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d4'>D4</span></td><td>Pricing models: On-Demand, RIs (Standard/Convertible), Savings Plans, Spot, Dedicated Hosts/Instances, data transfer</td><td>#1–#5 · concept grid §5 · also-know list</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d4'>D4</span></td><td>Billing tools: Budgets, Cost Explorer, Pricing Calculator, CUR, Anomaly Detection, Organizations, tags, Billing Conductor</td><td>#1–#5 · Billing Conductor in also-know</td><td><span class="ok">✓ diagram</span></td></tr><tr><td><span class='chip d4'>D4</span></td><td>Support: plans and TAM, Trusted Advisor, Health Dashboard, re:Post, Professional Services, Partner Network, Marketplace, Trust & Safety</td><td>#2, #4, #5 · concept grid §7 · also-know</td><td><span class="ok">✓ diagram</span></td></tr></tbody></table></div>
+  <h3>Also know: in scope, but not drawn in a diagram</h3>
+  <ul class="also"><li><b>Console / CLI / SDKs</b>: click in a browser / type commands / call AWS from code</li><li><b>EC2 instance families</b>: General purpose (balanced, web) · Compute optimized (batch, gaming, HPC) · Memory optimized (in-memory DBs) · Storage optimized (high IOPS) · Accelerated (GPU, ML)</li><li><b>Instance store</b>: temporary disk physically on the host; data lost when the instance stops</li><li><b>AWS Batch</b>: run batch jobs at any scale; AWS picks and manages the compute</li><li><b>Outposts · Local Zones · Wavelength</b>: AWS racks in your data center · compute near a big city · compute inside 5G networks</li><li><b>Neptune</b>: graph database: relationships, social networks, fraud rings</li><li><b>DocumentDB</b>: MongoDB-compatible document database</li><li><b>EMR</b>: big-data clusters with Hadoop/Spark</li><li><b>Amazon Q</b>: generative AI assistant for business users and developers</li><li><b>AppSync</b>: managed GraphQL APIs</li><li><b>AppStream 2.0</b>: stream a desktop application to a browser</li><li><b>WorkSpaces Secure Browser</b>: secure browser access to internal websites and SaaS</li><li><b>Transit Gateway</b>: hub that connects many VPCs and on-prem networks</li><li><b>Client VPN</b>: individual users connect from laptops (vs. Site-to-Site for whole offices)</li><li><b>Resource Access Manager</b>: share resources such as subnets or Transit Gateways across accounts</li><li><b>FSx</b>: managed file systems: Windows File Server, Lustre (HPC), NetApp ONTAP</li><li><b>Storage Gateway</b>: hybrid: on-prem apps use S3-backed file, volume or tape storage</li><li><b>DataSync</b>: online, automated data transfer from on-prem to S3/EFS (vs. offline Snowball)</li><li><b>Application Migration Service</b>: rehost (lift-and-shift) servers to AWS</li><li><b>Application Discovery Service</b>: discover on-prem servers and dependencies before migrating</li><li><b>Migration Evaluator</b>: build a business case / TCO for moving to AWS</li><li><b>Migration Hub</b>: track all migrations in one place</li><li><b>Service Catalog</b>: approved catalog of products users are allowed to launch</li><li><b>Service Quotas</b>: view and request increases to service limits</li><li><b>License Manager</b>: track software licenses, including bring-your-own-license</li><li><b>Well-Architected Tool</b>: review a workload against the 6 pillars</li><li><b>Billing Conductor</b>: custom pricing and billing views for resellers or showback</li><li><b>Dedicated Hosts vs. Dedicated Instances</b>: Hosts: whole physical server, BYOL per-socket/core licenses. Instances: hardware not shared, no host control</li><li><b>Standard vs. Convertible RIs</b>: Standard: biggest discount, fixed type. Convertible: smaller discount, can change instance family</li><li><b>Data transfer pricing</b>: data IN to AWS is free; data OUT to the internet and between Regions is charged</li><li><b>Support resources</b>: re:Post (community Q&amp;A), Knowledge Center, Professional Services, Partner Network, AWS Trust &amp; Safety (report abuse: spam, DDoS from AWS IPs)</li></ul>
+</section>
+<p class="foot">Domain weights from the CLF-C02 exam guide. Service capabilities and Region availability change; check the AWS documentation before using any of these as a real build plan.</p>
+</main><script>
+(function(){
+ var q=document.getElementById('q'), rows=[].slice.call(document.querySelectorAll('#cheat tbody tr')), f='all', c=document.getElementById('count');
+ function run(){ var s=(q.value||'').toLowerCase().trim(), n=0;
+  rows.forEach(function(r){ var ok=(f==='all'||r.dataset.d===f)&&(!s||r.dataset.t.indexOf(s)>-1); r.style.display=ok?'':'none'; if(ok)n++; });
+  c.textContent=n+' of '+rows.length+' shown'; }
+ q.addEventListener('input',run);
+ [].forEach.call(document.querySelectorAll('.fb button'),function(b){ b.addEventListener('click',function(){
+  [].forEach.call(document.querySelectorAll('.fb button'),function(x){x.classList.remove('on')}); b.classList.add('on'); f=b.dataset.f; run(); }); });
+ run();
+})();
+</script></body></html>
