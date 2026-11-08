@@ -13,7 +13,7 @@ A hand-drawn, clickable mind map for reviewing the **AWS Certified Cloud Practit
 
 ## AWS Architecture Atlas (`/atlas`)
 
-A companion study page in the [`atlas/`](atlas/) folder: five real-world system designs (typhoon alerts, clinic records, delivery tracking, real estate, OFW remittance) built from interconnected AWS services. Each design has a numbered architecture diagram, a 4-domain map, decision records (chosen service vs. closest distractor) and practice questions. It also has a searchable trigger-word and memory-hook table and a CLF-C02 coverage check.
+A companion study page in the [`atlas/`](atlas/) folder: five real-world system designs (typhoon alerts, clinic records, delivery tracking, real estate, OFW remittance) built from interconnected AWS services. Each design has a clickable architecture diagram (tap a service for its meaning, tap a numbered arrow to play the request step by step), a 4-domain map, decision records (chosen service vs. closest distractor) and 15 multiple-choice practice questions. An exam mode mixes all 75 questions, with flags saved in your browser. It also has a searchable trigger-word and memory-hook table and a CLF-C02 coverage check.
 
 These are design-only case studies for exam review; nothing in them is deployed.
 
