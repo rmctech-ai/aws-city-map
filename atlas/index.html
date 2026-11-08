@@ -132,6 +132,9 @@ dl{margin:0} dt{font-size:11.5px;font-weight:700;color:var(--muted);text-transfo
 .rev{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px} .rev.bad{border-left:4px solid var(--d2)} .rev.ok{border-left:4px solid var(--d1)}
 .rev p{margin:3px 0;font-size:14px} .revf{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .bookit{border:2px solid var(--d1);border-radius:12px;padding:10px 14px;margin-top:10px}
+.offlinks{margin-top:14px} .linkgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;width:100%}
+.lcard{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.lcard:hover{border-color:var(--d3)} .lcard b{color:var(--d3);font-size:14px} .lcard span{font-size:12.5px;color:var(--muted)}
 .foot{margin-top:44px;font-size:13px;color:var(--muted)}
 </style></head><body><main>
 <header>
@@ -144,7 +147,7 @@ dl{margin:0} dt{font-size:11.5px;font-weight:700;color:var(--muted);text-transfo
 <span class="lg"><span class="chip d4">D4</span>Billing, Pricing &amp; Support 12%</span>
 <span class="lg"><span class="chip ai">AI</span>AI/ML service</span><span class="lg"><span class="dashbox"></span>Beyond exam scope</span>
 </div>
-<nav><a href="#design-1">1 · BagyoAlert PH (serverless)</a><a href="#design-2">2 · KlinikaCloud (containers + Multi-AZ)</a><a href="#design-3">3 · PadalaTrack (streaming + ML + migration)</a><a href="#design-4">4 · BahayHub (real estate)</a><a href="#design-5">5 · RemitKo (fintech)</a><a href="#exam-mode">⏱ Exam mode</a><a href="#final-check">6 · Final check</a><a href="#cheat-sheet">★ Trigger words</a><a href="#coverage">✓ Exam coverage</a></nav>
+<nav><a href="#design-1">1 · BagyoAlert PH (serverless)</a><a href="#design-2">2 · KlinikaCloud (containers + Multi-AZ)</a><a href="#design-3">3 · PadalaTrack (streaming + ML + migration)</a><a href="#design-4">4 · BahayHub (real estate)</a><a href="#design-5">5 · RemitKo (fintech)</a><a href="#exam-mode">⏱ Exam mode</a><a href="#final-check">6 · Final check</a><a href="#official-practice">↗ AWS official practice</a><a href="#cheat-sheet">★ Trigger words</a><a href="#coverage">✓ Exam coverage</a></nav>
 </header>
 
 <section id="design-1">
@@ -1302,6 +1305,16 @@ dl{margin:0} dt{font-size:11.5px;font-weight:700;color:var(--muted);text-transfo
     <button class="primary" id="mockstart">Start Batch 6</button>
   </div>
   <div id="mockbox" class="quizbox" hidden></div>
+  <div class="excard wide offlinks" id="official-practice">
+    <h4>Official AWS practice: your last step before booking</h4>
+    <p class="small">Start at AWS's official exam page. Its "Prepare for the exam" section links straight to all three Skill Builder resources below. Skill Builder needs a free sign-in.</p>
+    <div class="linkgrid">
+      <a class="lcard" href="https://aws.amazon.com/certification/certified-cloud-practitioner/" target="_blank" rel="noopener"><b>AWS Certified Cloud Practitioner: official exam page</b><span>Exam guide, plus links to every official practice resource</span></a>
+      <a class="lcard" href="https://skillbuilder.aws/" target="_blank" rel="noopener"><b>AWS Skill Builder</b><span>Search: "Exam Prep Official Question Set: AWS Certified Cloud Practitioner (CLF-C02 - English)" · 20 questions · free</span></a>
+      <a class="lcard" href="https://training.resources.awscloud.com/associate-certification-articles/updated-cloud-practitioner-exam-prep-course" target="_blank" rel="noopener"><b>AWS Training: about the official question set</b><span>AWS's own page describing the free CLF-C02 question set</span></a>
+    </div>
+    <p class="muted small">Also on Skill Builder: the <b>Official Pretest</b> (find weak areas) and the <b>Official Practice Exam</b>, 65 questions in 90 minutes, which may need a Skill Builder subscription.</p>
+  </div>
 </section>
 
 <section id="cheat-sheet">
@@ -1540,7 +1553,7 @@ dl{margin:0} dt{font-size:11.5px;font-weight:700;color:var(--muted);text-transfo
     h += s >= goal ? '<p class="readyok">✓ Streak complete: 5 batches in a row at 80%+.</p>' :
       '<p class="small">Current streak: <b>' + s + "</b> of " + goal + ". Next in the cycle: <b>Batch " + cycle + "</b>.</p>";
     h += '<p class="small">Batch 6 final check: ' + (mk.length ? "best <b>" + mbest + "%</b> · last <b>" + mk[mk.length - 1].p + "%</b> · " + mk.length + " attempt" + (mk.length > 1 ? "s" : "") : "not taken yet") + (mbest >= 80 ? ' <span class="pass">✓ 80%+</span>' : "") + "</p>";
-    if (s >= goal && mbest >= 80) h += '<div class="bookit"><p class="readyok">✅ Book it. You have 5 batches in a row at 80%+ AND 80%+ on the Batch 6 mock exam.</p><p class="small muted">Before the real exam, also try AWS\'s free official practice question set on Skill Builder.</p></div>';
+    if (s >= goal && mbest >= 80) h += '<div class="bookit"><p class="readyok">✅ Book it. You have 5 batches in a row at 80%+ AND 80%+ on the Batch 6 mock exam.</p><p class="small muted">Before the real exam, also take AWS\'s free official question set: <a href="#official-practice">official practice links</a>.</p></div>';
     if (results.length) {
       h += '<table class="hist"><thead><tr><th>Date</th><th>Batch</th><th>Score</th><th></th></tr></thead><tbody>';
       results.slice(-8).reverse().forEach(function (r) {
