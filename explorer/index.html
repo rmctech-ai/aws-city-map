@@ -54,6 +54,7 @@ aside.projects{grid-row:2/5;display:flex;flex-direction:column;overflow:auto}
 .chip{font-family:var(--mono);font-size:10.5px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .chip.live{border-color:var(--good);color:var(--good)}
 .chip.plan{border-color:var(--accent);color:var(--accent)}
+.chip.lvl{border-color:#7c5cff;color:#7c5cff}
 .proj.on{background:linear-gradient(90deg,var(--accent-soft),transparent 70%)}
 .lessontabs{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 8px 52px}
 .ltab{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
@@ -806,6 +807,185 @@ const PROJECTS = [
       body:"Stock and sales data became an explained reorder list every evening, with a person making the final call.",
       extra:[["Owner approval","Required"]]}
   }]
+},
+{
+  id:"clinicbook", num:7, level:"Intermediate", name:"ClinicBook", tagline:"Highly available booking app across two AZs", status:"Planned", cost:"~US$200 / month (Multi-AZ isn't free)",
+  problem:"A clinic chain's booking site runs on one server in one data centre. When it fails, patients can't book, phones flood, and appointment slots go unused.",
+  solution:"A three-tier design across two Availability Zones: AWS WAF and an Application Load Balancer at the front, containers on ECS Fargate in each AZ, ElastiCache for fast slot lookups, and Aurora with a writer in one AZ and a replica ready to take over in the other.",
+  pitch:"I designed ClinicBook to lose a whole Availability Zone without patients noticing: the load balancer reroutes, Aurora fails over in about 30 seconds, and ECS replaces the lost tasks.",
+  nodes:{
+    patient:{n:"Patient", cat:"client", x:90, y:300},
+    waf:{n:"AWS WAF", cat:"sec", x:260, y:120},
+    alb:{n:"Load balancer", cat:"net", x:260, y:300},
+    taskA:{n:"Fargate · AZ a", cat:"svl", x:480, y:200},
+    taskB:{n:"Fargate · AZ b", cat:"svl", x:480, y:420},
+    cache:{n:"ElastiCache", cat:"db", x:700, y:100},
+    writer:{n:"Aurora writer", cat:"db", x:700, y:300},
+    replica:{n:"Aurora replica", cat:"db", x:700, y:490},
+    cloudwatch:{n:"CloudWatch", cat:"mgmt", x:900, y:300}
+  },
+  lessons:[
+  { name:"Book an appointment", short:"Edge, containers, cache, database",
+    intro:"A patient books a 10:30 slot with Dr. Santos. Follow the request through the firewall and load balancer, into a container, past the cache, and into the database, and see how the system shrinks after hours.",
+    steps:[
+      {f:"patient",t:"alb",tag:"POST /book",title:"The patient books",sub:"One load balancer, two AZs behind it",cat:"net",pillar:"Reliability",ms:30,
+       body:"The booking request reaches the Application Load Balancer, which has a foot in both Availability Zones. If one AZ disappears, the ALB is still reachable.",
+       facts:[["Slot","Dr. Santos, Mon 10:30"],["ALB subnets","Public, AZ a + AZ b"],["Protocol","HTTPS (ACM certificate)"]],log:["ALB","POST /book","0.6 KB"]},
+      {f:"alb",t:"waf",tag:"inspect",title:"WAF checks it",sub:"Attached to the load balancer",cat:"sec",pillar:"Security",ms:1,
+       body:"AWS WAF on the ALB checks for common web attacks and rate-limits each IP, so bots can't hoard appointment slots.",
+       facts:[["Rules","Core rule set + rate limit"],["Limit","300 requests / 5 min / IP"]],log:["AWS WAF","evaluate rules","0.3 KB"]},
+      {f:"waf",t:"alb",tag:"ALLOW",title:"Allowed",sub:"A real patient",cat:"sec",pillar:"Security",ms:1,
+       body:"Nothing suspicious, so the request goes through.",
+       facts:[["Verdict","ALLOW"]],log:["AWS WAF","ALLOW","0.1 KB"]},
+      {f:"alb",t:"taskA",tag:"route → AZ a",title:"Pick a healthy container",sub:"Only healthy targets get traffic",cat:"net",pillar:"Reliability",ms:2,
+       body:"The ALB sends the request to a healthy Fargate task. It checks every task's /health endpoint every 10 seconds and skips any that fail.",
+       facts:[["Tasks running","2 in AZ a, 2 in AZ b"],["Health check","/health every 10 s"],["Subnets","Private (no public IP)"]],log:["ALB","forward → task 10.0.11.24","0.6 KB"]},
+      {f:"taskA",t:"cache",tag:"GET slots:santos",title:"Check the cache first",sub:"Fast reads, less database load",cat:"db",pillar:"Performance Efficiency",ms:1,
+       body:"The app reads Dr. Santos's free slots from ElastiCache (Redis) instead of querying the database for every page view.",
+       facts:[["Engine","Redis, Multi-AZ"],["Hit rate","~92%"],["Read time","< 1 ms"]],log:["ElastiCache","GET slots:santos:2026-11-16","1.4 KB"]},
+      {f:"cache",t:"taskA",tag:"10:30 free",title:"The slot is free",sub:"Straight from memory",cat:"db",pillar:"Performance Efficiency",ms:1,
+       body:"The cache confirms the slot is open.",
+       facts:[["Result","10:30 available"]],log:["ElastiCache","HIT","1.4 KB"]},
+      {f:"taskA",t:"writer",tag:"INSERT booking",title:"Write to Aurora",sub:"A transaction stops double-booking",cat:"db",pillar:"Reliability",ms:12,
+       body:"The booking is written to the Aurora writer in a transaction with a unique constraint on doctor and time, so two patients can never get the same slot.",
+       facts:[["Engine","Aurora PostgreSQL"],["Storage","6 copies across 3 AZs"],["Constraint","unique(doctor, slot)"]],log:["Aurora","INSERT booking (COMMIT)","0.8 KB"]},
+      {f:"writer",t:"replica",tag:"replicate < 100 ms",title:"The replica stays in sync",sub:"Ready to take over",cat:"db",pillar:"Reliability",ms:20,
+       body:"Aurora's replica in AZ b shares the same storage and lags by milliseconds. It serves read-only reports now and can become the writer if AZ a fails.",
+       facts:[["Replica lag","< 100 ms"],["Failover target","Yes (priority tier 0)"]],log:["Aurora","replica in sync","—"]},
+      {f:"alb",t:"patient",tag:"201 Booked",title:"Confirmed",sub:"In about 80 ms",cat:"net",pillar:"Performance Efficiency",ms:15,
+       body:"The patient sees the confirmation. The app also updates the cache so the slot disappears for everyone else.",
+       facts:[["Total time","~80 ms"]],log:["ALB","201 Created","0.4 KB"]},
+      {f:"cloudwatch",t:"taskA",tag:"scale in to 1 per AZ",title:"After hours, shrink",sub:"Pay for what nights need",cat:"mgmt",pillar:"Sustainability",ms:36000000,
+       body:"At night, CPU drops and ECS Service Auto Scaling removes tasks down to one per AZ. Fewer idle containers means lower cost and less wasted energy. Tasks run on Graviton (arm64) for the same reason.",
+       facts:[["Scale target","CPU 50%"],["Night minimum","1 task per AZ"],["CPU type","Graviton (arm64)"]],log:["CloudWatch","alarm low CPU → scale in","0.3 KB"]}
+    ],
+    summary:{title:"Booked", sub:"Fast, protected, highly available",
+      body:"The request was filtered, balanced across two AZs, answered from cache, written safely to a database with a standby, and the system shrank overnight.",
+      extra:[["Availability Zones","2"],["Pillars","All 6"]]}
+  },
+  { name:"An AZ goes down", short:"Reroute, fail over, heal",
+    intro:"A power problem takes Availability Zone a offline, including the Aurora writer. Watch the system reroute traffic, promote the replica and replace the lost containers while patients keep booking.",
+    steps:[
+      {f:"alb",t:"taskA",tag:"health check failed",bad:true,title:"AZ a stops answering",sub:"Health checks fail",cat:"net",pillar:"Reliability",ms:20000,
+       body:"The ALB's health checks to the AZ a tasks time out twice in a row, so it marks them unhealthy.",
+       facts:[["Unhealthy after","2 failed checks (20 s)"],["Healthy tasks left","2 (AZ b)"]],log:["ALB","targets unhealthy (AZ a)","—"]},
+      {f:"alb",t:"taskB",tag:"all traffic → AZ b",title:"Traffic shifts to AZ b",sub:"Patients don't notice",cat:"net",pillar:"Reliability",ms:1,
+       body:"The ALB sends every request to the healthy tasks in AZ b. Patients mid-booking simply retry and succeed.",
+       facts:[["Traffic in AZ b","100%"]],log:["ALB","forward → AZ b only","—"]},
+      {f:"writer",t:"replica",tag:"failover: promote",bad:true,title:"Aurora fails over",sub:"The replica becomes the writer",cat:"db",pillar:"Reliability",ms:30000,
+       body:"Aurora detects the writer is gone and promotes the AZ b replica, usually in about 30 seconds. The database endpoint name stays the same, so the app reconnects without a code change.",
+       facts:[["Failover time","~30 s"],["Endpoint","Unchanged (cluster endpoint)"],["Data lost","None (shared storage)"]],log:["Aurora","failover → replica promoted","—"]},
+      {f:"cloudwatch",t:"taskB",tag:"scale out +2",title:"Replace lost capacity",sub:"Auto Scaling adds tasks",cat:"mgmt",pillar:"Reliability",ms:90000,
+       body:"With half the tasks gone, CPU in AZ b climbs. ECS starts two more tasks so capacity is back to normal within about 90 seconds.",
+       facts:[["Tasks","2 → 4 in AZ b"],["Trigger","CPU > 50%"]],log:["CloudWatch","alarm high CPU → scale out","0.3 KB"]},
+      {f:"patient",t:"alb",tag:"POST /book",title:"A patient books mid-outage",sub:"Business as usual",cat:"net",pillar:"Reliability",ms:30,
+       body:"A new booking arrives while AZ a is still down.",
+       facts:[["Slot","Dr. Reyes, Tue 14:00"]],log:["ALB","POST /book","0.6 KB"]},
+      {f:"alb",t:"taskB",tag:"route → AZ b",title:"Handled in AZ b",sub:"A healthy task takes it",cat:"net",pillar:"Reliability",ms:2,
+       body:"The ALB routes the request to a task in AZ b.",
+       facts:[["Target","Task in AZ b"]],log:["ALB","forward → task 10.0.21.17","0.6 KB"]},
+      {f:"taskB",t:"replica",tag:"INSERT (new writer)",title:"Written to the new writer",sub:"Same endpoint, new home",cat:"db",pillar:"Reliability",ms:14,
+       body:"The booking goes to the promoted writer in AZ b through the same cluster endpoint.",
+       facts:[["Writer","Now in AZ b"]],log:["Aurora","INSERT booking (COMMIT)","0.8 KB"]},
+      {f:"alb",t:"patient",tag:"201 Booked",title:"Booked anyway",sub:"The outage was invisible",cat:"net",pillar:"Reliability",ms:15,
+       body:"The patient gets a normal confirmation. When AZ a comes back, ECS spreads tasks across both AZs again and Aurora adds a new replica there.",
+       facts:[["Bookings lost","0"],["Patient-visible downtime","~30 s of retries"]],log:["ALB","201 Created","0.4 KB"]}
+    ],
+    summary:{title:"Outage survived", sub:"A whole AZ lost, bookings kept",
+      body:"The load balancer rerouted traffic, Aurora promoted its replica in about 30 seconds without losing data, and Auto Scaling restored capacity, with no human involved.",
+      extra:[["Bookings lost","0"],["Manual steps","0"]]}
+  }]
+},
+{
+  id:"sentinel", num:8, level:"Intermediate", name:"Sentinel", tagline:"Automated security detection and response", status:"Planned", cost:"~US$5–15 / month for a small account",
+  problem:"Small companies don't have a 24/7 security team. A leaked access key or a public S3 bucket can be abused for hours before anyone looks, and attackers move in minutes.",
+  solution:"CloudTrail, GuardDuty and AWS Config watch the account. Findings flow through EventBridge to a remediation Lambda that disables leaked keys, isolates compromised instances and re-locks public buckets within minutes, then reports to Security Hub and the security team.",
+  pitch:"Sentinel turns detection into action: when GuardDuty flags a leaked key, the key is disabled and the instance isolated about a minute later, without waiting for a human.",
+  nodes:{
+    attacker:{n:"Attacker", cat:"client", x:90, y:110},
+    ec2:{n:"EC2 instance", cat:"cmp", x:300, y:110},
+    hub:{n:"Security Hub", cat:"sec", x:520, y:110},
+    iam:{n:"IAM", cat:"sec", x:760, y:110},
+    cloudtrail:{n:"CloudTrail", cat:"mgmt", x:90, y:300},
+    guardduty:{n:"GuardDuty", cat:"sec", x:300, y:300},
+    eventbridge:{n:"EventBridge", cat:"int", x:520, y:300},
+    remediate:{n:"Remediate λ", cat:"svl", x:760, y:300},
+    config:{n:"AWS Config", cat:"mgmt", x:90, y:490},
+    s3:{n:"S3 bucket", cat:"sto", x:300, y:490},
+    secteam:{n:"Security team", cat:"client", x:520, y:490},
+    sns:{n:"SNS topic", cat:"int", x:760, y:490}
+  },
+  lessons:[
+  { name:"Leaked key, crypto miner", short:"Detect, isolate, disable, report",
+    intro:"A developer accidentally pushes an access key to a public GitHub repo. Within minutes an attacker uses it to launch crypto-mining instances. Watch Sentinel catch it and shut it down automatically.",
+    steps:[
+      {f:"attacker",t:"ec2",tag:"RunInstances × 20",bad:true,title:"The attacker strikes",sub:"Using a leaked access key",cat:"cmp",pillar:"Security",ms:60000,
+       body:"Bots scan GitHub for keys around the clock. Minutes after the push, the attacker uses the key to launch large instances that mine cryptocurrency on your bill.",
+       facts:[["Key","AKIA…7Q2F (dev-ci user)"],["Instances","20 × c5.4xlarge"],["Cost if ignored","~US$13,000 / day"]],log:["EC2","RunInstances (leaked key)","2.1 KB"]},
+      {f:"cloudtrail",t:"guardduty",tag:"unusual API calls",title:"CloudTrail saw every call",sub:"GuardDuty reads the trail",cat:"mgmt",pillar:"Security",ms:120000,
+       body:"CloudTrail records every API call, including who made it and from where. GuardDuty analyses these events and notices a CI key suddenly launching instances from an unfamiliar country.",
+       facts:[["Trail","Organization trail, all regions"],["Source IP","Unfamiliar ASN"]],log:["CloudTrail","RunInstances logged","1.6 KB"]},
+      {f:"ec2",t:"guardduty",tag:"DNS → mining pool",bad:true,title:"Mining traffic detected",sub:"From DNS and flow logs",cat:"sec",pillar:"Security",ms:300000,
+       body:"GuardDuty also reads DNS and VPC flow logs, and sees the new instances querying known mining-pool domains.",
+       facts:[["Finding","CryptoCurrency:EC2/BitcoinTool.B!DNS"],["Severity","High (8.0)"]],log:["GuardDuty","finding created (High)","3.4 KB"]},
+      {f:"guardduty",t:"hub",tag:"finding",title:"One place for findings",sub:"Security Hub aggregates",cat:"sec",pillar:"Operational Excellence",ms:60000,
+       body:"The finding also goes to Security Hub, which collects findings from GuardDuty, Config, Inspector and Macie into one prioritised view.",
+       facts:[["Standard","AWS Foundational Security Best Practices"]],log:["Security Hub","import finding","3.4 KB"]},
+      {f:"guardduty",t:"eventbridge",tag:"severity ≥ 7",title:"High severity triggers action",sub:"An EventBridge rule matches",cat:"int",pillar:"Security",ms:50000,
+       body:"An EventBridge rule matches GuardDuty findings with severity 7 or higher and invokes the remediation Lambda. Lower findings only go to the dashboard.",
+       facts:[["Rule","source aws.guardduty, severity ≥ 7"]],log:["EventBridge","rule matched → remediate λ","3.5 KB"]},
+      {f:"eventbridge",t:"remediate",tag:"invoke",title:"Remediation starts",sub:"Seconds after the finding",cat:"svl",pillar:"Security",ms:200,
+       body:"The Lambda reads the finding to get the instance IDs and the access key involved.",
+       facts:[["IAM role","Narrow: only remediation actions"]],log:["Lambda","remediate invoked","3.5 KB"]},
+      {f:"remediate",t:"ec2",tag:"isolate + snapshot",title:"Isolate, don't destroy",sub:"Keep evidence for forensics",cat:"cmp",pillar:"Security",ms:8000,
+       body:"The Lambda swaps each instance's security group for one with no inbound or outbound rules, snapshots its volume for investigation, then stops it. Terminating would destroy the evidence.",
+       facts:[["Security group","sg-quarantine (no rules)"],["Evidence","EBS snapshots kept"],["Instances","Stopped"]],log:["EC2","ModifyInstanceAttribute + CreateSnapshot","1.8 KB"]},
+      {f:"remediate",t:"iam",tag:"key → Inactive",title:"Disable the leaked key",sub:"The attacker is locked out",cat:"sec",pillar:"Security",ms:400,
+       body:"The access key is set to Inactive, so every further call with it fails. The CI pipeline will use a new key, or better, a role with no long-lived key at all.",
+       facts:[["Action","UpdateAccessKey Inactive"],["Follow-up","Move CI to an IAM role (OIDC)"]],log:["IAM","UpdateAccessKey Inactive","0.4 KB"]},
+      {f:"remediate",t:"sns",tag:"incident summary",title:"Tell the humans",sub:"What happened and what was done",cat:"int",pillar:"Operational Excellence",ms:100,
+       body:"The Lambda publishes an incident summary: the finding, the key disabled, the instances isolated and links to the evidence.",
+       facts:[["Topic","security-incidents"]],log:["SNS","Publish security-incidents","1.9 KB"]},
+      {f:"sns",t:"secteam",tag:"Contained in ~1 min",title:"The team reviews, not scrambles",sub:"Already contained",cat:"int",pillar:"Cost Optimization",ms:900,
+       body:"The security team is paged with the problem already contained. They clean up and rotate secrets calmly, and the bill shows minutes of mining, not days.",
+       facts:[["Time to contain","~1 minute after the finding"],["Mining cost","~US$25 instead of thousands"]],log:["SNS","Page to security team","1.9 KB"]}
+    ],
+    summary:{title:"Attack contained", sub:"Detection became action",
+      body:"A leaked key was detected from API, DNS and network signals, the key was disabled and the instances isolated with evidence kept, all before a person had to act.",
+      extra:[["Human steps to contain","0"]]}
+  },
+  { name:"Public bucket, auto-fixed", short:"Config rule plus remediation",
+    intro:"A developer makes a bucket public to share a file quickly. AWS Config spots it, Sentinel re-locks it, and the developer is told why.",
+    steps:[
+      {f:"s3",t:"config",tag:"policy: public read",bad:true,title:"A bucket goes public",sub:"A quick shortcut",cat:"sto",pillar:"Security",ms:60000,
+       body:"A developer adds a bucket policy that allows public read, to send a file to a client. AWS Config records the configuration change.",
+       facts:[["Bucket","client-exports"],["Change","Principal: * (public read)"]],log:["AWS Config","configuration change recorded","2.2 KB"]},
+      {f:"config",t:"eventbridge",tag:"NON_COMPLIANT",bad:true,title:"A Config rule flags it",sub:"Compliance checked on every change",cat:"mgmt",pillar:"Security",ms:30000,
+       body:"The managed rule s3-bucket-public-read-prohibited evaluates the change and marks the bucket NON_COMPLIANT. The compliance change goes to EventBridge.",
+       facts:[["Rule","s3-bucket-public-read-prohibited"],["Result","NON_COMPLIANT"]],log:["AWS Config","rule → NON_COMPLIANT","1.2 KB"]},
+      {f:"eventbridge",t:"remediate",tag:"invoke",title:"Remediation starts",sub:"The same Lambda, another playbook",cat:"svl",pillar:"Operational Excellence",ms:200,
+       body:"An EventBridge rule for Config compliance changes invokes the remediation Lambda. (AWS Config can also run SSM Automation remediations directly.)",
+       facts:[["Playbook","s3-public-read"]],log:["Lambda","remediate invoked","1.3 KB"]},
+      {f:"remediate",t:"s3",tag:"Block Public Access ON",title:"Re-lock the bucket",sub:"Removes the public policy",cat:"sto",pillar:"Security",ms:600,
+       body:"The Lambda turns on S3 Block Public Access for the bucket and removes the public statement, keeping a copy of the old policy in the incident record.",
+       facts:[["Setting","BlockPublicPolicy, RestrictPublicBuckets"],["Public for","~90 seconds"]],log:["S3","PutPublicAccessBlock","0.5 KB"]},
+      {f:"s3",t:"config",tag:"COMPLIANT",title:"Config re-checks",sub:"Back to green",cat:"mgmt",pillar:"Security",ms:30000,
+       body:"The change triggers a fresh evaluation and the bucket returns to COMPLIANT.",
+       facts:[["Result","COMPLIANT"]],log:["AWS Config","rule → COMPLIANT","1.1 KB"]},
+      {f:"config",t:"hub",tag:"control passed",title:"Score restored",sub:"Security Hub updates",cat:"sec",pillar:"Operational Excellence",ms:60000,
+       body:"Security Hub's security score recovers, and the finding is recorded as resolved by automation.",
+       facts:[["Workflow","RESOLVED"]],log:["Security Hub","finding resolved","1.0 KB"]},
+      {f:"remediate",t:"sns",tag:"tell the developer",title:"Explain, don't blame",sub:"With a safer way to share",cat:"int",pillar:"Operational Excellence",ms:100,
+       body:"The notification explains what was changed and why, and suggests the safe alternative: a presigned URL that expires in a day.",
+       facts:[["Safer option","Presigned URL, 24 h expiry"]],log:["SNS","Publish security-notices","1.2 KB"]},
+      {f:"sns",t:"secteam",tag:"Auto-fixed: client-exports",title:"Logged and closed",sub:"No ticket left open",cat:"int",pillar:"Operational Excellence",ms:900,
+       body:"The security team gets the record. Nobody had to stop what they were doing.",
+       facts:[["Exposure window","~90 seconds"],["Human steps","0"]],log:["SNS","Email to security team","1.2 KB"]}
+    ],
+    summary:{title:"Bucket re-locked", sub:"Exposed for about 90 seconds",
+      body:"A risky change was caught by a Config rule, reversed automatically, and explained to the developer with a safer alternative.",
+      extra:[["Exposure window","~90 s"]]}
+  }]
 }
 ];
 
@@ -967,7 +1147,7 @@ function renderProjects(){
   PROJECTS.forEach((p, pi) => {
     const d = document.createElement("div"); d.className = "proj" + (pi === P ? " on" : "");
     const b = document.createElement("button"); b.className = "ph";
-    b.innerHTML = `<span class="pnum">${p.num}</span><span><div class="pn"></div><div class="ps"></div><div class="pmeta"><span class="${statusChip(p.status)}">${p.status}</span><span class="chip">${awsNodes(p).length} services</span><span class="chip">${p.lessons.length} lessons</span></div></span>`;
+    b.innerHTML = `<span class="pnum">${p.num}</span><span><div class="pn"></div><div class="ps"></div><div class="pmeta"><span class="${statusChip(p.status)}">${p.status}</span>${p.level ? `<span class="chip lvl">${p.level}</span>` : ""}<span class="chip">${awsNodes(p).length} services</span><span class="chip">${p.lessons.length} lessons</span></div></span>`;
     b.querySelector(".pn").textContent = p.name; b.querySelector(".ps").textContent = p.tagline;
     b.addEventListener("click", () => selectProject(pi));
     d.appendChild(b);
