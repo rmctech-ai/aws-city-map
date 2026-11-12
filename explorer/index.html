@@ -9,15 +9,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* Layout idea: four panels like a lab bench — lessons left, live AWS scene centre, step notes right, event log underneath */
-  --bg:#f3f5f8; --panel:#ffffff; --ink:#152033; --muted:#5d6b80; --line:#d8dee8; --accent:#d9730d; --accent-soft:#fdf0e2; --bad:#c0392b; --good:#1f8a5b;
+  /* Layout idea: portfolio of projects left, a dark live "control room" stage centre, the selected project's breakdown right, event log underneath */
+  --bg:#f2f4f8; --panel:#ffffff; --ink:#152033; --muted:#5b687c; --line:#d9dfe8; --accent:#d9730d; --accent-soft:#fdf0e2; --bad:#c0392b; --good:#1f8a5b;
   --display:"Manrope", "Segoe UI", system-ui, sans-serif; --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --stage:#0a1020; --stage-2:#111a2e; --stage-line:#22304a; --stage-ink:#e7edf6; --stage-muted:#8594ab; --glow:#ff9f43; --glow-bad:#ff5d5d;
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){ --bg:#0d131d; --panel:#141c29; --ink:#e6ebf2; --muted:#93a1b5; --line:#263244; --accent:#f39a3c; --accent-soft:#2c2114; --bad:#ef6f61; --good:#4cc38a; color-scheme:dark; }
+  :root:not([data-theme="light"]){ --bg:#0b1019; --panel:#121a27; --ink:#e6ebf2; --muted:#93a1b5; --line:#243043; --accent:#f39a3c; --accent-soft:#2c2114; --bad:#ef6f61; --good:#4cc38a; color-scheme:dark; }
 }
-:root[data-theme="dark"]{ --bg:#0d131d; --panel:#141c29; --ink:#e6ebf2; --muted:#93a1b5; --line:#263244; --accent:#f39a3c; --accent-soft:#2c2114; --bad:#ef6f61; --good:#4cc38a; color-scheme:dark; }
+:root[data-theme="dark"]{ --bg:#0b1019; --panel:#121a27; --ink:#e6ebf2; --muted:#93a1b5; --line:#243043; --accent:#f39a3c; --accent-soft:#2c2114; --bad:#ef6f61; --good:#4cc38a; color-scheme:dark; }
 
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
@@ -25,72 +26,107 @@ body{background:var(--bg);color:var(--ink);font-family:var(--display);font-size:
 button,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-.app{display:grid;grid-template-columns:270px minmax(0,1fr) 310px;grid-template-rows:auto minmax(0,1fr) auto;gap:12px;padding:12px;min-height:100%}
-header{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px}
-.brand h1{font-size:18px;margin:0;font-weight:800;letter-spacing:-.01em}
+.app{display:grid;grid-template-columns:290px minmax(0,1fr) 330px;grid-template-rows:auto minmax(0,1fr) auto auto;gap:12px;padding:12px;min-height:100%}
+header{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:10px 24px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 16px}
+.brand h1{font-size:19px;margin:0;font-weight:800;letter-spacing:-.01em}
 .brand p{margin:0;color:var(--muted);font-size:12px}
+.brand a{color:var(--accent);text-decoration:none} .brand a:hover{text-decoration:underline}
 .cats{display:flex;flex-wrap:wrap;gap:6px;flex:1;justify-content:flex-end}
-.cat{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);display:flex;align-items:center;gap:6px;transition:all .2s}
-.cat i{width:8px;height:8px;border-radius:50%;background:var(--c);opacity:.35}
-.cat.seen{color:var(--ink)} .cat.seen i{opacity:1}
+.cat{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);display:flex;align-items:center;gap:6px;transition:all .25s}
+.cat i{width:8px;height:8px;border-radius:50%;background:var(--c);opacity:.3}
+.cat.inproj{color:var(--ink)} .cat.inproj i{opacity:.65}
+.cat.seen i{opacity:1;box-shadow:0 0 0 3px color-mix(in srgb, var(--c) 25%, transparent)}
 .cat.now{border-color:var(--c);box-shadow:0 0 0 1px var(--c) inset;color:var(--ink)}
+.cat.off{opacity:.35}
 
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;min-width:0}
 .ptitle{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 14px 8px;margin:0;font-weight:500}
 
-aside.lessons{grid-row:2/4;display:flex;flex-direction:column;overflow:auto}
-.lesson{border-top:1px solid var(--line)}
-.lesson>button{all:unset;cursor:pointer;display:block;width:100%;padding:10px 14px;box-sizing:border-box}
-.lesson>button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.lesson .ln{font-weight:700} .lesson .ls{font-size:12px;color:var(--muted)}
-.lesson.on>button{background:var(--accent-soft)}
-.lesson.on .ln{color:var(--accent)}
-ol.steps{list-style:none;margin:0;padding:4px 10px 12px}
-ol.steps li button{all:unset;cursor:pointer;display:grid;grid-template-columns:22px 1fr;gap:8px;padding:5px 6px;border-radius:6px;width:100%;box-sizing:border-box}
+aside.projects{grid-row:2/5;display:flex;flex-direction:column;overflow:auto}
+.proj{border-top:1px solid var(--line)}
+.proj>button.ph{all:unset;cursor:pointer;display:grid;grid-template-columns:28px 1fr;gap:10px;width:100%;padding:12px 14px;box-sizing:border-box}
+.proj>button.ph:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.proj>button.ph:hover{background:var(--bg)}
+.pnum{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:700;background:var(--bg);border:1px solid var(--line)}
+.proj.on .pnum{background:var(--accent);border-color:var(--accent);color:#fff}
+.pn{font-weight:800;line-height:1.25} .ps{font-size:12px;color:var(--muted);line-height:1.35;margin-top:2px}
+.pmeta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-family:var(--mono);font-size:10.5px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.chip.live{border-color:var(--good);color:var(--good)}
+.chip.plan{border-color:var(--accent);color:var(--accent)}
+.chip.lvl{border-color:#7c5cff;color:#7c5cff}
+.proj.on{background:linear-gradient(90deg,var(--accent-soft),transparent 70%)}
+.lessontabs{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 8px 52px}
+.ltab{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
+.ltab.on{border-color:var(--accent);color:var(--accent);font-weight:700}
+ol.steps{list-style:none;margin:0;padding:0 10px 12px 44px}
+ol.steps li button{all:unset;cursor:pointer;display:grid;grid-template-columns:20px 1fr;gap:8px;padding:4px 6px;border-radius:6px;width:100%;box-sizing:border-box}
 ol.steps li button:hover{background:var(--bg)}
 ol.steps li button:focus-visible{outline:2px solid var(--accent)}
-.dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);font-family:var(--mono);font-size:10px;display:grid;place-items:center;color:var(--muted)}
+.dot{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line);font-family:var(--mono);font-size:9.5px;display:grid;place-items:center;color:var(--muted);margin-top:1px}
 .done .dot{background:var(--good);border-color:var(--good);color:#fff}
 .cur .dot{background:var(--accent);border-color:var(--accent);color:#fff}
 .err .dot{background:var(--bad);border-color:var(--bad);color:#fff}
-.st{font-size:12.5px;font-weight:700;line-height:1.3} .ss{font-size:11.5px;color:var(--muted);line-height:1.3}
+.st{font-size:12.5px;font-weight:700;line-height:1.3}
 .cur .st{color:var(--accent)}
 
-.stage{position:relative;display:flex;flex-direction:column;overflow:hidden}
-.stage svg{width:100%;height:auto;display:block;flex:1;min-height:300px}
-.legend{font-size:11.5px;color:var(--muted);padding:0 14px 10px}
+main.stage{grid-column:2;grid-row:2;position:relative;display:flex;flex-direction:column;overflow:hidden;background:var(--stage);border-color:var(--stage-line);color:var(--stage-ink)}
+.hud{position:absolute;top:12px;left:14px;right:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;pointer-events:none;z-index:2}
+.hud .ttl{font-weight:800;font-size:15px;margin-right:auto;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.hud .ttl small{display:block;font-family:var(--mono);font-weight:400;font-size:11px;color:var(--stage-muted)}
+.hchip{font-family:var(--mono);font-size:11px;padding:4px 9px;border-radius:7px;background:rgba(17,26,46,.85);border:1px solid var(--stage-line);color:var(--stage-muted)}
+.hchip b{color:var(--stage-ink);font-weight:700}
+.stage svg{width:100%;height:auto;display:block;flex:1;min-height:340px}
+.progress{height:3px;background:var(--stage-line)} .progress i{display:block;height:100%;width:0;background:var(--glow);transition:width .4s ease;box-shadow:0 0 10px var(--glow)}
+.legend{font-size:11.5px;color:var(--stage-muted);padding:8px 14px 10px;display:flex;flex-wrap:wrap;gap:4px 16px}
 
-.node rect.box{fill:var(--panel);stroke:var(--line);stroke-width:1.2;transition:stroke .2s}
-.node rect.stripe{opacity:.9}
-.node text.nm{fill:var(--ink);font-family:var(--display);font-weight:700;font-size:14px}
-.node text.sb{fill:var(--muted);font-family:var(--mono);font-size:10.5px}
-.node.act rect.box{stroke:var(--accent);stroke-width:2.4}
-.node.used rect.box{stroke:var(--muted)}
-.node.idle{opacity:.38}
-.edge{fill:none;stroke:var(--line);stroke-width:1.6}
-.edge.done{stroke:var(--muted);stroke-width:1.6;opacity:.7}
-.edge.act{stroke:var(--accent);stroke-width:2.4;stroke-dasharray:7 6;animation:flow .8s linear infinite}
-@keyframes flow{to{stroke-dashoffset:-26}}
-@media (prefers-reduced-motion:reduce){.edge.act{animation:none}}
-.tag rect{fill:var(--accent)}
-.tag.bad rect{fill:var(--bad)}
-.tag text{fill:#fff;font-family:var(--mono);font-size:12px;font-weight:700}
+.node .box{fill:var(--stage-2);stroke:var(--stage-line);stroke-width:1.2;transition:stroke .25s, fill .25s}
+.node .nm{fill:var(--stage-ink);font-family:var(--display);font-weight:700;font-size:14px}
+.node .sb{fill:var(--stage-muted);font-family:var(--mono);font-size:10.5px}
+.node .halo{fill:none;stroke:var(--glow);stroke-width:2;opacity:0}
+.node.act .box{stroke:var(--glow);stroke-width:2.2;fill:#1a2440}
+.node.act .halo{animation:halo 1.4s ease-out infinite}
+.node.used .box{stroke:#3a4b6b}
+.node.idle{opacity:.22}
+@keyframes halo{0%{opacity:.85;transform:scale(1)}100%{opacity:0;transform:scale(1.25)}}
+.node .halo{transform-box:fill-box;transform-origin:center}
+.edge{fill:none;stroke:var(--stage-line);stroke-width:1.5}
+.edge.done{stroke:#40557a;stroke-width:1.8}
+.edge.act{stroke:var(--glow);stroke-width:2.6}
+.edge.act.bad{stroke:var(--glow-bad)}
+.edgeglow{fill:none;stroke:var(--glow);stroke-width:9;opacity:.22;filter:url(#blur)}
+.edgeglow.bad{stroke:var(--glow-bad)}
+.amb{fill:#5b78a8}
+.comet circle{fill:var(--glow)} .comet.bad circle{fill:var(--glow-bad)}
+.tag rect{fill:var(--glow)} .tag.bad rect{fill:var(--glow-bad)}
+.tag text{fill:#1b1004;font-family:var(--mono);font-size:12px;font-weight:700}
+.tag.bad text{fill:#fff}
+@media (prefers-reduced-motion:reduce){ .node.act .halo{animation:none} }
 
-aside.detail{display:flex;flex-direction:column;overflow:auto}
+aside.detail{grid-column:3;grid-row:2;display:flex;flex-direction:column;overflow:auto}
 .dbody{padding:0 16px 16px}
 .kicker{font-family:var(--mono);font-size:11px;color:var(--muted)}
 .dbody h2{font-size:20px;margin:2px 0 0;line-height:1.2;text-wrap:balance;font-weight:800}
+.dbody h3{font-size:12px;font-family:var(--mono);font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:14px 0 6px}
 .dbody .sub{color:var(--muted);margin:2px 0 10px}
-.dbody p{margin:0 0 12px;max-width:65ch}
+.dbody p{margin:0 0 10px;max-width:65ch}
+.quote{border-left:3px solid var(--accent);padding:6px 10px;background:var(--accent-soft);font-size:13px;margin:10px 0}
 .pills{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
-.pill{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid var(--c, var(--line));}
+.pill{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid var(--c, var(--line))}
 .pill b{font-weight:700}
+.pill.dim{opacity:.35}
 .facts{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px}
 .facts dt{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding-top:1px}
 .facts dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:4px 0 6px;background:var(--line)}
+.bar span{background:var(--c)}
+.barkey{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--muted)}
+.barkey i{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--c);margin-right:5px}
+.svcs{display:flex;flex-wrap:wrap;gap:5px}
+.svc{font-size:11.5px;padding:2px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--line)}
 .note{font-size:11.5px;color:var(--muted);margin-top:12px}
 
-section.log{grid-column:2/4;display:flex;flex-direction:column;min-height:0}
+section.log{grid-column:2/4;grid-row:3;display:flex;flex-direction:column;min-height:0}
 .logbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line)}
 .logbar .ptitle{padding:0;margin-right:auto}
 .ctl{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 12px;cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:500}
@@ -99,10 +135,7 @@ section.log{grid-column:2/4;display:flex;flex-direction:column;min-height:0}
 .ctl:disabled{opacity:.4;cursor:default}
 select.ctl{padding:5px 8px}
 .lbl{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.edge.act.bad{stroke:var(--bad)}
-.brand a{font-size:12px;color:var(--accent);text-decoration:none}
-.brand a:hover{text-decoration:underline}
-.tablewrap{overflow:auto;max-height:240px}
+.tablewrap{overflow:auto;max-height:230px}
 table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums}
 th{text-align:left;color:var(--muted);font-weight:500;padding:6px 10px;position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line)}
 td{padding:5px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -110,19 +143,22 @@ tr.cur td{background:var(--accent-soft)}
 tr.bad td.act{color:var(--bad)}
 td .sw{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--c);margin-right:6px}
 .empty td{color:var(--muted)}
-footer{grid-column:1/-1;font-size:11.5px;color:var(--muted);text-align:center;padding:2px 0 4px}
+footer{grid-column:2/4;grid-row:4;font-size:11.5px;color:var(--muted);text-align:center;padding:0 0 4px}
 footer a{color:inherit}
 
-@media (max-width:1100px){
-  .app{grid-template-columns:240px minmax(0,1fr)}
-  aside.detail{grid-column:2}
-  section.log{grid-column:1/-1}
-  aside.lessons{grid-row:auto}
+@media (max-width:1180px){
+  .app{grid-template-columns:260px minmax(0,1fr)}
+  aside.projects{grid-row:2/4}
+  main.stage{grid-column:2;grid-row:2}
+  aside.detail{grid-column:2;grid-row:3}
+  section.log{grid-column:1/-1;grid-row:4}
+  footer{grid-column:1/-1;grid-row:5}
 }
-@media (max-width:720px){
+@media (max-width:760px){
   .app{grid-template-columns:1fr}
-  aside.detail,section.log,aside.lessons{grid-column:1}
+  aside.detail,section.log,aside.projects,footer,main.stage{grid-column:1;grid-row:auto}
   .cats{justify-content:flex-start}
+  .hud .hchip{display:none}
 }
 </style>
 </head>
@@ -131,24 +167,30 @@ footer a{color:inherit}
   <header>
     <div class="brand">
       <h1>Cloud Request Explorer</h1>
-      <p>Watch one invoice travel through AWS, service by service · <a href="../">AWS City Map</a> · <a href="../atlas/">Architecture Atlas</a></p>
+      <p>Raul's AWS portfolio, animated: pick a project and watch every request move between services</p>
     </div>
-    <div class="cats" id="cats" aria-label="AWS categories touched"></div>
+    <div class="cats" id="cats" aria-label="AWS categories in this project"></div>
   </header>
 
-  <aside class="panel lessons" aria-label="Lessons">
-    <h2 class="ptitle">Lessons</h2>
-    <div id="lessons"></div>
+  <aside class="panel projects" aria-label="Portfolio projects">
+    <h2 class="ptitle">Portfolio projects</h2>
+    <div id="projects"></div>
   </aside>
 
   <main class="panel stage">
-    <h2 class="ptitle">InvoiceIQ architecture · live</h2>
-    <svg id="scene" viewBox="0 0 1000 580" role="img" aria-label="InvoiceIQ AWS services with the current request moving between them"></svg>
-    <div class="legend">The orange tag is the request in flight. Faded services are not used in this lesson.</div>
+    <div class="hud" aria-live="polite">
+      <div class="ttl" id="hudTitle"></div>
+      <span class="hchip">step <b id="hudStep">–</b></span>
+      <span class="hchip">t+ <b id="hudTime">0.000 s</b></span>
+      <span class="hchip">services <b id="hudSvc">0</b></span>
+    </div>
+    <svg id="scene" viewBox="0 0 1000 600" role="img" aria-label="The selected project's AWS services with the current request moving between them"></svg>
+    <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+    <div class="legend"><span>Glowing path: the request in flight</span><span>Red: something failed or was blocked</span><span>Faded: not used in this lesson</span></div>
   </main>
 
   <aside class="panel detail" aria-live="polite">
-    <h2 class="ptitle" id="dtitle">Lesson overview</h2>
+    <h2 class="ptitle" id="dtitle">Project</h2>
     <div class="dbody" id="detail"></div>
   </aside>
 
@@ -176,23 +218,34 @@ footer a{color:inherit}
     </div>
   </section>
 
-  <footer>Built by rmctech-ai as a portfolio project. Teaching pattern inspired by <a href="https://protocol-explorer-alpha.vercel.app/">Protocol Explorer</a> by Dilum Sanjaya. Numbers are illustrative.</footer>
+  <footer>Built by rmctech-ai. Teaching pattern inspired by <a href="https://protocol-explorer-alpha.vercel.app/">Protocol Explorer</a> by Dilum Sanjaya. Projects 2–6 are based on the five projects in AI With Soleyman's “5 AWS Projects To Get You Hired (2026)”; the designs here are my own. All numbers are illustrative.</footer>
 </div>
 
 <script>
 const CATS = {
-  net:{label:"Networking", full:"Networking & content delivery", c:"#3b82c4"},
-  sec:{label:"Security", full:"Security, identity & compliance", c:"#c0392b"},
-  svl:{label:"Serverless", full:"Serverless", c:"#d9730d"},
-  sto:{label:"Storage", full:"Storage", c:"#2e9d5b"},
-  int:{label:"Integration", full:"Application integration", c:"#b0418f"},
-  ml:{label:"AI / ML", full:"Machine learning", c:"#14998f"},
-  db:{label:"Database", full:"Database", c:"#5b5fc7"},
-  mgmt:{label:"Management", full:"Management & governance", c:"#8a7a1e"},
-  client:{label:"Client", full:"Outside AWS", c:"#8b97a8"}
+  net:{label:"Networking", full:"Networking & content delivery", c:"#4ea1ff"},
+  sec:{label:"Security", full:"Security, identity & compliance", c:"#ff6b6b"},
+  svl:{label:"Serverless", full:"Serverless", c:"#ffa94d"},
+  sto:{label:"Storage", full:"Storage", c:"#51cf66"},
+  int:{label:"Integration", full:"Application integration", c:"#da77f2"},
+  ml:{label:"AI / ML", full:"Machine learning", c:"#22d3c5"},
+  db:{label:"Database", full:"Database", c:"#8c8cff"},
+  ana:{label:"Analytics", full:"Analytics", c:"#a9e34b"},
+  cmp:{label:"Compute", full:"Compute", c:"#ffd8a8"},
+  biz:{label:"Business apps", full:"Business applications", c:"#e9ecef"},
+  mgmt:{label:"Management", full:"Management & governance", c:"#e6c34a"},
+  fin:{label:"Cost mgmt", full:"Cloud financial management", c:"#ff8fab"},
+  client:{label:"Client", full:"Outside AWS", c:"#94a3b8"}
 };
+const PILLARS = ["Operational Excellence","Security","Reliability","Performance Efficiency","Cost Optimization","Sustainability"];
 
-const NODES = {
+const PROJECTS = [
+{
+  id:"invoiceiq", num:1, name:"InvoiceIQ", tagline:"Serverless AI invoice processing", status:"Prototype", cost:"~US$0.01 per invoice",
+  problem:"Finance teams spend 5–10 minutes typing each invoice into a spreadsheet, make errors, and nobody is alerted when a big bill arrives.",
+  solution:"Upload a PDF; Textract reads it, Claude on Bedrock turns it into clean JSON, DynamoDB stores it and SNS emails finance. A queue and a dead-letter queue make sure nothing is lost.",
+  pitch:"InvoiceIQ uses services from nine AWS categories, each with one job, and I can show it failing safely, not just working.",
+  nodes: {
   user:{n:"Finance user", cat:"client", x:90, y:80},
   cloudfront:{n:"CloudFront", cat:"net", x:300, y:80},
   cognito:{n:"Cognito", cat:"sec", x:510, y:80},
@@ -206,12 +259,10 @@ const NODES = {
   bedrock:{n:"Bedrock", cat:"ml", x:620, y:420},
   dynamo:{n:"DynamoDB", cat:"db", x:810, y:420},
   sns:{n:"SNS topic", cat:"int", x:930, y:330},
-  inbox:{n:"Finance inbox", cat:"client", x:930, y:490},
+  inbox:{n:"Finance mail", cat:"client", x:930, y:490},
   cloudwatch:{n:"CloudWatch", cat:"mgmt", x:90, y:490}
-};
-const W = 124, H = 56;
-
-const LESSONS = [
+},
+  lessons: [
 {
   id:"happy", name:"InvoiceIQ: one invoice, start to finish", short:"The happy path through 13 services",
   intro:"A finance user uploads one PDF invoice. Follow it through the front door, into an encrypted bucket, through a queue, past two AI services, into a database, and out as an email. Each step names the AWS category and the Well-Architected pillar it serves.",
@@ -356,93 +407,726 @@ const LESSONS = [
     body:"The password never crossed the network, a second factor was required, an anonymous request was stopped before any code ran, and the session renewed without bothering the user. That is the Security pillar in four moves.",
     extra:[["Passwords in your code","None"],["Requests blocked before compute","1"]]}
 }
+]
+},
+{
+  id:"cost-calculator", num:2, name:"Cloud Cost Calculator", tagline:"Cost tracking & alert system", status:"Planned", cost:"~US$0.10 / month",
+  problem:"Cloud bills surprise people: a forgotten instance or a misconfigured service can run for weeks before anyone looks at the bill.",
+  solution:"EventBridge runs a Lambda every morning that pulls yesterday's costs from Cost Explorer, publishes them as CloudWatch metrics with tiered alarms, and writes a dashboard file to S3 for managers.",
+  pitch:"I built FinOps into my account: every morning a Lambda checks spend by service, and tiered alarms tell me about a spike the next day, not at month end.",
+  nodes:{
+    eventbridge:{n:"EventBridge", cat:"int", x:90, y:140},
+    costfn:{n:"Cost λ", cat:"svl", x:300, y:140},
+    ce:{n:"Cost Explorer", cat:"fin", x:540, y:140},
+    cloudwatch:{n:"CloudWatch", cat:"mgmt", x:300, y:330},
+    s3dash:{n:"S3 dashboard", cat:"sto", x:540, y:330},
+    viewer:{n:"Manager", cat:"client", x:800, y:330},
+    sns:{n:"SNS topic", cat:"int", x:300, y:510},
+    email:{n:"FinOps inbox", cat:"client", x:90, y:510}
+  },
+  lessons:[
+  { name:"The daily report", short:"Schedule, fetch, publish",
+    intro:"Every morning at 8:00 Philippine time, a schedule wakes a Lambda that pulls yesterday's costs, records them as metrics, and refreshes a dashboard.",
+    steps:[
+      {f:"eventbridge",t:"costfn",tag:"cron 08:00 PHT",title:"The schedule fires",sub:"No server waits around",cat:"int",pillar:"Cost Optimization",ms:5,
+       body:"An EventBridge Scheduler rule runs every day at 00:00 UTC (08:00 in the Philippines) and invokes the Cost Lambda.",
+       facts:[["Schedule","cron(0 0 * * ? *)"],["Local time","08:00 PHT"]],log:["EventBridge","scheduled invoke","0.3 KB"]},
+      {f:"costfn",t:"ce",tag:"GetCostAndUsage",title:"Ask for yesterday's costs",sub:"Grouped by service",cat:"fin",pillar:"Cost Optimization",ms:900,
+       body:"The Lambda calls the Cost Explorer API for yesterday's unblended cost grouped by service. Its IAM role can only read cost data.",
+       facts:[["Granularity","DAILY"],["Group by","SERVICE"],["API price","US$0.01 per request"]],log:["Cost Explorer","GetCostAndUsage (1 day)","0.6 KB"]},
+      {f:"ce",t:"costfn",tag:"US$4.12 total",title:"Costs come back",sub:"Top services listed",cat:"fin",pillar:"Cost Optimization",ms:15,
+       body:"Cost Explorer returns yesterday's spend. Nothing unusual today.",
+       facts:[["Total","US$4.12"],["Top","EC2 US$2.10, S3 US$0.84"],["vs 7-day avg","+3%"]],log:["Cost Explorer","200 · 14 services","9.4 KB"]},
+      {f:"costfn",t:"cloudwatch",tag:"DailySpend = 4.12",title:"Record as a metric",sub:"One metric per service",cat:"mgmt",pillar:"Operational Excellence",ms:30,
+       body:"The Lambda publishes the total and per-service spend as custom CloudWatch metrics, so spend can be graphed and alarmed like any other metric.",
+       facts:[["Namespace","CostWatch"],["Alarms","US$5 / US$15 / US$30"]],log:["CloudWatch","PutMetricData DailySpend=4.12","0.4 KB"]},
+      {f:"costfn",t:"s3dash",tag:"dashboard.json",title:"Refresh the dashboard",sub:"A static page reads this file",cat:"sto",pillar:"Cost Optimization",ms:45,
+       body:"The Lambda writes the last 30 days to dashboard.json in an S3 bucket that hosts a small static dashboard page.",
+       facts:[["File","dashboard.json, 30 days"],["Hosting","S3 static website"]],log:["S3","PUT dashboard.json","12 KB"]},
+      {f:"viewer",t:"s3dash",tag:"open dashboard",title:"A manager checks it",sub:"No console access needed",cat:"client",pillar:"Operational Excellence",ms:2000,
+       body:"A manager opens the dashboard link. They see spend without needing AWS console access or billing permissions.",
+       facts:[["Access","Read-only page"],["Console access","Not needed"]],log:["S3","GET index.html + dashboard.json","26 KB"]},
+      {f:"s3dash",t:"viewer",tag:"30-day chart",title:"Spend at a glance",sub:"Trend and top services",cat:"sto",pillar:"Cost Optimization",ms:40,
+       body:"The page draws the 30-day trend and the top five services, so a slow creep is as visible as a spike.",
+       facts:[["30-day total","US$118.40"],["Trend","Flat"]],log:["S3","200 · dashboard","26 KB"]}
+    ],
+    summary:{title:"Spend checked", sub:"Every morning, automatically",
+      body:"Yesterday's spend was fetched, recorded as metrics and published to a dashboard without anyone logging in. The whole system costs pennies a month.",
+      extra:[["Runs per month","30"],["Est. cost","~US$0.10 / month"]]}
+  },
+  { name:"A cost spike", short:"Tiered alarm fires",
+    intro:"Someone left a large EC2 instance running. Watch the next morning's run catch it and alert the FinOps inbox, weeks before the monthly bill.",
+    steps:[
+      {f:"eventbridge",t:"costfn",tag:"cron 08:00 PHT",title:"The schedule fires",sub:"Same as every day",cat:"int",pillar:"Cost Optimization",ms:5,
+       body:"The daily run starts as usual.",
+       facts:[["Schedule","cron(0 0 * * ? *)"]],log:["EventBridge","scheduled invoke","0.3 KB"]},
+      {f:"costfn",t:"ce",tag:"GetCostAndUsage",title:"Ask for yesterday's costs",sub:"Grouped by service",cat:"fin",pillar:"Cost Optimization",ms:900,
+       body:"The Lambda asks Cost Explorer for yesterday's spend.",
+       facts:[["Group by","SERVICE"]],log:["Cost Explorer","GetCostAndUsage (1 day)","0.6 KB"]},
+      {f:"ce",t:"costfn",tag:"EC2 +380%",bad:true,title:"Something jumped",sub:"EC2 spend nearly 5× normal",cat:"fin",pillar:"Cost Optimization",ms:15,
+       body:"Yesterday's EC2 cost is almost five times its 7-day average. A large instance was launched for a test and never stopped.",
+       facts:[["Total","US$18.40"],["EC2","US$12.60 (avg US$2.60)"]],log:["Cost Explorer","200 · EC2 anomaly","9.6 KB"]},
+      {f:"costfn",t:"cloudwatch",tag:"DailySpend = 18.40",bad:true,title:"The metric crosses tier 2",sub:"Above the US$15 line",cat:"mgmt",pillar:"Operational Excellence",ms:30,
+       body:"The new data point is above the US$15 tier-2 threshold.",
+       facts:[["Tier 1","US$5 (warning)"],["Tier 2","US$15 (action)"],["Tier 3","US$30 (page someone)"]],log:["CloudWatch","PutMetricData DailySpend=18.40","0.4 KB"]},
+      {f:"cloudwatch",t:"sns",tag:"ALARM tier 2",bad:true,title:"The alarm fires",sub:"CloudWatch notifies SNS",cat:"mgmt",pillar:"Cost Optimization",ms:60000,
+       body:"The tier-2 alarm switches to ALARM and publishes to the FinOps SNS topic.",
+       facts:[["Alarm","daily-spend-tier2"],["State","OK → ALARM"]],log:["CloudWatch","alarm → SNS","0.5 KB"]},
+      {f:"sns",t:"email",tag:"Spend spike: EC2",bad:true,title:"FinOps is told the same morning",sub:"Days of cost saved",cat:"int",pillar:"Cost Optimization",ms:900,
+       body:"The email names the service and the jump. Someone stops the instance before lunch instead of finding it on next month's bill.",
+       facts:[["Caught after","1 day"],["Without it","Up to 30 days"],["Saved","~US$290 this month"]],log:["SNS","Email to finops@","1.6 KB"]}
+    ],
+    summary:{title:"Spike caught", sub:"The next morning, not at month end",
+      body:"A forgotten instance was spotted from yesterday's numbers, and the right people were told by email. That's the Cost Optimization pillar as a habit.",
+      extra:[["Days of waste","1 instead of 30"]]}
+  }]
+},
+{
+  id:"backup", num:3, name:"Automatic Backup System", tagline:"Scheduled, encrypted, cross-region backups", status:"Planned", cost:"~US$3–8 / month for a small business",
+  problem:"A small business keeps orders on an RDS database and files on EC2. Backups are manual, often forgotten, and one accidental delete or ransomware attack could wipe out years of records.",
+  solution:"An AWS Backup plan snapshots every resource tagged backup=daily each night, encrypts the copies with a KMS key in a locked vault, copies them to a second region, and reports every job through EventBridge and SNS.",
+  pitch:"I don't back up servers by hand: a tag puts a resource in the plan, the vault is locked against deletion, and I've tested a restore.",
+  nodes:{
+    ec2:{n:"EC2 + EBS", cat:"cmp", x:90, y:150},
+    rds:{n:"RDS database", cat:"db", x:90, y:350},
+    plan:{n:"Backup plan", cat:"sto", x:320, y:250},
+    kms:{n:"KMS key", cat:"sec", x:560, y:80},
+    vault:{n:"Backup vault", cat:"sto", x:560, y:250},
+    dr:{n:"Tokyo vault", cat:"sto", x:820, y:250},
+    eventbridge:{n:"EventBridge", cat:"int", x:560, y:480},
+    sns:{n:"SNS topic", cat:"int", x:320, y:480},
+    admin:{n:"Admin", cat:"client", x:90, y:520}
+  },
+  lessons:[
+  { name:"The nightly backup", short:"Snapshot, encrypt, copy, report",
+    intro:"At 1:00 AM Philippine time, AWS Backup finds every resource tagged backup=daily, snapshots it, encrypts the copy in a locked vault, sends a second copy to Tokyo, and reports the result.",
+    steps:[
+      {f:"plan",t:"ec2",tag:"start job (tag match)",title:"The plan wakes up",sub:"Resources chosen by tag",cat:"sto",pillar:"Operational Excellence",ms:5,
+       body:"The backup plan's rule runs at 17:00 UTC (1:00 AM PHT). It picks resources by the tag backup=daily, so a new server is protected the moment someone tags it.",
+       facts:[["Schedule","cron(0 17 * * ? *)"],["Selection","Tag backup=daily"],["Region","ap-southeast-1 (Singapore)"]],log:["AWS Backup","StartBackupJob (EC2)","0.4 KB"]},
+      {f:"ec2",t:"vault",tag:"EBS snapshot",title:"Snapshot the server",sub:"Incremental: only changed blocks",cat:"cmp",pillar:"Cost Optimization",ms:420000,
+       body:"AWS Backup snapshots the server's EBS volume. After the first full copy, snapshots are incremental, so each night only the blocks that changed are stored and billed.",
+       facts:[["Volume","100 GB gp3"],["Changed tonight","2.4 GB"],["Downtime","None"]],log:["AWS Backup","EBS snapshot completed","2.4 GB"]},
+      {f:"kms",t:"vault",tag:"encrypt (CMK)",title:"Encrypted with your key",sub:"KMS protects every recovery point",cat:"sec",pillar:"Security",ms:20,
+       body:"Recovery points in the vault are encrypted with a customer-managed KMS key. Only roles allowed by the key policy can decrypt and restore them.",
+       facts:[["Key","alias/backup-vault"],["Rotation","Automatic, yearly"]],log:["KMS","GenerateDataKey for vault","0.3 KB"]},
+      {f:"plan",t:"rds",tag:"start job",title:"Back up the database",sub:"Same plan, same tag",cat:"sto",pillar:"Reliability",ms:5,
+       body:"The same rule starts a backup job for the RDS database, which carries the same tag.",
+       facts:[["Engine","PostgreSQL 16"],["Size","40 GB"]],log:["AWS Backup","StartBackupJob (RDS)","0.4 KB"]},
+      {f:"rds",t:"vault",tag:"RDS snapshot",title:"Snapshot the database",sub:"A consistent point in time",cat:"db",pillar:"Reliability",ms:600000,
+       body:"RDS takes a snapshot of the database and AWS Backup stores it as a recovery point. That sets the recovery point objective: at most 24 hours of data could be lost.",
+       facts:[["RPO","24 h"],["Retention","35 days"]],log:["AWS Backup","RDS snapshot completed","40 GB"]},
+      {f:"vault",t:"dr",tag:"cross-region copy",title:"Copy to another region",sub:"Survives a regional outage",cat:"sto",pillar:"Reliability",ms:1500000,
+       body:"A copy rule sends each recovery point to a vault in Tokyo. If the Singapore region had a major outage, the business could still restore from Tokyo.",
+       facts:[["Destination","ap-northeast-1 (Tokyo)"],["Copy retention","35 days"]],log:["AWS Backup","CopyJob → Tokyo vault","42 GB"]},
+      {f:"vault",t:"eventbridge",tag:"job COMPLETED",title:"Report the result",sub:"Every job emits an event",cat:"int",pillar:"Operational Excellence",ms:30,
+       body:"AWS Backup sends each job's state change to EventBridge. A rule matches COMPLETED and FAILED states and forwards them to SNS.",
+       facts:[["Rule","source aws.backup, state change"],["Matches","COMPLETED, FAILED"]],log:["EventBridge","Backup Job State Change","1.2 KB"]},
+      {f:"eventbridge",t:"sns",tag:"forward",title:"Hand off to SNS",sub:"One topic for backup news",cat:"int",pillar:"Operational Excellence",ms:20,
+       body:"EventBridge publishes the result to the backup-alerts SNS topic.",
+       facts:[["Topic","backup-alerts"]],log:["SNS","Publish backup-alerts","1.0 KB"]},
+      {f:"sns",t:"admin",tag:"All 2 jobs OK",title:"The admin sees a green report",sub:"Proof the backups ran",cat:"int",pillar:"Operational Excellence",ms:900,
+       body:"The admin's morning email confirms both jobs succeeded and were copied to Tokyo. A FAILED job would arrive the same way, in minutes.",
+       facts:[["Jobs","2 completed, 0 failed"],["Copies","2 in Tokyo"]],log:["SNS","Email to admin@","1.4 KB"]}
+    ],
+    summary:{title:"Backups done", sub:"Encrypted, copied, reported",
+      body:"Every tagged resource was backed up without anyone logging in, encrypted with the business's own key, copied to a second region and reported by email.",
+      extra:[["RPO","24 hours"],["Regions","2"]]}
+  },
+  { name:"Restore after a mistake", short:"A dropped table, recovered",
+    intro:"Someone accidentally drops the orders table. Watch the admin restore last night's recovery point to a new database, with the locked vault protecting the backups the whole time.",
+    steps:[
+      {f:"admin",t:"rds",tag:"DROP TABLE orders",bad:true,title:"A costly mistake",sub:"The orders table is gone",cat:"db",pillar:"Reliability",ms:10,
+       body:"At 10:40 AM a script meant for the test database runs against production and drops the orders table.",
+       facts:[["Lost","orders table"],["Noticed","10:52 AM"]],log:["RDS","DROP TABLE orders","0.1 KB"]},
+      {f:"admin",t:"vault",tag:"StartRestoreJob",title:"Choose a recovery point",sub:"Last night, 1:00 AM",cat:"sto",pillar:"Reliability",ms:60000,
+       body:"The admin opens the backup vault, picks last night's recovery point and starts a restore to a new database instance, so the damaged one is kept for investigation.",
+       facts:[["Recovery point","Today 01:00 PHT"],["Restore to","New instance orders-restore"]],log:["AWS Backup","StartRestoreJob (RDS)","0.6 KB"]},
+      {f:"kms",t:"vault",tag:"decrypt allowed",title:"The key policy allows it",sub:"Only the restore role can decrypt",cat:"sec",pillar:"Security",ms:20,
+       body:"KMS checks that the admin's restore role is allowed to use the key. A stolen developer account would be refused here.",
+       facts:[["Allowed role","BackupRestoreRole"],["Logged in","CloudTrail"]],log:["KMS","Decrypt (allowed)","0.3 KB"]},
+      {f:"vault",t:"rds",tag:"restore → new DB",title:"Restore the database",sub:"From the recovery point",cat:"sto",pillar:"Reliability",ms:1080000,
+       body:"AWS Backup restores the snapshot to a new RDS instance. The team copies the orders table back and re-enters the ten orders taken since 1:00 AM.",
+       facts:[["Restore time","~18 minutes"],["RTO target","1 hour"]],log:["AWS Backup","restore completed","40 GB"]},
+      {f:"vault",t:"eventbridge",tag:"restore COMPLETED",title:"The restore reports in",sub:"Same event pipeline",cat:"int",pillar:"Operational Excellence",ms:30,
+       body:"The finished restore emits an event, just like a backup job.",
+       facts:[["Event","Restore Job State Change"]],log:["EventBridge","Restore Job State Change","1.1 KB"]},
+      {f:"eventbridge",t:"sns",tag:"forward",title:"Forward to SNS",sub:"The team is told",cat:"int",pillar:"Operational Excellence",ms:20,
+       body:"EventBridge sends the result to the backup-alerts topic.",
+       facts:[["Topic","backup-alerts"]],log:["SNS","Publish backup-alerts","0.9 KB"]},
+      {f:"sns",t:"admin",tag:"Restored in 18 min",title:"Back in business",sub:"Before lunch",cat:"int",pillar:"Reliability",ms:900,
+       body:"The team gets confirmation that the restore finished. The backups themselves were never at risk: the vault uses Vault Lock, so no one, not even an admin, can delete recovery points early.",
+       facts:[["Vault Lock","Compliance mode (WORM)"],["Data lost","~10 orders, re-entered"]],log:["SNS","Email to admin@","1.2 KB"]}
+    ],
+    summary:{title:"Recovered", sub:"18 minutes from mistake to restore",
+      body:"A dropped table was recovered from last night's encrypted backup to a new database, and the locked vault meant the backups could not have been deleted by mistake or by an attacker.",
+      extra:[["RTO achieved","~18 min"],["Backups deletable early","No (Vault Lock)"]]}
+  }]
+},
+{
+  id:"uptime", num:4, name:"Website Uptime Monitor", tagline:"Checks a site every minute, texts when it's down", status:"Planned", cost:"~US$1 / month",
+  problem:"A shop owner only finds out the website is down when a customer complains, sometimes hours later, losing sales the whole time.",
+  solution:"EventBridge runs a Lambda every minute that requests the site, records status and response time in CloudWatch and DynamoDB, updates a public status page on S3, and raises an alarm that texts the owner after three failed checks.",
+  pitch:"My monitor checks the site every minute and texts the owner after three failures, so they know before their customers do.",
+  nodes:{
+    eventbridge:{n:"EventBridge", cat:"int", x:90, y:130},
+    check:{n:"Check λ", cat:"svl", x:300, y:130},
+    site:{n:"Shop website", cat:"client", x:560, y:130},
+    viewer:{n:"Customer", cat:"client", x:810, y:130},
+    cloudwatch:{n:"CloudWatch", cat:"mgmt", x:300, y:330},
+    dynamo:{n:"DynamoDB", cat:"db", x:560, y:330},
+    status:{n:"Status page", cat:"sto", x:810, y:330},
+    sns:{n:"SNS topic", cat:"int", x:300, y:510},
+    owner:{n:"Owner phone", cat:"client", x:90, y:510}
+  },
+  lessons:[
+  { name:"A healthy check", short:"Ping, record, publish",
+    intro:"Every minute, a scheduled Lambda requests the shop's website, measures how long it takes, and records the result as a metric, a history row and a public status page.",
+    steps:[
+      {f:"eventbridge",t:"check",tag:"rate(1 minute)",title:"The schedule fires",sub:"1,440 checks a day",cat:"int",pillar:"Operational Excellence",ms:5,
+       body:"An EventBridge Scheduler rule invokes the Check Lambda once a minute. No server runs between checks.",
+       facts:[["Schedule","rate(1 minute)"],["Checks / month","~43,200"]],log:["EventBridge","scheduled invoke","0.3 KB"]},
+      {f:"check",t:"site",tag:"GET / (timeout 5 s)",title:"Request the site",sub:"Like a real visitor would",cat:"svl",pillar:"Reliability",ms:20,
+       body:"The Lambda requests the homepage with a 5-second timeout and checks that the page contains the shop's name, so a blank error page doesn't count as up.",
+       facts:[["URL","https://shop.example.ph/"],["Must contain","'Lasam Hardware'"],["Timeout","5 s"]],log:["Lambda","GET https://shop.example.ph/","0.4 KB"]},
+      {f:"site",t:"check",tag:"200 in 340 ms",title:"The site answers",sub:"Up and fast",cat:"client",pillar:"Performance Efficiency",ms:340,
+       body:"The site returns 200 OK in 340 milliseconds, and the expected text is on the page.",
+       facts:[["Status","200 OK"],["Response time","340 ms"],["Text check","Passed"]],log:["Lambda","200 OK in 340 ms","48 KB"]},
+      {f:"check",t:"cloudwatch",tag:"Up=1, Latency=340",title:"Record the metrics",sub:"Graphed and alarmed",cat:"mgmt",pillar:"Operational Excellence",ms:20,
+       body:"The Lambda publishes two custom metrics: Up (1 or 0) and Latency. CloudWatch graphs them and holds the alarm.",
+       facts:[["Namespace","Uptime"],["Alarm","Up < 1 for 3 of 3 minutes"]],log:["CloudWatch","PutMetricData Up=1 Latency=340","0.3 KB"]},
+      {f:"check",t:"dynamo",tag:"PutItem check",title:"Save the history",sub:"For uptime reports",cat:"db",pillar:"Operational Excellence",ms:8,
+       body:"Each check is saved with a timestamp, so the owner can see monthly uptime. Rows expire after 90 days with a TTL to keep costs down.",
+       facts:[["Table","uptime-checks (on-demand)"],["TTL","90 days"]],log:["DynamoDB","PutItem 2026-11-13T09:00","0.2 KB"]},
+      {f:"check",t:"status",tag:"status.json: UP",title:"Update the status page",sub:"A public page on S3",cat:"sto",pillar:"Reliability",ms:30,
+       body:"The Lambda writes status.json to an S3 static website. The status page lives outside the shop's own server, so it still works when the shop is down.",
+       facts:[["File","status.json"],["30-day uptime","99.94%"]],log:["S3","PUT status.json","0.4 KB"]},
+      {f:"viewer",t:"status",tag:"view status",title:"Anyone can check",sub:"Customers see it's up",cat:"client",pillar:"Reliability",ms:2000,
+       body:"Customers and staff can open the status page to see current status and recent response times.",
+       facts:[["Shows","Status, 24 h latency, 30-day uptime"]],log:["S3","GET status page","14 KB"]}
+    ],
+    summary:{title:"Site is up", sub:"Checked, recorded, published",
+      body:"One check every minute, a metric for alarms, a history for reports and a status page that doesn't depend on the website it reports on.",
+      extra:[["Est. cost","~US$1 / month"]]}
+  },
+  { name:"The site goes down", short:"Three failures, then a text",
+    intro:"The shop's server crashes. Watch the monitor count failed checks, set off an alarm after three in a row, text the owner, and report the recovery.",
+    steps:[
+      {f:"eventbridge",t:"check",tag:"rate(1 minute)",title:"The next check starts",sub:"Same as always",cat:"int",pillar:"Operational Excellence",ms:5,
+       body:"The schedule fires as usual.",
+       facts:[["Schedule","rate(1 minute)"]],log:["EventBridge","scheduled invoke","0.3 KB"]},
+      {f:"check",t:"site",tag:"GET /",title:"Request the site",sub:"No answer yet",cat:"svl",pillar:"Reliability",ms:20,
+       body:"The Lambda requests the homepage.",
+       facts:[["Timeout","5 s"]],log:["Lambda","GET https://shop.example.ph/","0.4 KB"]},
+      {f:"site",t:"check",tag:"timeout after 5 s",bad:true,title:"No response",sub:"The server has crashed",cat:"client",pillar:"Reliability",ms:5000,
+       body:"Nothing comes back within 5 seconds. The Lambda counts the check as down.",
+       facts:[["Result","Timeout"],["Counted as","Down"]],log:["Lambda","timeout after 5000 ms","0 KB"]},
+      {f:"check",t:"cloudwatch",tag:"Up=0",bad:true,title:"Record a failure",sub:"One bad minute isn't enough",cat:"mgmt",pillar:"Operational Excellence",ms:20,
+       body:"Up is recorded as 0. The alarm waits for three failed minutes in a row, so a single blip doesn't wake the owner.",
+       facts:[["Failed in a row","1 of 3"]],log:["CloudWatch","PutMetricData Up=0","0.3 KB"]},
+      {f:"check",t:"status",tag:"status.json: DOWN",bad:true,title:"The status page says down",sub:"Honest with customers",cat:"sto",pillar:"Reliability",ms:30,
+       body:"The status page now shows the site as down, so staff can point customers to it.",
+       facts:[["Status","DOWN since 09:14"]],log:["S3","PUT status.json (DOWN)","0.4 KB"]},
+      {f:"cloudwatch",t:"sns",tag:"ALARM (3 of 3)",bad:true,title:"Third failure: alarm",sub:"Down for 3 minutes",cat:"mgmt",pillar:"Operational Excellence",ms:120000,
+       body:"After two more failed checks, the alarm switches to ALARM and publishes to SNS.",
+       facts:[["Datapoints","3 of 3 below 1"],["State","OK → ALARM"]],log:["CloudWatch","alarm → SNS","0.5 KB"]},
+      {f:"sns",t:"owner",tag:"SMS: site down",bad:true,title:"The owner gets a text",sub:"Before any customer complains",cat:"int",pillar:"Operational Excellence",ms:5000,
+       body:"SNS sends a text to the owner's phone and an email to the web developer, 3 minutes after the crash.",
+       facts:[["Channels","SMS + email"],["Time to alert","~3 minutes"]],log:["SNS","SMS to +63 9xx","0.2 KB"]},
+      {f:"site",t:"check",tag:"200 in 410 ms",title:"The site is back",sub:"The developer restarted it",cat:"client",pillar:"Reliability",ms:240000,
+       body:"The developer restarts the server. The next check gets 200 OK, and the status page flips back to up.",
+       facts:[["Downtime","6 minutes"]],log:["Lambda","200 OK in 410 ms","48 KB"]},
+      {f:"cloudwatch",t:"sns",tag:"OK",title:"The alarm clears",sub:"Recovery is reported too",cat:"mgmt",pillar:"Operational Excellence",ms:60000,
+       body:"The alarm returns to OK, which also publishes to SNS.",
+       facts:[["State","ALARM → OK"]],log:["CloudWatch","alarm OK → SNS","0.5 KB"]},
+      {f:"sns",t:"owner",tag:"Recovered after 6 min",title:"All clear",sub:"The owner knows it's fixed",cat:"int",pillar:"Operational Excellence",ms:5000,
+       body:"The owner gets a second text: the site is back after 6 minutes.",
+       facts:[["Total downtime","6 minutes"],["Customer complaints","0"]],log:["SNS","SMS to +63 9xx","0.2 KB"]}
+    ],
+    summary:{title:"Outage handled", sub:"Detected in 3 minutes, fixed in 6",
+      body:"The monitor caught the crash, waited for three failures to avoid false alarms, texted the owner, kept customers informed and reported the recovery.",
+      extra:[["Time to alert","~3 min"],["Downtime","6 min"]]}
+  }]
+},
+{
+  id:"inquiries", num:5, name:"Customer Inquiry Manager", tagline:"Contact form to tracked, prioritised tickets", status:"Planned", cost:"~US$2 / month",
+  problem:"Customer messages arrive by contact form and get lost in a shared inbox. Angry or urgent messages wait as long as simple questions, and customers never know their message was received.",
+  solution:"The contact form posts to API Gateway and a Lambda that scores urgency and sentiment with Amazon Comprehend, stores the inquiry in DynamoDB, sends the customer an instant confirmation through SES, and alerts staff about high-priority ones through SNS.",
+  pitch:"Every inquiry becomes a ticket with a priority, the customer gets an instant confirmation, and angry messages jump the queue automatically.",
+  nodes:{
+    customer:{n:"Customer", cat:"client", x:90, y:130},
+    apigw:{n:"API Gateway", cat:"net", x:300, y:130},
+    fn:{n:"Inquiry λ", cat:"svl", x:520, y:130},
+    comprehend:{n:"Comprehend", cat:"ml", x:790, y:130},
+    ses:{n:"Amazon SES", cat:"biz", x:300, y:330},
+    dynamo:{n:"DynamoDB", cat:"db", x:520, y:330},
+    sns:{n:"SNS topic", cat:"int", x:790, y:330},
+    team:{n:"Support team", cat:"client", x:790, y:510}
+  },
+  lessons:[
+  { name:"A new inquiry", short:"Score, store, confirm, alert",
+    intro:"An unhappy customer fills in the contact form about a late refund. Follow the message as it is scored, stored as a ticket, confirmed to the customer and flagged to staff.",
+    steps:[
+      {f:"customer",t:"apigw",tag:"POST /inquiry",title:"The customer writes in",sub:"'Still no refund after 2 weeks!'",cat:"net",pillar:"Security",ms:30,
+       body:"The website's contact form posts the name, email and message. API Gateway throttles requests and a CAPTCHA token on the form keeps bots out.",
+       facts:[["Message","Still no refund after 2 weeks! Very disappointed."],["Throttle","5 requests/s"]],log:["API Gateway","POST /inquiry","0.6 KB"]},
+      {f:"apigw",t:"fn",tag:"Invoke",title:"Inquiry Lambda runs",sub:"Checks the fields first",cat:"svl",pillar:"Reliability",ms:40,
+       body:"The Lambda validates the email address and message length before doing anything else.",
+       facts:[["Runtime","Python 3.12, arm64"]],log:["Lambda","inquiry invoked","0.6 KB"]},
+      {f:"fn",t:"comprehend",tag:"DetectSentiment",title:"Read the mood",sub:"Comprehend scores the message",cat:"ml",pillar:"Performance Efficiency",ms:180,
+       body:"Amazon Comprehend analyses the text for sentiment and key phrases. No model to train: it's a ready-made language service.",
+       facts:[["APIs","DetectSentiment, DetectKeyPhrases"],["Language","English (auto-detect)"]],log:["Comprehend","DetectSentiment + KeyPhrases","0.4 KB"]},
+      {f:"comprehend",t:"fn",tag:"NEGATIVE 0.93",title:"An unhappy customer",sub:"With 'refund' as a key phrase",cat:"ml",pillar:"Performance Efficiency",ms:10,
+       body:"Comprehend returns NEGATIVE with 93% confidence and the key phrases 'refund' and '2 weeks'. The Lambda's rule: negative plus 'refund' means HIGH priority.",
+       facts:[["Sentiment","NEGATIVE (0.93)"],["Key phrases","refund, 2 weeks"],["Priority","HIGH"]],log:["Comprehend","200 · NEGATIVE 0.93","0.7 KB"]},
+      {f:"fn",t:"dynamo",tag:"PutItem #1042",title:"Create the ticket",sub:"Status OPEN, priority HIGH",cat:"db",pillar:"Operational Excellence",ms:8,
+       body:"The inquiry is stored as ticket #1042 with status, priority and sentiment. A secondary index on status and priority lets staff list urgent open tickets first.",
+       facts:[["Table","inquiries (on-demand)"],["Index","status + priority (GSI)"]],log:["DynamoDB","PutItem #1042 OPEN HIGH","1.1 KB"]},
+      {f:"fn",t:"ses",tag:"send confirmation",title:"Confirm to the customer",sub:"An instant, honest reply",cat:"biz",pillar:"Operational Excellence",ms:60,
+       body:"The Lambda asks Amazon SES to email the customer a confirmation with the ticket number and expected reply time.",
+       facts:[["From","support@ (verified domain)"],["Template","inquiry-received"]],log:["SES","SendTemplatedEmail","2.4 KB"]},
+      {f:"ses",t:"customer",tag:"Ticket #1042 received",title:"The customer feels heard",sub:"Within seconds",cat:"biz",pillar:"Reliability",ms:3000,
+       body:"The customer gets: 'We've received your message (ticket #1042). Because it's about a refund, a team member will reply within 2 hours.'",
+       facts:[["Reply promise","2 hours (HIGH)"]],log:["SES","delivered to customer","2.4 KB"]},
+      {f:"fn",t:"sns",tag:"HIGH priority",title:"Flag it to the team",sub:"Only urgent ones interrupt",cat:"int",pillar:"Operational Excellence",ms:30,
+       body:"Only HIGH-priority tickets go to the team's alert topic. Normal questions wait in the queue without interrupting anyone.",
+       facts:[["Topic","inquiries-urgent"],["Sent for","HIGH only"]],log:["SNS","Publish inquiries-urgent","0.5 KB"]},
+      {f:"sns",t:"team",tag:"Urgent: refund #1042",title:"The team is alerted",sub:"Email or chat",cat:"int",pillar:"Operational Excellence",ms:900,
+       body:"The support team gets an alert with the ticket number, the customer's mood and the key phrases.",
+       facts:[["Channel","Email to support team"]],log:["SNS","Email to support@","1.2 KB"]}
+    ],
+    summary:{title:"Inquiry captured", sub:"Scored, stored, confirmed",
+      body:"The message became a prioritised ticket, the customer got a confirmation in seconds, and only the urgent case interrupted the team.",
+      extra:[["Time to confirmation","~3 s"]]}
+  },
+  { name:"Staff reply and close", short:"Urgent first, then resolve",
+    intro:"A support agent opens the queue, sees urgent tickets first, replies to the customer and closes the ticket.",
+    steps:[
+      {f:"team",t:"apigw",tag:"GET /inquiries?status=OPEN",title:"Open the queue",sub:"Signed in with Cognito",cat:"net",pillar:"Security",ms:30,
+       body:"The agent's dashboard asks for open tickets. Staff routes need a Cognito token, so customers can't see each other's messages.",
+       facts:[["Auth","Cognito JWT (staff group)"]],log:["API Gateway","GET /inquiries (JWT valid)","0.3 KB"]},
+      {f:"apigw",t:"fn",tag:"Invoke",title:"Lambda handles it",sub:"Same function, staff route",cat:"svl",pillar:"Cost Optimization",ms:40,
+       body:"API Gateway passes the request and the agent's identity to the Lambda.",
+       facts:[["Route","GET /inquiries"]],log:["Lambda","list inquiries","0.3 KB"]},
+      {f:"fn",t:"dynamo",tag:"Query GSI",title:"Query urgent first",sub:"Indexed, not scanned",cat:"db",pillar:"Performance Efficiency",ms:7,
+       body:"The Lambda queries the status-priority index instead of scanning the whole table, so it stays fast as tickets pile up.",
+       facts:[["Query","status = OPEN, sort by priority"]],log:["DynamoDB","Query status-priority-index","0.4 KB"]},
+      {f:"dynamo",t:"fn",tag:"7 open, 2 HIGH",title:"The queue comes back",sub:"#1042 is at the top",cat:"db",pillar:"Performance Efficiency",ms:5,
+       body:"Seven open tickets, two of them HIGH. The refund complaint is first.",
+       facts:[["Open","7"],["HIGH","2"]],log:["DynamoDB","200 · 7 items","6.2 KB"]},
+      {f:"team",t:"apigw",tag:"POST reply #1042",title:"The agent replies",sub:"'Refund processed today'",cat:"net",pillar:"Security",ms:180000,
+       body:"The agent checks the order, processes the refund and writes a reply in the dashboard.",
+       facts:[["Reply","Refund processed today, 3–5 days to appear"]],log:["API Gateway","POST /inquiries/1042/reply","0.8 KB"]},
+      {f:"fn",t:"dynamo",tag:"status=RESOLVED",title:"Close the ticket",sub:"With who and when",cat:"db",pillar:"Operational Excellence",ms:8,
+       body:"The ticket is marked RESOLVED with the agent's name and the time taken, which feeds a response-time report.",
+       facts:[["Status","RESOLVED"],["Response time","1 h 12 min"]],log:["DynamoDB","UpdateItem #1042 RESOLVED","0.5 KB"]},
+      {f:"fn",t:"ses",tag:"send reply",title:"Email the answer",sub:"From the support address",cat:"biz",pillar:"Operational Excellence",ms:60,
+       body:"SES sends the agent's reply to the customer from the support address, threaded with the ticket number.",
+       facts:[["Subject","Re: Ticket #1042"]],log:["SES","SendEmail","2.1 KB"]},
+      {f:"ses",t:"customer",tag:"Your refund is on its way",title:"The customer gets an answer",sub:"Inside the promised 2 hours",cat:"biz",pillar:"Reliability",ms:3000,
+       body:"The customer receives the reply well within the promised time.",
+       facts:[["Promise kept","Yes (1 h 12 min)"]],log:["SES","delivered to customer","2.1 KB"]}
+    ],
+    summary:{title:"Ticket resolved", sub:"Urgent first, promise kept",
+      body:"The agent saw the most urgent ticket first, replied through the system and closed it with a measured response time.",
+      extra:[["Response time","1 h 12 min"]]}
+  }]
+},
+{
+  id:"ai-inventory", num:6, name:"AI Inventory Tracker", tagline:"Shelf photos counted by AI, low-stock alerts", status:"Planned", cost:"~US$5–10 / month",
+  problem:"A small store counts stock by hand, so shelves run empty before anyone notices and reorders are guesswork.",
+  solution:"Staff photograph a shelf with their phone. The photo lands in S3, a Lambda asks Claude on Bedrock to count the products, stock levels update in DynamoDB, and low-stock items trigger an SNS alert. Every evening a second Lambda drafts a reorder list.",
+  pitch:"A phone photo becomes a stock count: Claude on Bedrock reads the shelf, DynamoDB tracks levels, and the owner gets a reorder list every evening.",
+  nodes:{
+    staff:{n:"Staff phone", cat:"client", x:90, y:120},
+    s3:{n:"S3 photos", cat:"sto", x:300, y:120},
+    count:{n:"Count λ", cat:"svl", x:520, y:120},
+    bedrock:{n:"Bedrock", cat:"ml", x:790, y:120},
+    dynamo:{n:"DynamoDB", cat:"db", x:520, y:310},
+    sns:{n:"SNS topic", cat:"int", x:790, y:310},
+    owner:{n:"Store owner", cat:"client", x:790, y:500},
+    eventbridge:{n:"EventBridge", cat:"int", x:90, y:500},
+    reorder:{n:"Reorder λ", cat:"svl", x:300, y:500}
+  },
+  lessons:[
+  { name:"Count a shelf", short:"Photo to stock level",
+    intro:"A staff member photographs the drinks shelf. Follow the photo as AI counts the products, stock levels update, and a low-stock alert goes out.",
+    steps:[
+      {f:"staff",t:"s3",tag:"PUT shelf-A3.jpg",title:"Snap the shelf",sub:"Straight from the phone",cat:"sto",pillar:"Performance Efficiency",ms:1200,
+       body:"The staff app uploads the photo to S3 with a presigned URL, tagged with the shelf ID.",
+       facts:[["Photo","shelf-A3.jpg, 1.8 MB"],["Shelf","A3 · drinks"]],log:["S3","PUT shelf-A3.jpg","1.8 MB"]},
+      {f:"s3",t:"count",tag:"ObjectCreated",title:"The upload triggers counting",sub:"No button to press",cat:"int",pillar:"Reliability",ms:50,
+       body:"The new photo invokes the Count Lambda through an S3 event.",
+       facts:[["Trigger","s3:ObjectCreated:*"]],log:["S3","event → count λ","1.1 KB"]},
+      {f:"count",t:"bedrock",tag:"count items (image)",title:"Ask Claude to count",sub:"Vision on Bedrock",cat:"ml",pillar:"Performance Efficiency",ms:2600,
+       body:"The Lambda sends the photo and the shelf's product list to Claude on Bedrock, asking for a JSON count per product with a confidence for each.",
+       facts:[["Model","Claude via Bedrock (vision)"],["Products expected","6"],["Output","JSON only"]],log:["Bedrock","InvokeModel (image + prompt)","1.9 MB"]},
+      {f:"bedrock",t:"count",tag:"{ Coke 330ml: 4 … }",title:"Counts come back",sub:"Per product, with confidence",cat:"ml",pillar:"Reliability",ms:20,
+       body:"Claude returns counts for six products. Anything under 90% confidence is flagged for a quick human check in the app.",
+       facts:[["Coke 330ml","4 (0.96)"],["Water 500ml","22 (0.94)"],["Flagged for review","1 product"]],log:["Bedrock","200 · 6 counts","0.9 KB"]},
+      {f:"count",t:"dynamo",tag:"UpdateItem stock",title:"Update stock levels",sub:"One item per product",cat:"db",pillar:"Operational Excellence",ms:10,
+       body:"DynamoDB stores each product's count, reorder threshold and when it was last counted.",
+       facts:[["Table","inventory (on-demand)"],["Coke threshold","12"]],log:["DynamoDB","UpdateItem × 6","1.4 KB"]},
+      {f:"count",t:"sns",tag:"LOW: Coke 330ml",title:"Low stock detected",sub:"4 left, threshold 12",cat:"int",pillar:"Operational Excellence",ms:30,
+       body:"Coke 330ml is below its threshold, so the Lambda publishes a low-stock alert.",
+       facts:[["Item","Coke 330ml"],["On shelf","4 of min 12"]],log:["SNS","Publish low-stock","0.4 KB"]},
+      {f:"sns",t:"owner",tag:"Low stock alert",title:"The owner is told",sub:"Before the shelf is empty",cat:"int",pillar:"Operational Excellence",ms:900,
+       body:"The owner gets a text and can restock from the back room before customers find an empty shelf.",
+       facts:[["Channel","SMS + email"]],log:["SNS","SMS to owner","0.2 KB"]}
+    ],
+    summary:{title:"Shelf counted", sub:"A photo became stock data",
+      body:"A single phone photo updated six stock levels and caught a low item, with uncertain counts sent to a person to confirm.",
+      extra:[["Time from photo to alert","~5 s"]]}
+  },
+  { name:"Evening reorder list", short:"AI drafts the order",
+    intro:"Every evening at 9:00 PM, a scheduled Lambda looks at stock levels and two weeks of sales and asks Claude to draft tomorrow's reorder list.",
+    steps:[
+      {f:"eventbridge",t:"reorder",tag:"cron 21:00 PHT",title:"The schedule fires",sub:"After the store closes",cat:"int",pillar:"Cost Optimization",ms:5,
+       body:"EventBridge Scheduler runs the Reorder Lambda at 13:00 UTC, which is 9:00 PM in the Philippines.",
+       facts:[["Schedule","cron(0 13 * * ? *)"]],log:["EventBridge","scheduled invoke","0.3 KB"]},
+      {f:"reorder",t:"dynamo",tag:"Query stock + sales",title:"Gather the numbers",sub:"Stock and 14 days of sales",cat:"db",pillar:"Performance Efficiency",ms:40,
+       body:"The Lambda reads current stock and the last 14 days of sales for every product.",
+       facts:[["Products","84"],["History","14 days"]],log:["DynamoDB","Query inventory + sales","38 KB"]},
+      {f:"dynamo",t:"reorder",tag:"84 products",title:"Data comes back",sub:"Ready to analyse",cat:"db",pillar:"Performance Efficiency",ms:10,
+       body:"84 products with stock levels and daily sales.",
+       facts:[["Below threshold","9"]],log:["DynamoDB","200 · 84 items","38 KB"]},
+      {f:"reorder",t:"bedrock",tag:"suggest reorder",title:"Ask Claude for a draft",sub:"With the rules spelled out",cat:"ml",pillar:"Cost Optimization",ms:3000,
+       body:"Claude gets the numbers and the store's rules (keep 5 days of stock, respect case sizes, avoid overstocking slow items) and drafts a reorder list with a reason for each line.",
+       facts:[["Rules","5 days cover, case sizes, cap slow movers"]],log:["Bedrock","InvokeModel (reorder prompt)","40 KB"]},
+      {f:"bedrock",t:"reorder",tag:"PO draft: 9 lines",title:"A draft order",sub:"Each line explained",cat:"ml",pillar:"Cost Optimization",ms:20,
+       body:"The draft lists nine products, for example: Coke 330ml, 3 cases, because it sells 11 a day and only 4 are left.",
+       facts:[["Lines","9"],["Est. value","₱18,450"]],log:["Bedrock","200 · reorder draft","2.2 KB"]},
+      {f:"reorder",t:"sns",tag:"Reorder list ready",title:"Send it to the owner",sub:"A person approves it",cat:"int",pillar:"Operational Excellence",ms:30,
+       body:"The draft goes out for approval. The system never places an order by itself: the owner decides.",
+       facts:[["Auto-ordering","Off (owner approves)"]],log:["SNS","Publish reorder-ready","1.1 KB"]},
+      {f:"sns",t:"owner",tag:"9 items to reorder",title:"The owner reviews it",sub:"Over dinner, not in the stockroom",cat:"int",pillar:"Operational Excellence",ms:900,
+       body:"The owner reads the list on their phone, adjusts one line and sends it to the supplier in the morning.",
+       facts:[["Time saved","~45 min of counting"]],log:["SNS","Email to owner","2.4 KB"]}
+    ],
+    summary:{title:"Reorder drafted", sub:"Data in, decision with the owner",
+      body:"Stock and sales data became an explained reorder list every evening, with a person making the final call.",
+      extra:[["Owner approval","Required"]]}
+  }]
+},
+{
+  id:"clinicbook", num:7, level:"Intermediate", name:"ClinicBook", tagline:"Highly available booking app across two AZs", status:"Planned", cost:"~US$200 / month (Multi-AZ isn't free)",
+  problem:"A clinic chain's booking site runs on one server in one data centre. When it fails, patients can't book, phones flood, and appointment slots go unused.",
+  solution:"A three-tier design across two Availability Zones: AWS WAF and an Application Load Balancer at the front, containers on ECS Fargate in each AZ, ElastiCache for fast slot lookups, and Aurora with a writer in one AZ and a replica ready to take over in the other.",
+  pitch:"I designed ClinicBook to lose a whole Availability Zone without patients noticing: the load balancer reroutes, Aurora fails over in about 30 seconds, and ECS replaces the lost tasks.",
+  nodes:{
+    patient:{n:"Patient", cat:"client", x:90, y:300},
+    waf:{n:"AWS WAF", cat:"sec", x:260, y:120},
+    alb:{n:"Load balancer", cat:"net", x:260, y:300},
+    taskA:{n:"Fargate · AZ a", cat:"svl", x:480, y:200},
+    taskB:{n:"Fargate · AZ b", cat:"svl", x:480, y:420},
+    cache:{n:"ElastiCache", cat:"db", x:700, y:100},
+    writer:{n:"Aurora writer", cat:"db", x:700, y:300},
+    replica:{n:"Aurora replica", cat:"db", x:700, y:490},
+    cloudwatch:{n:"CloudWatch", cat:"mgmt", x:900, y:300}
+  },
+  lessons:[
+  { name:"Book an appointment", short:"Edge, containers, cache, database",
+    intro:"A patient books a 10:30 slot with Dr. Santos. Follow the request through the firewall and load balancer, into a container, past the cache, and into the database, and see how the system shrinks after hours.",
+    steps:[
+      {f:"patient",t:"alb",tag:"POST /book",title:"The patient books",sub:"One load balancer, two AZs behind it",cat:"net",pillar:"Reliability",ms:30,
+       body:"The booking request reaches the Application Load Balancer, which has a foot in both Availability Zones. If one AZ disappears, the ALB is still reachable.",
+       facts:[["Slot","Dr. Santos, Mon 10:30"],["ALB subnets","Public, AZ a + AZ b"],["Protocol","HTTPS (ACM certificate)"]],log:["ALB","POST /book","0.6 KB"]},
+      {f:"alb",t:"waf",tag:"inspect",title:"WAF checks it",sub:"Attached to the load balancer",cat:"sec",pillar:"Security",ms:1,
+       body:"AWS WAF on the ALB checks for common web attacks and rate-limits each IP, so bots can't hoard appointment slots.",
+       facts:[["Rules","Core rule set + rate limit"],["Limit","300 requests / 5 min / IP"]],log:["AWS WAF","evaluate rules","0.3 KB"]},
+      {f:"waf",t:"alb",tag:"ALLOW",title:"Allowed",sub:"A real patient",cat:"sec",pillar:"Security",ms:1,
+       body:"Nothing suspicious, so the request goes through.",
+       facts:[["Verdict","ALLOW"]],log:["AWS WAF","ALLOW","0.1 KB"]},
+      {f:"alb",t:"taskA",tag:"route → AZ a",title:"Pick a healthy container",sub:"Only healthy targets get traffic",cat:"net",pillar:"Reliability",ms:2,
+       body:"The ALB sends the request to a healthy Fargate task. It checks every task's /health endpoint every 10 seconds and skips any that fail.",
+       facts:[["Tasks running","2 in AZ a, 2 in AZ b"],["Health check","/health every 10 s"],["Subnets","Private (no public IP)"]],log:["ALB","forward → task 10.0.11.24","0.6 KB"]},
+      {f:"taskA",t:"cache",tag:"GET slots:santos",title:"Check the cache first",sub:"Fast reads, less database load",cat:"db",pillar:"Performance Efficiency",ms:1,
+       body:"The app reads Dr. Santos's free slots from ElastiCache (Redis) instead of querying the database for every page view.",
+       facts:[["Engine","Redis, Multi-AZ"],["Hit rate","~92%"],["Read time","< 1 ms"]],log:["ElastiCache","GET slots:santos:2026-11-16","1.4 KB"]},
+      {f:"cache",t:"taskA",tag:"10:30 free",title:"The slot is free",sub:"Straight from memory",cat:"db",pillar:"Performance Efficiency",ms:1,
+       body:"The cache confirms the slot is open.",
+       facts:[["Result","10:30 available"]],log:["ElastiCache","HIT","1.4 KB"]},
+      {f:"taskA",t:"writer",tag:"INSERT booking",title:"Write to Aurora",sub:"A transaction stops double-booking",cat:"db",pillar:"Reliability",ms:12,
+       body:"The booking is written to the Aurora writer in a transaction with a unique constraint on doctor and time, so two patients can never get the same slot.",
+       facts:[["Engine","Aurora PostgreSQL"],["Storage","6 copies across 3 AZs"],["Constraint","unique(doctor, slot)"]],log:["Aurora","INSERT booking (COMMIT)","0.8 KB"]},
+      {f:"writer",t:"replica",tag:"replicate < 100 ms",title:"The replica stays in sync",sub:"Ready to take over",cat:"db",pillar:"Reliability",ms:20,
+       body:"Aurora's replica in AZ b shares the same storage and lags by milliseconds. It serves read-only reports now and can become the writer if AZ a fails.",
+       facts:[["Replica lag","< 100 ms"],["Failover target","Yes (priority tier 0)"]],log:["Aurora","replica in sync","—"]},
+      {f:"alb",t:"patient",tag:"201 Booked",title:"Confirmed",sub:"In about 80 ms",cat:"net",pillar:"Performance Efficiency",ms:15,
+       body:"The patient sees the confirmation. The app also updates the cache so the slot disappears for everyone else.",
+       facts:[["Total time","~80 ms"]],log:["ALB","201 Created","0.4 KB"]},
+      {f:"cloudwatch",t:"taskA",tag:"scale in to 1 per AZ",title:"After hours, shrink",sub:"Pay for what nights need",cat:"mgmt",pillar:"Sustainability",ms:36000000,
+       body:"At night, CPU drops and ECS Service Auto Scaling removes tasks down to one per AZ. Fewer idle containers means lower cost and less wasted energy. Tasks run on Graviton (arm64) for the same reason.",
+       facts:[["Scale target","CPU 50%"],["Night minimum","1 task per AZ"],["CPU type","Graviton (arm64)"]],log:["CloudWatch","alarm low CPU → scale in","0.3 KB"]}
+    ],
+    summary:{title:"Booked", sub:"Fast, protected, highly available",
+      body:"The request was filtered, balanced across two AZs, answered from cache, written safely to a database with a standby, and the system shrank overnight.",
+      extra:[["Availability Zones","2"],["Pillars","All 6"]]}
+  },
+  { name:"An AZ goes down", short:"Reroute, fail over, heal",
+    intro:"A power problem takes Availability Zone a offline, including the Aurora writer. Watch the system reroute traffic, promote the replica and replace the lost containers while patients keep booking.",
+    steps:[
+      {f:"alb",t:"taskA",tag:"health check failed",bad:true,title:"AZ a stops answering",sub:"Health checks fail",cat:"net",pillar:"Reliability",ms:20000,
+       body:"The ALB's health checks to the AZ a tasks time out twice in a row, so it marks them unhealthy.",
+       facts:[["Unhealthy after","2 failed checks (20 s)"],["Healthy tasks left","2 (AZ b)"]],log:["ALB","targets unhealthy (AZ a)","—"]},
+      {f:"alb",t:"taskB",tag:"all traffic → AZ b",title:"Traffic shifts to AZ b",sub:"Patients don't notice",cat:"net",pillar:"Reliability",ms:1,
+       body:"The ALB sends every request to the healthy tasks in AZ b. Patients mid-booking simply retry and succeed.",
+       facts:[["Traffic in AZ b","100%"]],log:["ALB","forward → AZ b only","—"]},
+      {f:"writer",t:"replica",tag:"failover: promote",bad:true,title:"Aurora fails over",sub:"The replica becomes the writer",cat:"db",pillar:"Reliability",ms:30000,
+       body:"Aurora detects the writer is gone and promotes the AZ b replica, usually in about 30 seconds. The database endpoint name stays the same, so the app reconnects without a code change.",
+       facts:[["Failover time","~30 s"],["Endpoint","Unchanged (cluster endpoint)"],["Data lost","None (shared storage)"]],log:["Aurora","failover → replica promoted","—"]},
+      {f:"cloudwatch",t:"taskB",tag:"scale out +2",title:"Replace lost capacity",sub:"Auto Scaling adds tasks",cat:"mgmt",pillar:"Reliability",ms:90000,
+       body:"With half the tasks gone, CPU in AZ b climbs. ECS starts two more tasks so capacity is back to normal within about 90 seconds.",
+       facts:[["Tasks","2 → 4 in AZ b"],["Trigger","CPU > 50%"]],log:["CloudWatch","alarm high CPU → scale out","0.3 KB"]},
+      {f:"patient",t:"alb",tag:"POST /book",title:"A patient books mid-outage",sub:"Business as usual",cat:"net",pillar:"Reliability",ms:30,
+       body:"A new booking arrives while AZ a is still down.",
+       facts:[["Slot","Dr. Reyes, Tue 14:00"]],log:["ALB","POST /book","0.6 KB"]},
+      {f:"alb",t:"taskB",tag:"route → AZ b",title:"Handled in AZ b",sub:"A healthy task takes it",cat:"net",pillar:"Reliability",ms:2,
+       body:"The ALB routes the request to a task in AZ b.",
+       facts:[["Target","Task in AZ b"]],log:["ALB","forward → task 10.0.21.17","0.6 KB"]},
+      {f:"taskB",t:"replica",tag:"INSERT (new writer)",title:"Written to the new writer",sub:"Same endpoint, new home",cat:"db",pillar:"Reliability",ms:14,
+       body:"The booking goes to the promoted writer in AZ b through the same cluster endpoint.",
+       facts:[["Writer","Now in AZ b"]],log:["Aurora","INSERT booking (COMMIT)","0.8 KB"]},
+      {f:"alb",t:"patient",tag:"201 Booked",title:"Booked anyway",sub:"The outage was invisible",cat:"net",pillar:"Reliability",ms:15,
+       body:"The patient gets a normal confirmation. When AZ a comes back, ECS spreads tasks across both AZs again and Aurora adds a new replica there.",
+       facts:[["Bookings lost","0"],["Patient-visible downtime","~30 s of retries"]],log:["ALB","201 Created","0.4 KB"]}
+    ],
+    summary:{title:"Outage survived", sub:"A whole AZ lost, bookings kept",
+      body:"The load balancer rerouted traffic, Aurora promoted its replica in about 30 seconds without losing data, and Auto Scaling restored capacity, with no human involved.",
+      extra:[["Bookings lost","0"],["Manual steps","0"]]}
+  }]
+},
+{
+  id:"sentinel", num:8, level:"Intermediate", name:"Sentinel", tagline:"Automated security detection and response", status:"Planned", cost:"~US$5–15 / month for a small account",
+  problem:"Small companies don't have a 24/7 security team. A leaked access key or a public S3 bucket can be abused for hours before anyone looks, and attackers move in minutes.",
+  solution:"CloudTrail, GuardDuty and AWS Config watch the account. Findings flow through EventBridge to a remediation Lambda that disables leaked keys, isolates compromised instances and re-locks public buckets within minutes, then reports to Security Hub and the security team.",
+  pitch:"Sentinel turns detection into action: when GuardDuty flags a leaked key, the key is disabled and the instance isolated about a minute later, without waiting for a human.",
+  nodes:{
+    attacker:{n:"Attacker", cat:"client", x:90, y:110},
+    ec2:{n:"EC2 instance", cat:"cmp", x:300, y:110},
+    hub:{n:"Security Hub", cat:"sec", x:520, y:110},
+    iam:{n:"IAM", cat:"sec", x:760, y:110},
+    cloudtrail:{n:"CloudTrail", cat:"mgmt", x:90, y:300},
+    guardduty:{n:"GuardDuty", cat:"sec", x:300, y:300},
+    eventbridge:{n:"EventBridge", cat:"int", x:520, y:300},
+    remediate:{n:"Remediate λ", cat:"svl", x:760, y:300},
+    config:{n:"AWS Config", cat:"mgmt", x:90, y:490},
+    s3:{n:"S3 bucket", cat:"sto", x:300, y:490},
+    secteam:{n:"Security team", cat:"client", x:520, y:490},
+    sns:{n:"SNS topic", cat:"int", x:760, y:490}
+  },
+  lessons:[
+  { name:"Leaked key, crypto miner", short:"Detect, isolate, disable, report",
+    intro:"A developer accidentally pushes an access key to a public GitHub repo. Within minutes an attacker uses it to launch crypto-mining instances. Watch Sentinel catch it and shut it down automatically.",
+    steps:[
+      {f:"attacker",t:"ec2",tag:"RunInstances × 20",bad:true,title:"The attacker strikes",sub:"Using a leaked access key",cat:"cmp",pillar:"Security",ms:60000,
+       body:"Bots scan GitHub for keys around the clock. Minutes after the push, the attacker uses the key to launch large instances that mine cryptocurrency on your bill.",
+       facts:[["Key","AKIA…7Q2F (dev-ci user)"],["Instances","20 × c5.4xlarge"],["Cost if ignored","~US$13,000 / day"]],log:["EC2","RunInstances (leaked key)","2.1 KB"]},
+      {f:"cloudtrail",t:"guardduty",tag:"unusual API calls",title:"CloudTrail saw every call",sub:"GuardDuty reads the trail",cat:"mgmt",pillar:"Security",ms:120000,
+       body:"CloudTrail records every API call, including who made it and from where. GuardDuty analyses these events and notices a CI key suddenly launching instances from an unfamiliar country.",
+       facts:[["Trail","Organization trail, all regions"],["Source IP","Unfamiliar ASN"]],log:["CloudTrail","RunInstances logged","1.6 KB"]},
+      {f:"ec2",t:"guardduty",tag:"DNS → mining pool",bad:true,title:"Mining traffic detected",sub:"From DNS and flow logs",cat:"sec",pillar:"Security",ms:300000,
+       body:"GuardDuty also reads DNS and VPC flow logs, and sees the new instances querying known mining-pool domains.",
+       facts:[["Finding","CryptoCurrency:EC2/BitcoinTool.B!DNS"],["Severity","High (8.0)"]],log:["GuardDuty","finding created (High)","3.4 KB"]},
+      {f:"guardduty",t:"hub",tag:"finding",title:"One place for findings",sub:"Security Hub aggregates",cat:"sec",pillar:"Operational Excellence",ms:60000,
+       body:"The finding also goes to Security Hub, which collects findings from GuardDuty, Config, Inspector and Macie into one prioritised view.",
+       facts:[["Standard","AWS Foundational Security Best Practices"]],log:["Security Hub","import finding","3.4 KB"]},
+      {f:"guardduty",t:"eventbridge",tag:"severity ≥ 7",title:"High severity triggers action",sub:"An EventBridge rule matches",cat:"int",pillar:"Security",ms:50000,
+       body:"An EventBridge rule matches GuardDuty findings with severity 7 or higher and invokes the remediation Lambda. Lower findings only go to the dashboard.",
+       facts:[["Rule","source aws.guardduty, severity ≥ 7"]],log:["EventBridge","rule matched → remediate λ","3.5 KB"]},
+      {f:"eventbridge",t:"remediate",tag:"invoke",title:"Remediation starts",sub:"Seconds after the finding",cat:"svl",pillar:"Security",ms:200,
+       body:"The Lambda reads the finding to get the instance IDs and the access key involved.",
+       facts:[["IAM role","Narrow: only remediation actions"]],log:["Lambda","remediate invoked","3.5 KB"]},
+      {f:"remediate",t:"ec2",tag:"isolate + snapshot",title:"Isolate, don't destroy",sub:"Keep evidence for forensics",cat:"cmp",pillar:"Security",ms:8000,
+       body:"The Lambda swaps each instance's security group for one with no inbound or outbound rules, snapshots its volume for investigation, then stops it. Terminating would destroy the evidence.",
+       facts:[["Security group","sg-quarantine (no rules)"],["Evidence","EBS snapshots kept"],["Instances","Stopped"]],log:["EC2","ModifyInstanceAttribute + CreateSnapshot","1.8 KB"]},
+      {f:"remediate",t:"iam",tag:"key → Inactive",title:"Disable the leaked key",sub:"The attacker is locked out",cat:"sec",pillar:"Security",ms:400,
+       body:"The access key is set to Inactive, so every further call with it fails. The CI pipeline will use a new key, or better, a role with no long-lived key at all.",
+       facts:[["Action","UpdateAccessKey Inactive"],["Follow-up","Move CI to an IAM role (OIDC)"]],log:["IAM","UpdateAccessKey Inactive","0.4 KB"]},
+      {f:"remediate",t:"sns",tag:"incident summary",title:"Tell the humans",sub:"What happened and what was done",cat:"int",pillar:"Operational Excellence",ms:100,
+       body:"The Lambda publishes an incident summary: the finding, the key disabled, the instances isolated and links to the evidence.",
+       facts:[["Topic","security-incidents"]],log:["SNS","Publish security-incidents","1.9 KB"]},
+      {f:"sns",t:"secteam",tag:"Contained in ~1 min",title:"The team reviews, not scrambles",sub:"Already contained",cat:"int",pillar:"Cost Optimization",ms:900,
+       body:"The security team is paged with the problem already contained. They clean up and rotate secrets calmly, and the bill shows minutes of mining, not days.",
+       facts:[["Time to contain","~1 minute after the finding"],["Mining cost","~US$25 instead of thousands"]],log:["SNS","Page to security team","1.9 KB"]}
+    ],
+    summary:{title:"Attack contained", sub:"Detection became action",
+      body:"A leaked key was detected from API, DNS and network signals, the key was disabled and the instances isolated with evidence kept, all before a person had to act.",
+      extra:[["Human steps to contain","0"]]}
+  },
+  { name:"Public bucket, auto-fixed", short:"Config rule plus remediation",
+    intro:"A developer makes a bucket public to share a file quickly. AWS Config spots it, Sentinel re-locks it, and the developer is told why.",
+    steps:[
+      {f:"s3",t:"config",tag:"policy: public read",bad:true,title:"A bucket goes public",sub:"A quick shortcut",cat:"sto",pillar:"Security",ms:60000,
+       body:"A developer adds a bucket policy that allows public read, to send a file to a client. AWS Config records the configuration change.",
+       facts:[["Bucket","client-exports"],["Change","Principal: * (public read)"]],log:["AWS Config","configuration change recorded","2.2 KB"]},
+      {f:"config",t:"eventbridge",tag:"NON_COMPLIANT",bad:true,title:"A Config rule flags it",sub:"Compliance checked on every change",cat:"mgmt",pillar:"Security",ms:30000,
+       body:"The managed rule s3-bucket-public-read-prohibited evaluates the change and marks the bucket NON_COMPLIANT. The compliance change goes to EventBridge.",
+       facts:[["Rule","s3-bucket-public-read-prohibited"],["Result","NON_COMPLIANT"]],log:["AWS Config","rule → NON_COMPLIANT","1.2 KB"]},
+      {f:"eventbridge",t:"remediate",tag:"invoke",title:"Remediation starts",sub:"The same Lambda, another playbook",cat:"svl",pillar:"Operational Excellence",ms:200,
+       body:"An EventBridge rule for Config compliance changes invokes the remediation Lambda. (AWS Config can also run SSM Automation remediations directly.)",
+       facts:[["Playbook","s3-public-read"]],log:["Lambda","remediate invoked","1.3 KB"]},
+      {f:"remediate",t:"s3",tag:"Block Public Access ON",title:"Re-lock the bucket",sub:"Removes the public policy",cat:"sto",pillar:"Security",ms:600,
+       body:"The Lambda turns on S3 Block Public Access for the bucket and removes the public statement, keeping a copy of the old policy in the incident record.",
+       facts:[["Setting","BlockPublicPolicy, RestrictPublicBuckets"],["Public for","~90 seconds"]],log:["S3","PutPublicAccessBlock","0.5 KB"]},
+      {f:"s3",t:"config",tag:"COMPLIANT",title:"Config re-checks",sub:"Back to green",cat:"mgmt",pillar:"Security",ms:30000,
+       body:"The change triggers a fresh evaluation and the bucket returns to COMPLIANT.",
+       facts:[["Result","COMPLIANT"]],log:["AWS Config","rule → COMPLIANT","1.1 KB"]},
+      {f:"config",t:"hub",tag:"control passed",title:"Score restored",sub:"Security Hub updates",cat:"sec",pillar:"Operational Excellence",ms:60000,
+       body:"Security Hub's security score recovers, and the finding is recorded as resolved by automation.",
+       facts:[["Workflow","RESOLVED"]],log:["Security Hub","finding resolved","1.0 KB"]},
+      {f:"remediate",t:"sns",tag:"tell the developer",title:"Explain, don't blame",sub:"With a safer way to share",cat:"int",pillar:"Operational Excellence",ms:100,
+       body:"The notification explains what was changed and why, and suggests the safe alternative: a presigned URL that expires in a day.",
+       facts:[["Safer option","Presigned URL, 24 h expiry"]],log:["SNS","Publish security-notices","1.2 KB"]},
+      {f:"sns",t:"secteam",tag:"Auto-fixed: client-exports",title:"Logged and closed",sub:"No ticket left open",cat:"int",pillar:"Operational Excellence",ms:900,
+       body:"The security team gets the record. Nobody had to stop what they were doing.",
+       facts:[["Exposure window","~90 seconds"],["Human steps","0"]],log:["SNS","Email to security team","1.2 KB"]}
+    ],
+    summary:{title:"Bucket re-locked", sub:"Exposed for about 90 seconds",
+      body:"A risky change was caught by a Config rule, reversed automatically, and explained to the developer with a safer alternative.",
+      extra:[["Exposure window","~90 s"]]}
+  }]
+}
 ];
 
+const W = 124, H = 56;
 const $ = s => document.querySelector(s);
 const svg = $("#scene"), NS = "http://www.w3.org/2000/svg";
-let L = 0, step = -1, playing = false, timer = null, raf = null;
+let P = 0, L = 0, step = -1, playing = false, timer = null, raf = null, ambRaf = null;
 const speed = () => parseFloat($("#speed").value);
+const proj = () => PROJECTS[P];
+const lesson = () => proj().lessons[L];
+const N = () => proj().nodes;
+const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
 
-function anchor(id, toward){
-  const n = NODES[id], o = NODES[toward];
-  const dx = o.x - n.x, dy = o.y - n.y;
-  if (Math.abs(dy) < 5) return [n.x + Math.sign(dx) * W/2, n.y];
-  if (Math.abs(dx) < 5) return [n.x, n.y + Math.sign(dy) * H/2];
-  const sx = (W/2) / Math.abs(dx), sy = (H/2) / Math.abs(dy), s = Math.min(sx, sy);
+function anchorTo(id, px, py){
+  const n = N()[id], dx = px - n.x, dy = py - n.y;
+  if (!dx && !dy) return [n.x, n.y];
+  const sx = dx ? (W/2) / Math.abs(dx) : Infinity, sy = dy ? (H/2) / Math.abs(dy) : Infinity, s = Math.min(sx, sy);
   return [n.x + dx * s, n.y + dy * s];
 }
-function pathFor(s){
-  const a = NODES[s.f], b = NODES[s.t];
-  const sameRow = Math.abs(a.y - b.y) < 5 && Math.abs(a.x - b.x) > 250;
-  if (sameRow){
-    const bend = Math.abs(a.x - b.x) > 450 ? 110 : 90;
-    const p1 = [a.x, a.y + H/2], p2 = [b.x, b.y + H/2];
-    return `M${p1[0]},${p1[1]} Q${(a.x+b.x)/2},${a.y + H/2 + bend} ${p2[0]},${p2[1]}`;
+function blocked(pts, f, t){
+  const nodes = N();
+  for (const id in nodes){
+    if (id === f || id === t) continue;
+    const n = nodes[id];
+    for (const [x, y] of pts) if (Math.abs(x - n.x) < W/2 + 8 && Math.abs(y - n.y) < H/2 + 8) return true;
   }
-  const p1 = anchor(s.f, s.t), p2 = anchor(s.t, s.f);
-  if (s.curve){
-    const p1b = [a.x, a.y + H/2], p2b = [b.x, b.y + H/2];
-    return `M${p1b[0]},${p1b[1]} Q${(a.x+b.x)/2},${Math.max(a.y,b.y) + s.curve} ${p2b[0]},${p2b[1]}`;
+  return false;
+}
+function routeFor(s){
+  const a = N()[s.f], b = N()[s.t];
+  const p1 = anchorTo(s.f, b.x, b.y), p2 = anchorTo(s.t, a.x, a.y);
+  const line = []; for (let i = 0; i <= 40; i++){ const u = i/40; line.push([p1[0] + (p2[0]-p1[0])*u, p1[1] + (p2[1]-p1[1])*u]); }
+  if (!blocked(line, s.f, s.t)) return `M${p1[0]},${p1[1]} L${p2[0]},${p2[1]}`;
+  const mx = (a.x + b.x)/2, my = (a.y + b.y)/2, len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const nx = -(b.y - a.y)/len, ny = (b.x - a.x)/len;
+  for (const k of [90, -90, 140, -140, 200, -200, 260, -260]){
+    const cx = mx + nx*k, cy = my + ny*k;
+    const q1 = anchorTo(s.f, cx, cy), q2 = anchorTo(s.t, cx, cy);
+    if (cy < 30 || cy > 600 + 60) continue;
+    const pts = []; for (let i = 0; i <= 40; i++){ const u = i/40, v = 1-u; pts.push([v*v*q1[0] + 2*v*u*cx + u*u*q2[0], v*v*q1[1] + 2*v*u*cy + u*u*q2[1]]); }
+    if (pts.every(([x, y]) => y > 8 && y < 592) && !blocked(pts, s.f, s.t)) return `M${q1[0]},${q1[1]} Q${cx},${cy} ${q2[0]},${q2[1]}`;
   }
   return `M${p1[0]},${p1[1]} L${p2[0]},${p2[1]}`;
 }
-const pairKey = s => [s.f, s.t].sort().join("|") + (s.curve ? "c" : "");
+const pairKey = s => [s.f, s.t].sort().join("|");
 
-let edgeEls = {}, nodeEls = {}, tagG, tagRect, tagText;
+let edgeEls = {}, nodeEls = {}, ambDots = [], glowEl, cometG, tagG, tagRect, tagText;
 function buildScene(){
+  cancelAnimationFrame(ambRaf);
   svg.innerHTML = "";
-  edgeEls = {}; nodeEls = {};
-  const lesson = LESSONS[L];
-  const gE = el("g", {}, svg), gN = el("g", {}, svg);
-  lesson.steps.forEach(s => {
+  edgeEls = {}; nodeEls = {}; ambDots = [];
+  const defs = el("defs", {}, svg);
+  const f = el("filter", {id: "blur", x: "-20%", y: "-20%", width: "140%", height: "140%"}, defs);
+  el("feGaussianBlur", {stdDeviation: 4}, f);
+  const pat = el("pattern", {id: "grid", width: 28, height: 28, patternUnits: "userSpaceOnUse"}, defs);
+  el("circle", {cx: 1.5, cy: 1.5, r: 1.1, fill: "#1b2742"}, pat);
+  el("rect", {width: 1000, height: 600, fill: "url(#grid)"}, svg);
+
+  const gE = el("g", {}, svg);
+  glowEl = el("path", {class: "edgeglow", d: "", opacity: 0}, svg);
+  const gA = el("g", {}, svg), gN = el("g", {}, svg);
+  const seen = new Set();
+  proj().lessons.forEach(les => les.steps.forEach(s => {
     const k = pairKey(s);
-    if (!edgeEls[k]) edgeEls[k] = el("path", {d: pathFor(s), class: "edge"}, gE);
+    if (seen.has(k)) return; seen.add(k);
+    const p = el("path", {d: routeFor(s), class: "edge"}, gE);
+    edgeEls[k] = p;
+  }));
+  const used = new Set(lesson().steps.flatMap(s => [s.f, s.t]));
+  Object.entries(edgeEls).forEach(([k, p], i) => {
+    const [x, y] = k.split("|");
+    const live = used.has(x) && used.has(y) && lesson().steps.some(s => pairKey(s) === k);
+    if (live) ambDots.push({p, len: p.getTotalLength(), ph: (i * 0.37) % 1, dot: el("circle", {r: 1.8, class: "amb", opacity: .7}, gA)});
+    else p.setAttribute("opacity", .25);
   });
-  const used = new Set(lesson.steps.flatMap(s => [s.f, s.t]));
-  for (const id in NODES){
-    const n = NODES[id], c = CATS[n.cat];
+  for (const id in N()){
+    const n = N()[id], c = CATS[n.cat];
     const g = el("g", {class: "node" + (used.has(id) ? "" : " idle"), transform: `translate(${n.x - W/2},${n.y - H/2})`}, gN);
-    el("rect", {class: "box", width: W, height: H, rx: 8}, g);
-    el("rect", {class: "stripe", width: 5, height: H - 16, x: 6, y: 8, rx: 2, fill: c.c}, g);
-    const t1 = el("text", {class: "nm", x: 18, y: 25}, g); t1.textContent = n.n;
-    const t2 = el("text", {class: "sb", x: 18, y: 42}, g); t2.textContent = c.label;
+    el("rect", {class: "halo", width: W, height: H, rx: 10}, g);
+    el("rect", {class: "box", width: W, height: H, rx: 10}, g);
+    el("rect", {width: 4, height: H - 18, x: 8, y: 9, rx: 2, fill: c.c}, g);
+    el("circle", {cx: W - 12, cy: 12, r: 3.5, fill: c.c}, g);
+    const t1 = el("text", {class: "nm", x: 20, y: 25}, g); t1.textContent = n.n;
+    const t2 = el("text", {class: "sb", x: 20, y: 42}, g); t2.textContent = c.label;
     nodeEls[id] = g;
   }
+  cometG = el("g", {class: "comet", opacity: 0}, svg);
+  for (let i = 0; i < 6; i++) el("circle", {r: 5 - i*0.7, opacity: 1 - i*0.15}, cometG);
   tagG = el("g", {class: "tag", opacity: 0}, svg);
-  tagRect = el("rect", {rx: 5, height: 24, y: -12}, tagG);
-  tagText = el("text", {y: 4, "text-anchor": "middle"}, tagG);
+  tagRect = el("rect", {rx: 6, height: 24, y: -36}, tagG);
+  tagText = el("text", {y: -20, "text-anchor": "middle"}, tagG);
+  ambient();
 }
 
-function placeTag(s, frac){
-  const k = pairKey(s), p = edgeEls[k];
-  if (!p) return;
-  const len = p.getTotalLength();
-  const a = NODES[s.f], start = p.getPointAtLength(0);
-  const forward = Math.hypot(start.x - a.x, start.y - a.y) < Math.hypot(p.getPointAtLength(len).x - a.x, p.getPointAtLength(len).y - a.y);
-  const pt = p.getPointAtLength(len * (forward ? frac : 1 - frac));
+function ambient(){
+  if (reduceMotion()){ ambDots.forEach(d => d.dot.setAttribute("opacity", 0)); return; }
+  const tick = now => {
+    for (const d of ambDots){ const u = ((now / 3600) + d.ph) % 1; const pt = d.p.getPointAtLength(d.len * u); d.dot.setAttribute("cx", pt.x); d.dot.setAttribute("cy", pt.y); }
+    ambRaf = requestAnimationFrame(tick);
+  };
+  ambRaf = requestAnimationFrame(tick);
+}
+
+function pointOn(s, frac){
+  const p = edgeEls[pairKey(s)];
+  if (!p) return null;
+  const len = p.getTotalLength(), a = N()[s.f], st = p.getPointAtLength(0), en = p.getPointAtLength(len);
+  const forward = Math.hypot(st.x - a.x, st.y - a.y) <= Math.hypot(en.x - a.x, en.y - a.y);
+  const f = Math.max(0, Math.min(1, frac));
+  return p.getPointAtLength(len * (forward ? f : 1 - f));
+}
+function place(s, frac){
+  const pt = pointOn(s, frac); if (!pt) return;
   tagG.setAttribute("transform", `translate(${pt.x},${pt.y})`);
+  [...cometG.children].forEach((c, i) => { const q = pointOn(s, frac - i*0.035); c.setAttribute("cx", q.x); c.setAttribute("cy", q.y); });
 }
 function showTag(s){
   tagText.textContent = s.tag;
   const w = s.tag.length * 7.4 + 18;
   tagRect.setAttribute("width", w); tagRect.setAttribute("x", -w/2);
   tagG.setAttribute("class", "tag" + (s.bad ? " bad" : ""));
-  tagG.setAttribute("opacity", 1);
+  cometG.setAttribute("class", "comet" + (s.bad ? " bad" : ""));
+  tagG.setAttribute("opacity", 1); cometG.setAttribute("opacity", 1);
+  glowEl.setAttribute("d", edgeEls[pairKey(s)].getAttribute("d"));
+  glowEl.setAttribute("class", "edgeglow" + (s.bad ? " bad" : ""));
+  glowEl.setAttribute("opacity", 1);
 }
+function hideTag(){ [tagG, cometG, glowEl].forEach(e => e.setAttribute("opacity", 0)); }
 
 function animate(i, done){
   cancelAnimationFrame(raf);
-  const s = LESSONS[L].steps[i];
+  const s = lesson().steps[i];
   showTag(s);
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const dur = reduce ? 1 : 1400 / speed();
+  const dur = reduceMotion() ? 1 : 1400 / speed();
   const t0 = performance.now();
   const tick = now => {
     const t = Math.min(1, (now - t0) / dur);
     const e = t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
-    placeTag(s, e);
+    place(s, e);
     if (t < 1) raf = requestAnimationFrame(tick); else if (done) done();
   };
   raf = requestAnimationFrame(tick);
@@ -450,30 +1134,42 @@ function animate(i, done){
 
 function fmtTime(ms){
   if (ms < 10000) return (ms/1000).toFixed(3) + " s";
+  if (ms < 60000) return (ms/1000).toFixed(1) + " s";
   const s = Math.round(ms/1000), m = Math.floor(s/60);
+  if (m >= 60) return `${Math.floor(m/60)}h ${String(m % 60).padStart(2,"0")}m`;
   return `${m}m ${String(s % 60).padStart(2,"0")}s`;
 }
+const awsNodes = p => Object.keys(p.nodes).filter(id => p.nodes[id].cat !== "client");
+const statusChip = st => st === "Prototype" ? "chip live" : "chip plan";
 
-function renderLessons(){
-  const box = $("#lessons"); box.innerHTML = "";
-  LESSONS.forEach((les, li) => {
-    const d = document.createElement("div"); d.className = "lesson" + (li === L ? " on" : "");
-    const b = document.createElement("button");
-    b.innerHTML = `<div class="ln"></div><div class="ls"></div>`;
-    b.querySelector(".ln").textContent = les.name; b.querySelector(".ls").textContent = les.short;
-    b.addEventListener("click", () => { if (li !== L){ stop(); L = li; step = -1; buildScene(); render(); } });
+function renderProjects(){
+  const box = $("#projects"); box.innerHTML = "";
+  PROJECTS.forEach((p, pi) => {
+    const d = document.createElement("div"); d.className = "proj" + (pi === P ? " on" : "");
+    const b = document.createElement("button"); b.className = "ph";
+    b.innerHTML = `<span class="pnum">${p.num}</span><span><div class="pn"></div><div class="ps"></div><div class="pmeta"><span class="${statusChip(p.status)}">${p.status}</span>${p.level ? `<span class="chip lvl">${p.level}</span>` : ""}<span class="chip">${awsNodes(p).length} services</span><span class="chip">${p.lessons.length} lessons</span></div></span>`;
+    b.querySelector(".pn").textContent = p.name; b.querySelector(".ps").textContent = p.tagline;
+    b.addEventListener("click", () => selectProject(pi));
     d.appendChild(b);
-    if (li === L){
+    if (pi === P){
+      const tabs = document.createElement("div"); tabs.className = "lessontabs";
+      p.lessons.forEach((les, li) => {
+        const t = document.createElement("button"); t.className = "ltab" + (li === L ? " on" : ""); t.textContent = les.name;
+        t.addEventListener("click", () => { if (li !== L){ stop(); L = li; step = -1; buildScene(); render(); } });
+        tabs.appendChild(t);
+      });
+      d.appendChild(tabs);
       const ol = document.createElement("ol"); ol.className = "steps";
-      les.steps.forEach((s, si) => {
-        const li2 = document.createElement("li");
-        const state = si < step || step >= les.steps.length ? (s.bad ? "err" : "done") : si === step ? "cur" : "";
-        li2.className = state;
+      const steps = lesson().steps;
+      steps.forEach((s, si) => {
+        const li = document.createElement("li");
+        const past = si < step || step >= steps.length;
+        li.className = past ? (s.bad ? "err" : "done") : si === step ? "cur" : "";
         const bt = document.createElement("button");
-        bt.innerHTML = `<span class="dot">${si < step || step >= les.steps.length ? (s.bad ? "!" : "✓") : si + 1}</span><span><div class="st"></div><div class="ss"></div></span>`;
-        bt.querySelector(".st").textContent = s.title; bt.querySelector(".ss").textContent = s.sub;
+        bt.innerHTML = `<span class="dot">${past ? (s.bad ? "!" : "✓") : si + 1}</span><span class="st"></span>`;
+        bt.querySelector(".st").textContent = s.title;
         bt.addEventListener("click", () => { stop(); step = si; render(); animate(si); });
-        li2.appendChild(bt); ol.appendChild(li2);
+        li.appendChild(bt); ol.appendChild(li);
       });
       d.appendChild(ol);
     }
@@ -482,75 +1178,80 @@ function renderLessons(){
 }
 
 function renderCats(){
-  const steps = LESSONS[L].steps;
+  const steps = lesson().steps;
+  const inProj = new Set(Object.values(N()).map(n => n.cat));
   const seen = new Set(steps.slice(0, Math.max(0, step + 1)).map(s => s.cat));
   const now = step >= 0 && step < steps.length ? steps[step].cat : null;
   const box = $("#cats"); box.innerHTML = "";
   Object.entries(CATS).filter(([k]) => k !== "client").forEach(([k, c]) => {
     const s = document.createElement("span");
-    s.className = "cat" + (seen.has(k) ? " seen" : "") + (k === now ? " now" : "");
+    s.className = "cat" + (inProj.has(k) ? " inproj" : " off") + (seen.has(k) ? " seen" : "") + (k === now ? " now" : "");
     s.style.setProperty("--c", c.c);
-    s.innerHTML = "<i></i>"; s.append(c.label);
-    s.title = c.full;
+    s.innerHTML = "<i></i>"; s.append(c.label); s.title = c.full;
     box.appendChild(s);
   });
 }
 
-function facts(rows){
-  return `<dl class="facts">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
-}
+const facts = rows => `<dl class="facts">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+function pillarPills(hit){ return `<div class="pills">${PILLARS.map(p => `<span class="pill${hit.has(p) ? "" : " dim"}" style="--c:var(--accent)">${p}</span>`).join("")}</div>`; }
 
 function renderDetail(){
-  const les = LESSONS[L], steps = les.steps, box = $("#detail");
+  const p = proj(), les = lesson(), steps = les.steps, box = $("#detail");
   if (step < 0){
-    $("#dtitle").textContent = "Lesson overview";
-    const services = new Set(steps.flatMap(s => [s.f, s.t]).filter(id => NODES[id].cat !== "client"));
-    box.innerHTML = `<div class="kicker">${steps.length} steps</div><h2></h2><p class="sub"></p><p></p>` +
-      facts([["Services", services.size], ["Categories", new Set([...services].map(id => NODES[id].cat)).size], ["Controls", "Play, or Step one at a time"]]);
-    box.querySelector("h2").textContent = les.name;
-    box.querySelector(".sub").textContent = les.short;
-    box.querySelectorAll("p")[1].textContent = les.intro;
+    $("#dtitle").textContent = `Project ${p.num} · overview`;
+    const svcs = awsNodes(p);
+    const counts = {}; svcs.forEach(id => { const c = p.nodes[id].cat; counts[c] = (counts[c] || 0) + 1; });
+    const allPillars = new Set(p.lessons.flatMap(l => l.steps.map(s => s.pillar)));
+    box.innerHTML = `<div class="kicker"><span class="${statusChip(p.status)}">${p.status}</span></div><h2 id="pName"></h2><p class="sub" id="pTag"></p>` +
+      `<h3>Business problem</h3><p id="pProb"></p><h3>Solution</h3><p id="pSol"></p>` +
+      `<div class="quote" id="pPitch"></div>` +
+      `<h3>Services by AWS category</h3><div class="bar">${Object.entries(counts).map(([c, n]) => `<span style="--c:${CATS[c].c};flex:${n}" title="${CATS[c].full}: ${n}"></span>`).join("")}</div>` +
+      `<div class="barkey">${Object.entries(counts).map(([c, n]) => `<span style="--c:${CATS[c].c}"><i></i>${CATS[c].label} ${n}</span>`).join("")}</div>` +
+      `<h3>Services</h3><div class="svcs">${svcs.map(id => `<span class="svc">${p.nodes[id].n}</span>`).join("")}</div>` +
+      `<h3>Well-Architected pillars covered</h3>${pillarPills(allPillars)}` +
+      facts([["Lessons", p.lessons.map(l => l.name).join(" · ")], ["Est. cost", p.cost]]) +
+      `<h3>This lesson</h3><p id="lIntro"></p>` +
+      (p.status === "Placeholder" ? `<p class="note">Placeholder design: the exact AI project from the video still needs confirming.</p>` : "");
+    $("#pName").textContent = p.name; $("#pTag").textContent = p.tagline;
+    $("#pProb").textContent = p.problem; $("#pSol").textContent = p.solution;
+    $("#pPitch").textContent = "Interview line: “" + p.pitch + "”";
+    $("#lIntro").textContent = les.intro;
     return;
   }
   if (step >= steps.length){
     $("#dtitle").textContent = "Lesson summary";
     const total = steps.reduce((a, s) => a + s.ms, 0);
-    const services = new Set(steps.flatMap(s => [s.f, s.t]).filter(id => NODES[id].cat !== "client"));
-    const pillars = [...new Set(steps.map(s => s.pillar))];
-    const cats = [...new Set([...services].map(id => NODES[id].cat))];
-    box.innerHTML = `<div class="kicker" style="color:var(--good)">Lesson complete</div><h2></h2><p class="sub"></p><p></p>` +
+    const services = new Set(steps.flatMap(s => [s.f, s.t]).filter(id => N()[id].cat !== "client"));
+    const pillars = new Set(steps.map(s => s.pillar));
+    const cats = [...new Set([...services].map(id => N()[id].cat))];
+    box.innerHTML = `<div class="kicker" style="color:var(--good)">Lesson complete</div><h2 id="sT"></h2><p class="sub" id="sS"></p><p id="sB"></p>` +
       `<div class="pills">${cats.map(c => `<span class="pill" style="--c:${CATS[c].c}">${CATS[c].label}</span>`).join("")}</div>` +
-      facts([["Steps", steps.length], ["Total time", fmtTime(total)], ["Services", services.size], ["Pillars", `${pillars.length} of 6`], ...les.summary.extra]) +
-      `<p class="note">Pillars covered: ${pillars.join(", ")}. Press Replay to watch again.</p>`;
-    box.querySelector("h2").textContent = les.summary.title;
-    box.querySelector(".sub").textContent = les.summary.sub;
-    box.querySelectorAll("p")[1].textContent = les.summary.body;
+      facts([["Steps", steps.length], ["Total time", fmtTime(total)], ["Services", services.size], ["Pillars", `${pillars.size} of 6`], ...les.summary.extra]) +
+      `<h3>Pillars in this lesson</h3>${pillarPills(pillars)}<p class="note">Press Replay to watch again, or pick another lesson or project.</p>`;
+    $("#sT").textContent = les.summary.title; $("#sS").textContent = les.summary.sub; $("#sB").textContent = les.summary.body;
     return;
   }
   const s = steps[step], c = CATS[s.cat];
   $("#dtitle").textContent = "Step details";
-  box.innerHTML = `<div class="kicker">Step ${step + 1} of ${steps.length}</div><h2></h2><p class="sub"></p>` +
-    `<div class="pills"><span class="pill" style="--c:${c.c}"><b>Category</b> ${c.full}</span><span class="pill"><b>Pillar</b> ${s.pillar}</span></div><p></p>` +
-    facts([["From → to", `${NODES[s.f].n} → ${NODES[s.t].n}`], ...s.facts]);
-  box.querySelector("h2").textContent = s.title;
-  box.querySelector(".sub").textContent = s.sub;
-  box.querySelectorAll("p")[1].textContent = s.body;
+  box.innerHTML = `<div class="kicker">${p.name} · step ${step + 1} of ${steps.length}</div><h2 id="dT"></h2><p class="sub" id="dS"></p>` +
+    `<div class="pills"><span class="pill" style="--c:${c.c}"><b>Category</b> ${c.full}</span><span class="pill" style="--c:var(--accent)"><b>Pillar</b> ${s.pillar}</span></div><p id="dB"></p>` +
+    facts([["From → to", `${N()[s.f].n} → ${N()[s.t].n}`], ...s.facts]);
+  $("#dT").textContent = s.title; $("#dS").textContent = s.sub; $("#dB").textContent = s.body;
 }
 
 function renderLog(){
-  const steps = LESSONS[L].steps, tb = $("#log");
+  const steps = lesson().steps, tb = $("#log");
   const n = Math.min(step + 1, steps.length);
   if (n <= 0){ tb.innerHTML = `<tr class="empty"><td colspan="7">Nothing has moved yet. Press Play or Step.</td></tr>`; return; }
   let t = 0, html = "";
   for (let i = 0; i < n; i++){
-    const s = steps[i]; const c = CATS[s.cat];
-    html += `<tr class="${i === step ? "cur" : ""} ${s.bad ? "bad" : ""}"><td>${i + 1}</td><td>${fmtTime(t)}</td><td>${NODES[s.f].n}</td><td>${NODES[s.t].n}</td>` +
+    const s = steps[i], c = CATS[s.cat];
+    html += `<tr class="${i === step ? "cur" : ""} ${s.bad ? "bad" : ""}"><td>${i + 1}</td><td>${fmtTime(t)}</td><td>${N()[s.f].n}</td><td>${N()[s.t].n}</td>` +
       `<td><span class="sw" style="--c:${c.c}"></span>${s.log[0]}</td><td class="act">${s.log[1]}</td><td>${s.log[2]}</td></tr>`;
     t += s.ms;
   }
   tb.innerHTML = html;
-  const cur = tb.querySelector("tr.cur") || tb.lastElementChild;
-  const wrap = tb.closest(".tablewrap");
+  const cur = tb.querySelector("tr.cur") || tb.lastElementChild, wrap = tb.closest(".tablewrap");
   if (cur && wrap){
     const top = cur.offsetTop - wrap.querySelector("thead").offsetHeight;
     if (top < wrap.scrollTop || cur.offsetTop + cur.offsetHeight > wrap.scrollTop + wrap.clientHeight) wrap.scrollTop = Math.max(0, top - 8);
@@ -558,67 +1259,79 @@ function renderLog(){
 }
 
 function renderScene(){
-  const steps = LESSONS[L].steps;
-  const doneKeys = new Set(steps.slice(0, Math.max(0, step)).map(pairKey));
-  for (const k in edgeEls) edgeEls[k].setAttribute("class", "edge" + (doneKeys.has(k) ? " done" : ""));
+  const steps = lesson().steps;
+  const done = steps.slice(0, Math.max(0, Math.min(step, steps.length)));
+  const doneKeys = new Set(done.map(pairKey));
+  for (const k in edgeEls) edgeEls[k].setAttribute("class", "edge" + (doneKeys.has(k) || step >= steps.length && steps.some(s => pairKey(s) === k) ? " done" : ""));
   for (const id in nodeEls) nodeEls[id].classList.remove("act", "used");
-  steps.slice(0, Math.max(0, Math.min(step, steps.length))).forEach(s => { nodeEls[s.f].classList.add("used"); nodeEls[s.t].classList.add("used"); });
+  const usedNow = step >= steps.length ? steps : done;
+  usedNow.forEach(s => { nodeEls[s.f].classList.add("used"); nodeEls[s.t].classList.add("used"); });
   if (step >= 0 && step < steps.length){
     const s = steps[step];
     edgeEls[pairKey(s)].setAttribute("class", "edge act" + (s.bad ? " bad" : ""));
     nodeEls[s.f].classList.add("act"); nodeEls[s.t].classList.add("act");
-  } else if (step >= steps.length){
-    steps.forEach(s => { nodeEls[s.f].classList.add("used"); nodeEls[s.t].classList.add("used"); });
-    for (const k in edgeEls) edgeEls[k].setAttribute("class", "edge done");
-    tagG.setAttribute("opacity", 0);
-  } else {
-    tagG.setAttribute("opacity", 0);
-  }
+  } else hideTag();
+  const total = awsNodes(proj()).length;
+  const touched = new Set(steps.slice(0, Math.max(0, Math.min(step + 1, steps.length))).flatMap(s => [s.f, s.t]).filter(id => N()[id].cat !== "client"));
+  let t = 0; for (let i = 0; i < Math.min(step, steps.length); i++) t += steps[i].ms;
+  if (step >= steps.length) t = steps.reduce((a, s) => a + s.ms, 0);
+  $("#hudTitle").innerHTML = ""; $("#hudTitle").append(`${proj().num} · ${proj().name}`);
+  const sm = document.createElement("small"); sm.textContent = lesson().name; $("#hudTitle").appendChild(sm);
+  $("#hudStep").textContent = step < 0 ? `0/${steps.length}` : step >= steps.length ? "done" : `${step + 1}/${steps.length}`;
+  $("#hudTime").textContent = fmtTime(Math.max(0, t));
+  $("#hudSvc").textContent = `${touched.size}/${total}`;
+  $("#prog").style.width = (step < 0 ? 0 : Math.min(1, (step + 1) / steps.length) * 100) + "%";
 }
 
 function render(){
-  renderLessons(); renderCats(); renderDetail(); renderLog(); renderScene();
-  const steps = LESSONS[L].steps;
+  renderProjects(); renderCats(); renderDetail(); renderLog(); renderScene();
+  const steps = lesson().steps;
   $("#prev").disabled = step < 0;
   $("#next").disabled = step >= steps.length;
   $("#play").textContent = playing ? "❚❚ Pause" : step >= steps.length ? "↺ Again" : "▶ Play";
 }
 
+function selectProject(pi){
+  if (pi === P) return;
+  stop(); P = pi; L = 0; step = -1; buildScene(); render();
+  try { history.replaceState(null, "", "#" + proj().id); } catch (e) {}
+}
 function advance(withAnim){
-  const steps = LESSONS[L].steps;
+  const steps = lesson().steps;
   if (step >= steps.length) return false;
-  step++;
-  render();
+  step++; render();
   if (step < steps.length){
     if (withAnim) animate(step, () => { if (playing) timer = setTimeout(() => advance(true) || stop(), parseInt($("#wait").value, 10)); });
     else animate(step);
-  } else if (playing){ stop(); }
+  } else if (playing) stop();
   return true;
 }
 function stop(){ playing = false; clearTimeout(timer); cancelAnimationFrame(raf); render(); }
-function play(){
-  const steps = LESSONS[L].steps;
-  if (step >= steps.length) step = -1;
-  playing = true; render(); advance(true);
-}
+function play(){ if (step >= lesson().steps.length) step = -1; playing = true; render(); advance(true); }
 
 $("#play").addEventListener("click", () => playing ? stop() : play());
 $("#next").addEventListener("click", () => { stop(); advance(false); });
 $("#prev").addEventListener("click", () => {
-  stop(); cancelAnimationFrame(raf);
-  if (step > 0){ step = Math.min(step, LESSONS[L].steps.length) - 1; render(); const s = LESSONS[L].steps[step]; showTag(s); placeTag(s, 1); }
+  stop();
+  if (step > 0){ step = Math.min(step, lesson().steps.length) - 1; render(); const s = lesson().steps[step]; showTag(s); place(s, 1); }
   else { step = -1; render(); }
 });
-$("#replay").addEventListener("click", () => { stop(); cancelAnimationFrame(raf); step = -1; play(); });
+$("#replay").addEventListener("click", () => { stop(); step = -1; play(); });
 document.addEventListener("keydown", e => {
   if (e.target.closest("select")) return;
   if (e.key === "ArrowRight"){ e.preventDefault(); $("#next").click(); }
   if (e.key === "ArrowLeft"){ e.preventDefault(); $("#prev").click(); }
   if (e.key === " " && !e.target.closest("button")){ e.preventDefault(); $("#play").click(); }
 });
+window.addEventListener("hashchange", () => { const i = PROJECTS.findIndex(p => "#" + p.id === location.hash); if (i >= 0) selectProject(i); });
 
-buildScene();
-step = 6; render(); { const s = LESSONS[L].steps[step]; showTag(s); placeTag(s, .55); }
+(function init(){
+  const i = PROJECTS.findIndex(p => "#" + p.id === location.hash);
+  if (i >= 0) P = i;
+  buildScene();
+  if (P === 0){ step = 6; render(); const s = lesson().steps[step]; showTag(s); place(s, .55); }
+  else render();
+})();
 </script>
 </body>
 </html>
