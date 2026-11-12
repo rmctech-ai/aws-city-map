@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cloud Request Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout idea: four panels like a lab bench — lessons left, live AWS scene centre, step notes right, event log underneath */
+  --bg:#f3f5f8; --panel:#ffffff; --ink:#152033; --muted:#5d6b80; --line:#d8dee8; --accent:#d9730d; --accent-soft:#fdf0e2; --bad:#c0392b; --good:#1f8a5b;
+  --display:"Manrope", "Segoe UI", system-ui, sans-serif; --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0d131d; --panel:#141c29; --ink:#e6ebf2; --muted:#93a1b5; --line:#263244; --accent:#f39a3c; --accent-soft:#2c2114; --bad:#ef6f61; --good:#4cc38a; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#0d131d; --panel:#141c29; --ink:#e6ebf2; --muted:#93a1b5; --line:#263244; --accent:#f39a3c; --accent-soft:#2c2114; --bad:#ef6f61; --good:#4cc38a; color-scheme:dark; }
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--display);font-size:14px;line-height:1.5}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:270px minmax(0,1fr) 310px;grid-template-rows:auto minmax(0,1fr) auto;gap:12px;padding:12px;min-height:100%}
+header{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px}
+.brand h1{font-size:18px;margin:0;font-weight:800;letter-spacing:-.01em}
+.brand p{margin:0;color:var(--muted);font-size:12px}
+.cats{display:flex;flex-wrap:wrap;gap:6px;flex:1;justify-content:flex-end}
+.cat{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);display:flex;align-items:center;gap:6px;transition:all .2s}
+.cat i{width:8px;height:8px;border-radius:50%;background:var(--c);opacity:.35}
+.cat.seen{color:var(--ink)} .cat.seen i{opacity:1}
+.cat.now{border-color:var(--c);box-shadow:0 0 0 1px var(--c) inset;color:var(--ink)}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.ptitle{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 14px 8px;margin:0;font-weight:500}
+
+aside.lessons{grid-row:2/4;display:flex;flex-direction:column;overflow:auto}
+.lesson{border-top:1px solid var(--line)}
+.lesson>button{all:unset;cursor:pointer;display:block;width:100%;padding:10px 14px;box-sizing:border-box}
+.lesson>button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.lesson .ln{font-weight:700} .lesson .ls{font-size:12px;color:var(--muted)}
+.lesson.on>button{background:var(--accent-soft)}
+.lesson.on .ln{color:var(--accent)}
+ol.steps{list-style:none;margin:0;padding:4px 10px 12px}
+ol.steps li button{all:unset;cursor:pointer;display:grid;grid-template-columns:22px 1fr;gap:8px;padding:5px 6px;border-radius:6px;width:100%;box-sizing:border-box}
+ol.steps li button:hover{background:var(--bg)}
+ol.steps li button:focus-visible{outline:2px solid var(--accent)}
+.dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);font-family:var(--mono);font-size:10px;display:grid;place-items:center;color:var(--muted)}
+.done .dot{background:var(--good);border-color:var(--good);color:#fff}
+.cur .dot{background:var(--accent);border-color:var(--accent);color:#fff}
+.err .dot{background:var(--bad);border-color:var(--bad);color:#fff}
+.st{font-size:12.5px;font-weight:700;line-height:1.3} .ss{font-size:11.5px;color:var(--muted);line-height:1.3}
+.cur .st{color:var(--accent)}
+
+.stage{position:relative;display:flex;flex-direction:column;overflow:hidden}
+.stage svg{width:100%;height:auto;display:block;flex:1;min-height:300px}
+.legend{font-size:11.5px;color:var(--muted);padding:0 14px 10px}
+
+.node rect.box{fill:var(--panel);stroke:var(--line);stroke-width:1.2;transition:stroke .2s}
+.node rect.stripe{opacity:.9}
+.node text.nm{fill:var(--ink);font-family:var(--display);font-weight:700;font-size:14px}
+.node text.sb{fill:var(--muted);font-family:var(--mono);font-size:10.5px}
+.node.act rect.box{stroke:var(--accent);stroke-width:2.4}
+.node.used rect.box{stroke:var(--muted)}
+.node.idle{opacity:.38}
+.edge{fill:none;stroke:var(--line);stroke-width:1.6}
+.edge.done{stroke:var(--muted);stroke-width:1.6;opacity:.7}
+.edge.act{stroke:var(--accent);stroke-width:2.4;stroke-dasharray:7 6;animation:flow .8s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-26}}
+@media (prefers-reduced-motion:reduce){.edge.act{animation:none}}
+.tag rect{fill:var(--accent)}
+.tag.bad rect{fill:var(--bad)}
+.tag text{fill:#fff;font-family:var(--mono);font-size:12px;font-weight:700}
+
+aside.detail{display:flex;flex-direction:column;overflow:auto}
+.dbody{padding:0 16px 16px}
+.kicker{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.dbody h2{font-size:20px;margin:2px 0 0;line-height:1.2;text-wrap:balance;font-weight:800}
+.dbody .sub{color:var(--muted);margin:2px 0 10px}
+.dbody p{margin:0 0 12px;max-width:65ch}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.pill{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid var(--c, var(--line));}
+.pill b{font-weight:700}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px}
+.facts dt{font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding-top:1px}
+.facts dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.note{font-size:11.5px;color:var(--muted);margin-top:12px}
+
+section.log{grid-column:2/4;display:flex;flex-direction:column;min-height:0}
+.logbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.logbar .ptitle{padding:0;margin-right:auto}
+.ctl{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 12px;cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:500}
+.ctl:hover{border-color:var(--muted)}
+.ctl.primary{background:var(--accent);border-color:var(--accent);color:#fff;min-width:92px}
+.ctl:disabled{opacity:.4;cursor:default}
+select.ctl{padding:5px 8px}
+.lbl{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.edge.act.bad{stroke:var(--bad)}
+.brand a{font-size:12px;color:var(--accent);text-decoration:none}
+.brand a:hover{text-decoration:underline}
+.tablewrap{overflow:auto;max-height:240px}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums}
+th{text-align:left;color:var(--muted);font-weight:500;padding:6px 10px;position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line)}
+td{padding:5px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr.cur td{background:var(--accent-soft)}
+tr.bad td.act{color:var(--bad)}
+td .sw{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--c);margin-right:6px}
+.empty td{color:var(--muted)}
+footer{grid-column:1/-1;font-size:11.5px;color:var(--muted);text-align:center;padding:2px 0 4px}
+footer a{color:inherit}
+
+@media (max-width:1100px){
+  .app{grid-template-columns:240px minmax(0,1fr)}
+  aside.detail{grid-column:2}
+  section.log{grid-column:1/-1}
+  aside.lessons{grid-row:auto}
+}
+@media (max-width:720px){
+  .app{grid-template-columns:1fr}
+  aside.detail,section.log,aside.lessons{grid-column:1}
+  .cats{justify-content:flex-start}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <h1>Cloud Request Explorer</h1>
+      <p>Watch one invoice travel through AWS, service by service · <a href="../">AWS City Map</a> · <a href="../atlas/">Architecture Atlas</a></p>
+    </div>
+    <div class="cats" id="cats" aria-label="AWS categories touched"></div>
+  </header>
+
+  <aside class="panel lessons" aria-label="Lessons">
+    <h2 class="ptitle">Lessons</h2>
+    <div id="lessons"></div>
+  </aside>
+
+  <main class="panel stage">
+    <h2 class="ptitle">InvoiceIQ architecture · live</h2>
+    <svg id="scene" viewBox="0 0 1000 580" role="img" aria-label="InvoiceIQ AWS services with the current request moving between them"></svg>
+    <div class="legend">The orange tag is the request in flight. Faded services are not used in this lesson.</div>
+  </main>
+
+  <aside class="panel detail" aria-live="polite">
+    <h2 class="ptitle" id="dtitle">Lesson overview</h2>
+    <div class="dbody" id="detail"></div>
+  </aside>
+
+  <section class="panel log" aria-label="Event log">
+    <div class="logbar">
+      <h2 class="ptitle">Event log · like an X-Ray trace</h2>
+      <label class="lbl" for="speed">Move</label>
+      <select class="ctl" id="speed">
+        <option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option>
+      </select>
+      <label class="lbl" for="wait">Pause</label>
+      <select class="ctl" id="wait">
+        <option value="2000">2 s</option><option value="4000" selected>4 s</option><option value="6000">6 s</option><option value="10000">10 s</option>
+      </select>
+      <button class="ctl" id="prev" aria-label="Previous step">‹ Back</button>
+      <button class="ctl primary" id="play">▶ Play</button>
+      <button class="ctl" id="next">Step ›</button>
+      <button class="ctl" id="replay">↺ Replay</button>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>#</th><th>Time</th><th>From</th><th>To</th><th>Service</th><th>Action</th><th>Size</th></tr></thead>
+        <tbody id="log"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>Built by rmctech-ai as a portfolio project. Teaching pattern inspired by <a href="https://protocol-explorer-alpha.vercel.app/">Protocol Explorer</a> by Dilum Sanjaya. Numbers are illustrative.</footer>
+</div>
+
+<script>
+const CATS = {
+  net:{label:"Networking", full:"Networking & content delivery", c:"#3b82c4"},
+  sec:{label:"Security", full:"Security, identity & compliance", c:"#c0392b"},
+  svl:{label:"Serverless", full:"Serverless", c:"#d9730d"},
+  sto:{label:"Storage", full:"Storage", c:"#2e9d5b"},
+  int:{label:"Integration", full:"Application integration", c:"#b0418f"},
+  ml:{label:"AI / ML", full:"Machine learning", c:"#14998f"},
+  db:{label:"Database", full:"Database", c:"#5b5fc7"},
+  mgmt:{label:"Management", full:"Management & governance", c:"#8a7a1e"},
+  client:{label:"Client", full:"Outside AWS", c:"#8b97a8"}
+};
+
+const NODES = {
+  user:{n:"Finance user", cat:"client", x:90, y:80},
+  cloudfront:{n:"CloudFront", cat:"net", x:300, y:80},
+  cognito:{n:"Cognito", cat:"sec", x:510, y:80},
+  apigw:{n:"API Gateway", cat:"net", x:720, y:80},
+  upload:{n:"Upload λ", cat:"svl", x:720, y:250},
+  s3:{n:"S3 bucket", cat:"sto", x:480, y:250},
+  sqs:{n:"SQS queue", cat:"int", x:240, y:250},
+  dlq:{n:"SQS DLQ", cat:"int", x:90, y:340},
+  worker:{n:"Worker λ", cat:"svl", x:240, y:420},
+  textract:{n:"Textract", cat:"ml", x:430, y:420},
+  bedrock:{n:"Bedrock", cat:"ml", x:620, y:420},
+  dynamo:{n:"DynamoDB", cat:"db", x:810, y:420},
+  sns:{n:"SNS topic", cat:"int", x:930, y:330},
+  inbox:{n:"Finance inbox", cat:"client", x:930, y:490},
+  cloudwatch:{n:"CloudWatch", cat:"mgmt", x:90, y:490}
+};
+const W = 124, H = 56;
+
+const LESSONS = [
+{
+  id:"happy", name:"InvoiceIQ: one invoice, start to finish", short:"The happy path through 13 services",
+  intro:"A finance user uploads one PDF invoice. Follow it through the front door, into an encrypted bucket, through a queue, past two AI services, into a database, and out as an email. Each step names the AWS category and the Well-Architected pillar it serves.",
+  steps:[
+    {f:"user",t:"cloudfront",tag:"GET /",title:"Open the app",sub:"CloudFront serves the page",cat:"net",pillar:"Performance Efficiency",ms:22,
+     body:"The finance user opens invoiceiq.app. CloudFront answers from the nearest edge location, so the page loads from cache instead of travelling to the S3 bucket in the region.",
+     facts:[["Edge cache","HIT"],["Origin","Private S3 bucket (OAC)"],["Protocol","HTTPS, TLS 1.3"]],log:["CloudFront","GET /index.html → 200 (cache hit)","14 KB"]},
+    {f:"user",t:"cognito",tag:"InitiateAuth",title:"Sign in",sub:"Cognito checks the password",cat:"sec",pillar:"Security",ms:180,
+     body:"The page sends the user's email and password to the Cognito user pool. Cognito verifies them, so the app never stores or checks passwords itself.",
+     facts:[["User pool","invoiceiq-users"],["MFA","Optional TOTP"],["Passwords","Held by Cognito, not your code"]],log:["Cognito","InitiateAuth (USER_SRP_AUTH)","1.2 KB"]},
+    {f:"cognito",t:"user",tag:"JWT issued",title:"Get a token",sub:"A signed ID token comes back",cat:"sec",pillar:"Security",ms:40,
+     body:"Cognito returns a signed JSON Web Token valid for one hour. Every later API call carries it, so the backend can trust who is calling without a session server.",
+     facts:[["Tokens","ID + access (JWT)"],["Expires","60 min"],["Signed with","RS256"]],log:["Cognito","200 · tokens issued","3.8 KB"]},
+    {f:"user",t:"apigw",tag:"POST /upload-url",title:"Ask to upload",sub:"API Gateway checks the JWT",cat:"net",pillar:"Security",ms:25,
+     body:"The browser asks for permission to upload. API Gateway's JWT authorizer checks the token's signature and expiry before any code runs. A bad token gets a 401 and never reaches Lambda.",
+     facts:[["Authorizer","Cognito JWT"],["Throttle","50 requests/s"],["Bad token","401, no Lambda run"]],log:["API Gateway","POST /upload-url (JWT valid)","0.6 KB"]},
+    {f:"apigw",t:"upload",tag:"Invoke",title:"Run the upload Lambda",sub:"One small function, one job",cat:"svl",pillar:"Security",ms:45,
+     body:"API Gateway invokes the Upload Lambda. Its IAM role may only call s3:PutObject on one bucket, which is all it needs to sign an upload URL.",
+     facts:[["Runtime","Python 3.12, arm64"],["IAM","s3:PutObject, one bucket"],["Cold start","~300 ms on first call"]],log:["Lambda","upload-url invoked","0.4 KB"]},
+    {f:"apigw",t:"user",tag:"presigned URL",title:"Get a presigned URL",sub:"Permission to upload one file",cat:"net",pillar:"Performance Efficiency",ms:12,
+     body:"The Lambda returns a presigned S3 URL that works for 5 minutes and for one file name. The browser can now upload straight to S3, so the file never passes through Lambda or API Gateway.",
+     facts:[["Valid for","300 s"],["Scope","One object key"],["Why","Big files skip API limits"]],log:["API Gateway","200 · presigned URL","1.1 KB"]},
+    {f:"user",t:"s3",tag:"PUT invoice.pdf",title:"Upload the invoice",sub:"Straight into an encrypted bucket",cat:"sto",pillar:"Security",ms:410,
+     body:"The browser PUTs the PDF to S3. The bucket blocks public access and encrypts every object with a KMS key, so the invoice is protected at rest from the first byte.",
+     facts:[["Object","invoices/2026/11/acme-0412.pdf"],["Encryption","SSE-KMS"],["Public access","Blocked"]],log:["S3","PUT acme-0412.pdf → 200","248 KB"]},
+    {f:"s3",t:"sqs",tag:"ObjectCreated",title:"Queue the job",sub:"S3 event becomes an SQS message",cat:"int",pillar:"Reliability",ms:30,
+     body:"S3 sends an ObjectCreated event into SQS. The user is done waiting. Processing happens in the background, and if anything downstream is slow, the message simply waits in the queue.",
+     facts:[["Queue","invoice-jobs"],["Retention","4 days"],["Max receives","3, then the DLQ"]],log:["SQS","SendMessage (s3:ObjectCreated)","1.4 KB"]},
+    {f:"sqs",t:"worker",tag:"ReceiveMessage",title:"Pick up the job",sub:"The worker Lambda polls the queue",cat:"svl",pillar:"Reliability",ms:60,
+     body:"Lambda polls SQS and receives the message. While the worker runs, the message is hidden from other workers. It is deleted only when processing succeeds.",
+     facts:[["Batch size","1"],["Visibility timeout","120 s"],["Tracing","X-Ray on"]],log:["Lambda","worker received 1 message","1.4 KB"]},
+    {f:"worker",t:"textract",tag:"AnalyzeExpense",title:"Read the PDF",sub:"Textract finds the fields",cat:"ml",pillar:"Performance Efficiency",ms:1800,
+     body:"The worker points Textract's AnalyzeExpense API at the S3 object. It is trained on invoices and receipts, and returns text plus labelled fields like vendor, total and due date.",
+     facts:[["API","AnalyzeExpense"],["Pages","1"],["Input","S3 object, no copy"]],log:["Textract","AnalyzeExpense request","0.5 KB"]},
+    {f:"textract",t:"worker",tag:"fields + text",title:"Get the raw text",sub:"Fields, words and line items",cat:"ml",pillar:"Performance Efficiency",ms:20,
+     body:"Textract replies with the fields it found and every line item. Some values are messy, like \"PHP48,200.00\" or \"Due: 20/12\", which is why the next step exists.",
+     facts:[["Fields found","11"],["Line items","14"],["Lowest confidence","87% (due date)"]],log:["Textract","200 · 11 fields, 14 line items","38 KB"]},
+    {f:"worker",t:"bedrock",tag:"InvokeModel",title:"Clean it up with Claude",sub:"Bedrock turns text into JSON",cat:"ml",pillar:"Operational Excellence",ms:1400,
+     body:"The worker sends Textract's output to Claude on Amazon Bedrock with a strict prompt: return only JSON that matches the InvoiceIQ schema. Claude normalizes dates, currency and vendor names.",
+     facts:[["Model","Claude via Bedrock"],["Output","JSON only, schema-checked"],["Your data","Not used to train models"]],log:["Bedrock","InvokeModel (invoice schema)","6.2 KB"]},
+    {f:"bedrock",t:"worker",tag:"{ JSON }",title:"Get clean JSON",sub:"Structured, validated data",cat:"ml",pillar:"Operational Excellence",ms:15,
+     body:"Claude returns the vendor, total, currency, due date and line items as JSON. The worker validates it against the schema before saving anything.",
+     facts:[["Vendor","Acme Supplies"],["Total","₱48,200.00"],["Due","2026-12-20"]],log:["Bedrock","200 · JSON validated","2.1 KB"]},
+    {f:"worker",t:"dynamo",tag:"PutItem",title:"Save the result",sub:"One item per invoice",cat:"db",pillar:"Cost Optimization",ms:9,
+     body:"The worker writes one DynamoDB item keyed by invoice ID. On-demand capacity means no cost when no invoices arrive, and no capacity planning when a hundred arrive at once.",
+     facts:[["Table","invoices (on-demand)"],["Key","invoiceId"],["Write","1 write unit"]],log:["DynamoDB","PutItem acme-0412","2.3 KB"]},
+    {f:"worker",t:"sns",tag:"Publish",title:"Alert finance",sub:"SNS fans out the notice",cat:"int",pillar:"Operational Excellence",ms:35,curve:160,
+     body:"The worker publishes a short summary to an SNS topic. SNS delivers it to every subscriber. Today that is the finance team's email; later it could also be Slack or another queue.",
+     facts:[["Topic","invoice-alerts"],["Subscribers","finance@ (email)"],["Messages","1 per invoice"]],log:["SNS","Publish invoice-alerts","0.8 KB"]},
+    {f:"sns",t:"inbox",tag:"Email",title:"Finance gets the email",sub:"Nobody typed a thing",cat:"int",pillar:"Operational Excellence",ms:900,
+     body:"Finance receives: New invoice from Acme Supplies, ₱48,200, due Dec 20. The worker deletes the SQS message, and the job is done.",
+     facts:[["Subject","New invoice: Acme Supplies"],["Typing saved","~8 minutes"],["SQS message","Deleted"]],log:["SNS","Email delivered to finance@","2.4 KB"]}
+  ],
+  summary:{title:"Invoice processed", sub:"Upload to email, untouched by hand",
+    body:"One PDF went from a browser to a structured database record and an email alert. No server ran while the system was idle, every step had its own least-privilege permission, and the queue would have held the job if any service was slow.",
+    extra:[["Est. cost / invoice","~US$0.01, mostly Textract"]]}
+},
+{
+  id:"fail", name:"Failure lesson: a broken file", short:"Retries, the DLQ and the alarm",
+  intro:"Most demos only show the happy path. This one uploads a file that can never succeed and shows how InvoiceIQ retries, quarantines it in a dead-letter queue, and tells a human, without losing a single invoice.",
+  steps:[
+    {f:"user",t:"s3",tag:"PUT scan.pdf",title:"A broken file arrives",sub:"A photo renamed to .pdf",cat:"sto",pillar:"Reliability",ms:620,
+     body:"Same signed-in user and same presigned URL flow as lesson 1. This time the file is a phone photo renamed to .pdf, so it is not a real PDF.",
+     facts:[["Object","invoices/2026/11/scan-0413.pdf"],["Real type","JPEG image"],["S3 result","200, stored"]],log:["S3","PUT scan-0413.pdf → 200","1.9 MB"]},
+    {f:"s3",t:"sqs",tag:"ObjectCreated",title:"Queue the job",sub:"S3 stores bytes, it doesn't judge them",cat:"int",pillar:"Reliability",ms:30,
+     body:"S3 accepts any bytes. The ObjectCreated event lands in SQS exactly as before.",
+     facts:[["Queue","invoice-jobs"],["Receive count","0 of 3"]],log:["SQS","SendMessage (s3:ObjectCreated)","1.4 KB"]},
+    {f:"sqs",t:"worker",tag:"Receive 1/3",title:"First attempt",sub:"The worker picks up the job",cat:"svl",pillar:"Reliability",ms:60,
+     body:"The worker receives the message. SQS counts this as receive number 1.",
+     facts:[["Receive count","1 of 3"],["Visibility timeout","120 s"]],log:["Lambda","worker received 1 message","1.4 KB"]},
+    {f:"worker",t:"textract",tag:"AnalyzeExpense",title:"Try to read it",sub:"Textract gets the file",cat:"ml",pillar:"Reliability",ms:700,
+     body:"The worker asks Textract to read the file, just like any other invoice.",
+     facts:[["API","AnalyzeExpense"]],log:["Textract","AnalyzeExpense request","0.5 KB"]},
+    {f:"textract",t:"worker",tag:"Unsupported",bad:true,title:"Textract rejects it",sub:"The worker raises an error",cat:"ml",pillar:"Reliability",ms:15,
+     body:"Textract can't parse the file. The worker logs the error to CloudWatch and exits without deleting the message.",
+     facts:[["Error","UnsupportedDocumentException"],["Message deleted","No"],["Logged to","CloudWatch Logs"]],log:["Textract","400 · UnsupportedDocumentException","0.3 KB"]},
+    {f:"worker",t:"sqs",tag:"back in queue",title:"The message comes back",sub:"No code needed for retries",cat:"int",pillar:"Reliability",ms:120000,
+     body:"Because nobody deleted the message, SQS makes it visible again after the 120-second visibility timeout. Temporary failures, like a throttled API, usually succeed on this retry.",
+     facts:[["Waited","120 s"],["Retry code written","None, SQS does it"]],log:["SQS","message visible again","1.4 KB"]},
+    {f:"sqs",t:"worker",tag:"Receive 2/3, 3/3",bad:true,title:"Attempts 2 and 3 fail",sub:"Some files will never work",cat:"svl",pillar:"Cost Optimization",ms:240000,
+     body:"The next two attempts fail the same way. A broken file will never succeed, and retrying forever would waste money and block the queue.",
+     facts:[["Receive count","3 of 3"],["Each attempt","Logged and traced"]],log:["Lambda","attempts 2 and 3 failed","1.4 KB"]},
+    {f:"sqs",t:"dlq",tag:"maxReceive = 3",title:"Quarantine in the DLQ",sub:"The bad message moves aside",cat:"int",pillar:"Reliability",ms:50,
+     body:"After the third receive, SQS moves the message to the dead-letter queue. Good invoices keep flowing, and the bad one is kept for 14 days for a person to inspect.",
+     facts:[["Redrive policy","maxReceiveCount 3"],["DLQ retention","14 days"],["Invoices lost","0"]],log:["SQS","moved to invoice-jobs-dlq","1.4 KB"]},
+    {f:"dlq",t:"cloudwatch",tag:"messages = 1",title:"CloudWatch notices",sub:"The DLQ is no longer empty",cat:"mgmt",pillar:"Operational Excellence",ms:60000,
+     body:"CloudWatch tracks the DLQ's ApproximateNumberOfMessagesVisible metric. It just went from 0 to 1, crossing the alarm threshold.",
+     facts:[["Metric","ApproximateNumberOfMessagesVisible"],["Threshold","> 0"],["Period","1 minute"]],log:["CloudWatch","metric 0 → 1 on DLQ","0.2 KB"]},
+    {f:"cloudwatch",t:"sns",tag:"ALARM",bad:true,title:"The alarm fires",sub:"CloudWatch notifies SNS",cat:"mgmt",pillar:"Operational Excellence",ms:20,curve:200,
+     body:"The alarm switches to ALARM state and publishes to the same SNS topic finance already uses.",
+     facts:[["Alarm","invoiceiq-dlq-not-empty"],["State","OK → ALARM"]],log:["CloudWatch","alarm → SNS invoice-alerts","0.6 KB"]},
+    {f:"sns",t:"inbox",tag:"Email: DLQ",bad:true,title:"A human takes over",sub:"Fast, specific, nothing lost",cat:"int",pillar:"Operational Excellence",ms:900,
+     body:"The inbox receives: InvoiceIQ DLQ has 1 message. Finance opens the file, sees it is a photo, and asks the vendor for a real PDF.",
+     facts:[["Subject","ALARM: invoiceiq-dlq-not-empty"],["Time to alert","About 7 minutes"],["Fix","Ask vendor for a PDF"]],log:["SNS","Email delivered to finance@","2.1 KB"]}
+  ],
+  summary:{title:"Failure handled", sub:"Retried, quarantined, reported",
+    body:"The system retried a broken file three times, moved it aside so the queue kept working, and alerted a person, all without custom retry code. This is the Reliability and Operational Excellence pillars working together.",
+    extra:[["Invoices lost","0"],["Custom retry code","None"]]}
+},
+{
+  id:"auth", name:"Sign-in: how Cognito guards the API", short:"MFA, JWTs, a blocked request, a refresh",
+  intro:"Security and Compliance is 30% of the CLF-C02 exam. This lesson follows one user signing in with MFA, shows API Gateway turning away a request with no token before any code runs, and ends with a silent token refresh an hour later.",
+  steps:[
+    {f:"user",t:"cloudfront",tag:"GET /",title:"Load the sign-in page",sub:"Served from the edge",cat:"net",pillar:"Performance Efficiency",ms:22,
+     body:"The browser loads the app from CloudFront. Nothing secret lives in this page: it holds only the Cognito user pool ID and app client ID, which are safe to be public.",
+     facts:[["Edge cache","HIT"],["Contains","Pool ID, client ID"],["Contains no","Passwords or API keys"]],log:["CloudFront","GET /index.html → 200","14 KB"]},
+    {f:"user",t:"cognito",tag:"InitiateAuth",title:"Send the password, safely",sub:"SRP: the password never travels",cat:"sec",pillar:"Security",ms:160,
+     body:"The browser starts Secure Remote Password (SRP) auth. It proves it knows the password using maths, so the password itself is never sent over the network.",
+     facts:[["Flow","USER_SRP_AUTH"],["Password sent","No, only a proof"],["Lockout","After repeated failures"]],log:["Cognito","InitiateAuth (USER_SRP_AUTH)","1.2 KB"]},
+    {f:"cognito",t:"user",tag:"MFA challenge",title:"Ask for a second factor",sub:"Password alone is not enough",cat:"sec",pillar:"Security",ms:35,
+     body:"The password proof checks out, but this user pool requires MFA. Cognito answers with a challenge asking for the 6-digit code from the user's authenticator app.",
+     facts:[["Challenge","SOFTWARE_TOKEN_MFA"],["Code","6 digits, changes every 30 s"],["Why","A stolen password can't sign in"]],log:["Cognito","200 · challenge SOFTWARE_TOKEN_MFA","0.9 KB"]},
+    {f:"user",t:"cognito",tag:"code 482 913",title:"Answer the challenge",sub:"The user types the code",cat:"sec",pillar:"Security",ms:4200,
+     body:"The user opens the authenticator app and types the current code. The browser sends it back to Cognito with the session from the previous step.",
+     facts:[["Call","RespondToAuthChallenge"],["Session","Valid 3 minutes"]],log:["Cognito","RespondToAuthChallenge (MFA code)","0.7 KB"]},
+    {f:"cognito",t:"user",tag:"3 tokens",title:"Receive the tokens",sub:"ID, access and refresh",cat:"sec",pillar:"Security",ms:40,
+     body:"Cognito returns three tokens. The ID and access tokens are signed JWTs that expire in an hour. The refresh token lasts 30 days and is used only to get new short-lived tokens.",
+     facts:[["ID / access token","JWT, 60 min"],["Refresh token","30 days"],["Signed with","RS256, keys published by Cognito"]],log:["Cognito","200 · ID, access, refresh tokens","3.8 KB"]},
+    {f:"user",t:"apigw",tag:"no token",bad:true,title:"A request without a token",sub:"Someone calls the API directly",cat:"net",pillar:"Security",ms:20,
+     body:"Imagine a script on the internet calling POST /upload-url with no Authorization header. It knows the URL, because API URLs are not secret.",
+     facts:[["Header","Authorization missing"],["Caller","Unknown"]],log:["API Gateway","POST /upload-url (no token)","0.3 KB"]},
+    {f:"apigw",t:"user",tag:"401",bad:true,title:"Blocked at the door",sub:"No Lambda runs, no cost",cat:"net",pillar:"Security",ms:3,
+     body:"API Gateway's JWT authorizer rejects the request with 401 Unauthorized. It never reaches the Upload Lambda, so the attacker gets nothing and you pay nothing for compute.",
+     facts:[["Status","401 Unauthorized"],["Lambda invoked","No"],["Stopped by","JWT authorizer"]],log:["API Gateway","401 Unauthorized","0.2 KB"]},
+    {f:"user",t:"apigw",tag:"Bearer JWT",title:"The real user calls the API",sub:"Token in the Authorization header",cat:"net",pillar:"Security",ms:25,
+     body:"The signed-in browser sends the same request with its access token. API Gateway checks the signature against Cognito's public keys, the expiry time, and the audience.",
+     facts:[["Header","Authorization: Bearer eyJ…"],["Checks","Signature, expiry, audience"],["Result","Valid"]],log:["API Gateway","POST /upload-url (JWT valid)","0.6 KB"]},
+    {f:"apigw",t:"upload",tag:"claims: sub, email",title:"Pass the identity along",sub:"The Lambda knows who is calling",cat:"svl",pillar:"Security",ms:45,
+     body:"API Gateway forwards the token's claims to the Lambda. The function can tag the upload with the user's ID without parsing or trusting anything the browser typed.",
+     facts:[["Claims passed","sub, email, groups"],["Used for","Tagging who uploaded"],["IAM role","s3:PutObject only"]],log:["Lambda","upload-url invoked (sub=7f3c…)","0.5 KB"]},
+    {f:"apigw",t:"user",tag:"200 OK",title:"Request allowed",sub:"Presigned URL returned",cat:"net",pillar:"Security",ms:12,
+     body:"The Lambda returns a presigned upload URL and API Gateway sends it back. Same endpoint as the blocked request, completely different result, decided by the token alone.",
+     facts:[["Status","200 OK"],["Returned","Presigned S3 URL, 5 min"]],log:["API Gateway","200 · presigned URL","1.1 KB"]},
+    {f:"user",t:"cognito",tag:"refresh token",title:"One hour later",sub:"The access token has expired",cat:"sec",pillar:"Security",ms:3600000,
+     body:"An hour passes and the access token expires. Instead of asking for the password and MFA code again, the app quietly sends the refresh token to Cognito.",
+     facts:[["Flow","REFRESH_TOKEN_AUTH"],["User sees","Nothing"],["If refresh is revoked","User must sign in again"]],log:["Cognito","InitiateAuth (REFRESH_TOKEN_AUTH)","1.0 KB"]},
+    {f:"cognito",t:"user",tag:"new tokens",title:"Fresh tokens",sub:"Short-lived again",cat:"sec",pillar:"Security",ms:30,
+     body:"Cognito issues new ID and access tokens. Short-lived tokens limit the damage if one leaks: a stolen access token stops working within the hour.",
+     facts:[["New lifetime","60 min"],["Password asked","No"],["Admin can","Sign the user out everywhere"]],log:["Cognito","200 · new ID, access tokens","3.1 KB"]}
+  ],
+  summary:{title:"Signed in and protected", sub:"Identity checked at the edge",
+    body:"The password never crossed the network, a second factor was required, an anonymous request was stopped before any code ran, and the session renewed without bothering the user. That is the Security pillar in four moves.",
+    extra:[["Passwords in your code","None"],["Requests blocked before compute","1"]]}
+}
+];
+
+const $ = s => document.querySelector(s);
+const svg = $("#scene"), NS = "http://www.w3.org/2000/svg";
+let L = 0, step = -1, playing = false, timer = null, raf = null;
+const speed = () => parseFloat($("#speed").value);
+
+function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+
+function anchor(id, toward){
+  const n = NODES[id], o = NODES[toward];
+  const dx = o.x - n.x, dy = o.y - n.y;
+  if (Math.abs(dy) < 5) return [n.x + Math.sign(dx) * W/2, n.y];
+  if (Math.abs(dx) < 5) return [n.x, n.y + Math.sign(dy) * H/2];
+  const sx = (W/2) / Math.abs(dx), sy = (H/2) / Math.abs(dy), s = Math.min(sx, sy);
+  return [n.x + dx * s, n.y + dy * s];
+}
+function pathFor(s){
+  const a = NODES[s.f], b = NODES[s.t];
+  const sameRow = Math.abs(a.y - b.y) < 5 && Math.abs(a.x - b.x) > 250;
+  if (sameRow){
+    const bend = Math.abs(a.x - b.x) > 450 ? 110 : 90;
+    const p1 = [a.x, a.y + H/2], p2 = [b.x, b.y + H/2];
+    return `M${p1[0]},${p1[1]} Q${(a.x+b.x)/2},${a.y + H/2 + bend} ${p2[0]},${p2[1]}`;
+  }
+  const p1 = anchor(s.f, s.t), p2 = anchor(s.t, s.f);
+  if (s.curve){
+    const p1b = [a.x, a.y + H/2], p2b = [b.x, b.y + H/2];
+    return `M${p1b[0]},${p1b[1]} Q${(a.x+b.x)/2},${Math.max(a.y,b.y) + s.curve} ${p2b[0]},${p2b[1]}`;
+  }
+  return `M${p1[0]},${p1[1]} L${p2[0]},${p2[1]}`;
+}
+const pairKey = s => [s.f, s.t].sort().join("|") + (s.curve ? "c" : "");
+
+let edgeEls = {}, nodeEls = {}, tagG, tagRect, tagText;
+function buildScene(){
+  svg.innerHTML = "";
+  edgeEls = {}; nodeEls = {};
+  const lesson = LESSONS[L];
+  const gE = el("g", {}, svg), gN = el("g", {}, svg);
+  lesson.steps.forEach(s => {
+    const k = pairKey(s);
+    if (!edgeEls[k]) edgeEls[k] = el("path", {d: pathFor(s), class: "edge"}, gE);
+  });
+  const used = new Set(lesson.steps.flatMap(s => [s.f, s.t]));
+  for (const id in NODES){
+    const n = NODES[id], c = CATS[n.cat];
+    const g = el("g", {class: "node" + (used.has(id) ? "" : " idle"), transform: `translate(${n.x - W/2},${n.y - H/2})`}, gN);
+    el("rect", {class: "box", width: W, height: H, rx: 8}, g);
+    el("rect", {class: "stripe", width: 5, height: H - 16, x: 6, y: 8, rx: 2, fill: c.c}, g);
+    const t1 = el("text", {class: "nm", x: 18, y: 25}, g); t1.textContent = n.n;
+    const t2 = el("text", {class: "sb", x: 18, y: 42}, g); t2.textContent = c.label;
+    nodeEls[id] = g;
+  }
+  tagG = el("g", {class: "tag", opacity: 0}, svg);
+  tagRect = el("rect", {rx: 5, height: 24, y: -12}, tagG);
+  tagText = el("text", {y: 4, "text-anchor": "middle"}, tagG);
+}
+
+function placeTag(s, frac){
+  const k = pairKey(s), p = edgeEls[k];
+  if (!p) return;
+  const len = p.getTotalLength();
+  const a = NODES[s.f], start = p.getPointAtLength(0);
+  const forward = Math.hypot(start.x - a.x, start.y - a.y) < Math.hypot(p.getPointAtLength(len).x - a.x, p.getPointAtLength(len).y - a.y);
+  const pt = p.getPointAtLength(len * (forward ? frac : 1 - frac));
+  tagG.setAttribute("transform", `translate(${pt.x},${pt.y})`);
+}
+function showTag(s){
+  tagText.textContent = s.tag;
+  const w = s.tag.length * 7.4 + 18;
+  tagRect.setAttribute("width", w); tagRect.setAttribute("x", -w/2);
+  tagG.setAttribute("class", "tag" + (s.bad ? " bad" : ""));
+  tagG.setAttribute("opacity", 1);
+}
+
+function animate(i, done){
+  cancelAnimationFrame(raf);
+  const s = LESSONS[L].steps[i];
+  showTag(s);
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const dur = reduce ? 1 : 1400 / speed();
+  const t0 = performance.now();
+  const tick = now => {
+    const t = Math.min(1, (now - t0) / dur);
+    const e = t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+    placeTag(s, e);
+    if (t < 1) raf = requestAnimationFrame(tick); else if (done) done();
+  };
+  raf = requestAnimationFrame(tick);
+}
+
+function fmtTime(ms){
+  if (ms < 10000) return (ms/1000).toFixed(3) + " s";
+  const s = Math.round(ms/1000), m = Math.floor(s/60);
+  return `${m}m ${String(s % 60).padStart(2,"0")}s`;
+}
+
+function renderLessons(){
+  const box = $("#lessons"); box.innerHTML = "";
+  LESSONS.forEach((les, li) => {
+    const d = document.createElement("div"); d.className = "lesson" + (li === L ? " on" : "");
+    const b = document.createElement("button");
+    b.innerHTML = `<div class="ln"></div><div class="ls"></div>`;
+    b.querySelector(".ln").textContent = les.name; b.querySelector(".ls").textContent = les.short;
+    b.addEventListener("click", () => { if (li !== L){ stop(); L = li; step = -1; buildScene(); render(); } });
+    d.appendChild(b);
+    if (li === L){
+      const ol = document.createElement("ol"); ol.className = "steps";
+      les.steps.forEach((s, si) => {
+        const li2 = document.createElement("li");
+        const state = si < step || step >= les.steps.length ? (s.bad ? "err" : "done") : si === step ? "cur" : "";
+        li2.className = state;
+        const bt = document.createElement("button");
+        bt.innerHTML = `<span class="dot">${si < step || step >= les.steps.length ? (s.bad ? "!" : "✓") : si + 1}</span><span><div class="st"></div><div class="ss"></div></span>`;
+        bt.querySelector(".st").textContent = s.title; bt.querySelector(".ss").textContent = s.sub;
+        bt.addEventListener("click", () => { stop(); step = si; render(); animate(si); });
+        li2.appendChild(bt); ol.appendChild(li2);
+      });
+      d.appendChild(ol);
+    }
+    box.appendChild(d);
+  });
+}
+
+function renderCats(){
+  const steps = LESSONS[L].steps;
+  const seen = new Set(steps.slice(0, Math.max(0, step + 1)).map(s => s.cat));
+  const now = step >= 0 && step < steps.length ? steps[step].cat : null;
+  const box = $("#cats"); box.innerHTML = "";
+  Object.entries(CATS).filter(([k]) => k !== "client").forEach(([k, c]) => {
+    const s = document.createElement("span");
+    s.className = "cat" + (seen.has(k) ? " seen" : "") + (k === now ? " now" : "");
+    s.style.setProperty("--c", c.c);
+    s.innerHTML = "<i></i>"; s.append(c.label);
+    s.title = c.full;
+    box.appendChild(s);
+  });
+}
+
+function facts(rows){
+  return `<dl class="facts">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+}
+
+function renderDetail(){
+  const les = LESSONS[L], steps = les.steps, box = $("#detail");
+  if (step < 0){
+    $("#dtitle").textContent = "Lesson overview";
+    const services = new Set(steps.flatMap(s => [s.f, s.t]).filter(id => NODES[id].cat !== "client"));
+    box.innerHTML = `<div class="kicker">${steps.length} steps</div><h2></h2><p class="sub"></p><p></p>` +
+      facts([["Services", services.size], ["Categories", new Set([...services].map(id => NODES[id].cat)).size], ["Controls", "Play, or Step one at a time"]]);
+    box.querySelector("h2").textContent = les.name;
+    box.querySelector(".sub").textContent = les.short;
+    box.querySelectorAll("p")[1].textContent = les.intro;
+    return;
+  }
+  if (step >= steps.length){
+    $("#dtitle").textContent = "Lesson summary";
+    const total = steps.reduce((a, s) => a + s.ms, 0);
+    const services = new Set(steps.flatMap(s => [s.f, s.t]).filter(id => NODES[id].cat !== "client"));
+    const pillars = [...new Set(steps.map(s => s.pillar))];
+    const cats = [...new Set([...services].map(id => NODES[id].cat))];
+    box.innerHTML = `<div class="kicker" style="color:var(--good)">Lesson complete</div><h2></h2><p class="sub"></p><p></p>` +
+      `<div class="pills">${cats.map(c => `<span class="pill" style="--c:${CATS[c].c}">${CATS[c].label}</span>`).join("")}</div>` +
+      facts([["Steps", steps.length], ["Total time", fmtTime(total)], ["Services", services.size], ["Pillars", `${pillars.length} of 6`], ...les.summary.extra]) +
+      `<p class="note">Pillars covered: ${pillars.join(", ")}. Press Replay to watch again.</p>`;
+    box.querySelector("h2").textContent = les.summary.title;
+    box.querySelector(".sub").textContent = les.summary.sub;
+    box.querySelectorAll("p")[1].textContent = les.summary.body;
+    return;
+  }
+  const s = steps[step], c = CATS[s.cat];
+  $("#dtitle").textContent = "Step details";
+  box.innerHTML = `<div class="kicker">Step ${step + 1} of ${steps.length}</div><h2></h2><p class="sub"></p>` +
+    `<div class="pills"><span class="pill" style="--c:${c.c}"><b>Category</b> ${c.full}</span><span class="pill"><b>Pillar</b> ${s.pillar}</span></div><p></p>` +
+    facts([["From → to", `${NODES[s.f].n} → ${NODES[s.t].n}`], ...s.facts]);
+  box.querySelector("h2").textContent = s.title;
+  box.querySelector(".sub").textContent = s.sub;
+  box.querySelectorAll("p")[1].textContent = s.body;
+}
+
+function renderLog(){
+  const steps = LESSONS[L].steps, tb = $("#log");
+  const n = Math.min(step + 1, steps.length);
+  if (n <= 0){ tb.innerHTML = `<tr class="empty"><td colspan="7">Nothing has moved yet. Press Play or Step.</td></tr>`; return; }
+  let t = 0, html = "";
+  for (let i = 0; i < n; i++){
+    const s = steps[i]; const c = CATS[s.cat];
+    html += `<tr class="${i === step ? "cur" : ""} ${s.bad ? "bad" : ""}"><td>${i + 1}</td><td>${fmtTime(t)}</td><td>${NODES[s.f].n}</td><td>${NODES[s.t].n}</td>` +
+      `<td><span class="sw" style="--c:${c.c}"></span>${s.log[0]}</td><td class="act">${s.log[1]}</td><td>${s.log[2]}</td></tr>`;
+    t += s.ms;
+  }
+  tb.innerHTML = html;
+  const cur = tb.querySelector("tr.cur") || tb.lastElementChild;
+  const wrap = tb.closest(".tablewrap");
+  if (cur && wrap){
+    const top = cur.offsetTop - wrap.querySelector("thead").offsetHeight;
+    if (top < wrap.scrollTop || cur.offsetTop + cur.offsetHeight > wrap.scrollTop + wrap.clientHeight) wrap.scrollTop = Math.max(0, top - 8);
+  }
+}
+
+function renderScene(){
+  const steps = LESSONS[L].steps;
+  const doneKeys = new Set(steps.slice(0, Math.max(0, step)).map(pairKey));
+  for (const k in edgeEls) edgeEls[k].setAttribute("class", "edge" + (doneKeys.has(k) ? " done" : ""));
+  for (const id in nodeEls) nodeEls[id].classList.remove("act", "used");
+  steps.slice(0, Math.max(0, Math.min(step, steps.length))).forEach(s => { nodeEls[s.f].classList.add("used"); nodeEls[s.t].classList.add("used"); });
+  if (step >= 0 && step < steps.length){
+    const s = steps[step];
+    edgeEls[pairKey(s)].setAttribute("class", "edge act" + (s.bad ? " bad" : ""));
+    nodeEls[s.f].classList.add("act"); nodeEls[s.t].classList.add("act");
+  } else if (step >= steps.length){
+    steps.forEach(s => { nodeEls[s.f].classList.add("used"); nodeEls[s.t].classList.add("used"); });
+    for (const k in edgeEls) edgeEls[k].setAttribute("class", "edge done");
+    tagG.setAttribute("opacity", 0);
+  } else {
+    tagG.setAttribute("opacity", 0);
+  }
+}
+
+function render(){
+  renderLessons(); renderCats(); renderDetail(); renderLog(); renderScene();
+  const steps = LESSONS[L].steps;
+  $("#prev").disabled = step < 0;
+  $("#next").disabled = step >= steps.length;
+  $("#play").textContent = playing ? "❚❚ Pause" : step >= steps.length ? "↺ Again" : "▶ Play";
+}
+
+function advance(withAnim){
+  const steps = LESSONS[L].steps;
+  if (step >= steps.length) return false;
+  step++;
+  render();
+  if (step < steps.length){
+    if (withAnim) animate(step, () => { if (playing) timer = setTimeout(() => advance(true) || stop(), parseInt($("#wait").value, 10)); });
+    else animate(step);
+  } else if (playing){ stop(); }
+  return true;
+}
+function stop(){ playing = false; clearTimeout(timer); cancelAnimationFrame(raf); render(); }
+function play(){
+  const steps = LESSONS[L].steps;
+  if (step >= steps.length) step = -1;
+  playing = true; render(); advance(true);
+}
+
+$("#play").addEventListener("click", () => playing ? stop() : play());
+$("#next").addEventListener("click", () => { stop(); advance(false); });
+$("#prev").addEventListener("click", () => {
+  stop(); cancelAnimationFrame(raf);
+  if (step > 0){ step = Math.min(step, LESSONS[L].steps.length) - 1; render(); const s = LESSONS[L].steps[step]; showTag(s); placeTag(s, 1); }
+  else { step = -1; render(); }
+});
+$("#replay").addEventListener("click", () => { stop(); cancelAnimationFrame(raf); step = -1; play(); });
+document.addEventListener("keydown", e => {
+  if (e.target.closest("select")) return;
+  if (e.key === "ArrowRight"){ e.preventDefault(); $("#next").click(); }
+  if (e.key === "ArrowLeft"){ e.preventDefault(); $("#prev").click(); }
+  if (e.key === " " && !e.target.closest("button")){ e.preventDefault(); $("#play").click(); }
+});
+
+buildScene();
+step = 6; render(); { const s = LESSONS[L].steps[step]; showTag(s); placeTag(s, .55); }
+</script>
+</body>
+</html>
