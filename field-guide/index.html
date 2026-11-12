@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AWS Service Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout idea: a field guide — filters and service cards on the left, one service's full profile and its connection map pinned on the right */
+  --bg:#f3f4f7; --panel:#ffffff; --ink:#172033; --muted:#5d6a7e; --line:#dce1e9; --accent:#d9730d; --accent-soft:#fdf0e2; --map:#0b1222; --map-line:#26344f; --map-ink:#e8edf5;
+  --display:"Manrope","Segoe UI",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0b1019; --panel:#131b28; --ink:#e6ebf2; --muted:#95a3b6; --line:#253145; --accent:#f39a3c; --accent-soft:#2c2114; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --bg:#0b1019; --panel:#131b28; --ink:#e6ebf2; --muted:#95a3b6; --line:#253145; --accent:#f39a3c; --accent-soft:#2c2114; color-scheme:dark; }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--display);font-size:14px;line-height:1.5}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:12px;padding:12px;align-items:start}
+header{grid-column:1/-1;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+header h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
+header p{margin:0;color:var(--muted);font-size:12.5px}
+header p a{color:var(--accent);text-decoration:none}
+.tools{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+#q{width:280px;max-width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:700;font-size:13px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.left{display:flex;flex-direction:column;gap:12px;min-width:0}
+.cats{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px}
+.cat{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.cat i{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.cat b{font-family:var(--mono);font-weight:500;color:var(--muted);font-size:11px}
+.cat.on{border-color:var(--c, var(--accent));box-shadow:0 0 0 1px var(--c, var(--accent)) inset;font-weight:700}
+.count{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding:0 4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.card{all:unset;box-sizing:border-box;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px 11px;border-left:4px solid var(--c);display:flex;flex-direction:column;gap:3px;min-height:104px}
+.card:hover{border-color:var(--muted);border-left-color:var(--c)}
+.card:focus-visible{outline:2px solid var(--accent)}
+.card.on{background:var(--accent-soft);border-color:var(--accent);border-left-color:var(--c)}
+.card .cn{font-weight:800;line-height:1.25}
+.card .cc{font-family:var(--mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.card .cw{font-size:12.3px;color:var(--muted);line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.empty{padding:30px;text-align:center;color:var(--muted);background:var(--panel);border:1px dashed var(--line);border-radius:10px}
+aside{position:sticky;top:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;max-height:calc(100vh - 24px);display:flex;flex-direction:column}
+.map{background:var(--map);border-bottom:1px solid var(--map-line)}
+.map svg{display:block;width:100%;height:auto}
+.map .lbl{fill:var(--map-ink);font-family:var(--display);font-size:12px;font-weight:700}
+.map .lbl.center{font-size:14px}
+.map .node{cursor:pointer}
+.map .node:hover circle{stroke:#fff}
+.maphint{font-size:11px;color:#8d9bb1;padding:6px 12px 8px;font-family:var(--mono)}
+.detail{padding:14px 16px 18px;overflow:auto}
+.dk{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dk .pill{border:1px solid var(--c);border-radius:999px;padding:1px 8px;color:var(--ink)}
+.detail h2{margin:4px 0 8px;font-size:22px;line-height:1.2;font-weight:800;text-wrap:balance}
+.sec{margin-top:12px}
+.sec h3{margin:0 0 4px;font-family:var(--mono);font-weight:500;font-size:11.5px;color:var(--accent);letter-spacing:.02em}
+.sec p{margin:0;max-width:65ch}
+.kws{display:flex;flex-wrap:wrap;gap:5px}
+.kw{font-family:var(--mono);font-size:11.5px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+.hook{border-left:3px solid var(--accent);background:var(--accent-soft);padding:7px 10px;font-weight:700}
+.links{display:flex;flex-wrap:wrap;gap:6px}
+.link{border:1px solid var(--line);border-left:3px solid var(--c);background:var(--panel);border-radius:6px;padding:3px 9px;font-size:12.5px;cursor:pointer}
+.link:hover{border-color:var(--muted);border-left-color:var(--c)}
+.note{font-size:11.5px;color:var(--muted);margin-top:14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.view[hidden]{display:none}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.box h2{margin:0 0 2px;font-size:18px;font-weight:800;text-wrap:balance}
+.box .lead{margin:0 0 10px;color:var(--muted);font-size:13px}
+.rows{display:grid;grid-template-columns:minmax(150px,240px) 1fr;gap:6px 14px;margin:0}
+.rows dt{font-weight:800}
+.rows dd{margin:0;color:var(--ink)}
+.stack{display:flex;flex-direction:column;gap:12px}
+.pillars{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.pillar{border:1px solid var(--line);border-top:4px solid var(--accent);border-radius:10px;padding:12px 14px;background:var(--panel)}
+.pillar h3{margin:0;font-size:16px;font-weight:800}
+.pillar .q{color:var(--muted);font-size:12.5px;margin:2px 0 8px}
+.pillar h4{margin:10px 0 4px;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--accent)}
+.pillar ol,.pillar ul{margin:0;padding-left:20px}
+.pillar li{margin:2px 0}
+.small{font-size:12px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.trow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.trow:last-child{border-bottom:0}
+.quiz .ans{visibility:hidden}
+.quiz .trow:hover .ans,.quiz .trow:focus-within .ans{visibility:visible}
+.grp{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.grp .box h3{margin:0 0 6px;font-size:15px;font-weight:800}
+.grow{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:start;font-size:13px}
+.trap{padding:8px 0;border-bottom:1px solid var(--line)}
+.trap:last-child{border-bottom:0}
+.trap .no{color:var(--bad, #c0392b);font-weight:700;text-decoration:line-through;text-decoration-thickness:1px}
+.trap .yes{margin-top:2px}
+#tq{width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);margin-bottom:6px}
+footer{grid-column:1/-1;text-align:center;color:var(--muted);font-size:11.5px;padding:4px 0 8px}
+footer a{color:inherit}
+@media (max-width:980px){
+  .wrap{grid-template-columns:1fr}
+  aside{position:static;max-height:none;order:-1}
+  header{order:-2}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>AWS Service Field Guide</h1>
+      <p>Every CLF-C02 service, plus design principles, best practices, core concepts and exam traps · <a href="../">AWS City Map</a></p>
+    </div>
+    <div class="tools">
+      <label for="q" class="count" style="align-self:center">Search</label>
+      <input id="q" type="search" placeholder="Name, keyword or use case (e.g. DDoS, queue, SQL on S3)" autocomplete="off">
+      <button class="btn primary" id="rand">Random service</button>
+    </div>
+  </header>
+
+  <div class="left">
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-v="services">Services</button>
+      <button class="tab" data-v="concepts">Design principles, best practices &amp; concepts</button>
+      <button class="tab" data-v="traps">Exam traps</button>
+    </div>
+    <div class="view stack" id="v-services">
+      <div class="cats" id="cats" aria-label="Filter by category"></div>
+      <div class="count" id="count"></div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <div class="view stack" id="v-concepts" hidden></div>
+    <div class="view stack" id="v-traps" hidden></div>
+  </div>
+
+  <aside aria-live="polite">
+    <div class="map"><svg id="map" viewBox="0 0 460 300" role="img" aria-label="Map of services connected to the selected service"></svg><div class="maphint">Connection map · click any service to jump to it</div></div>
+    <div class="detail" id="detail"></div>
+  </aside>
+
+  <footer>Built by rmctech-ai for CLF-C02 review. The service list follows AWS's official in-scope list (non-exhaustive), plus Elastic Load Balancing, CodeDeploy, CDK, Pricing Calculator and Bedrock. Memory hooks and analogies are study aids, not definitions.</footer>
+</div>
+
+<script>
+const CATS = {
+  compute:{l:"Compute", c:"#e8590c"},
+  containers:{l:"Containers", c:"#f08c00"},
+  serverless:{l:"Serverless", c:"#f59f00"},
+  storage:{l:"Storage", c:"#2f9e44"},
+  database:{l:"Database", c:"#4c6ef5"},
+  network:{l:"Networking & content delivery", c:"#1c7ed6"},
+  security:{l:"Security, identity & compliance", c:"#e03131"},
+  mgmt:{l:"Management & governance", c:"#ae3ec9"},
+  finance:{l:"Cloud financial management", c:"#d6336c"},
+  integration:{l:"Application integration", c:"#9c36b5"},
+  analytics:{l:"Analytics", c:"#5c940d"},
+  ml:{l:"Machine learning", c:"#0ca678"},
+  devtools:{l:"Developer tools", c:"#495057"},
+  migration:{l:"Migration & transfer", c:"#0b7285"},
+  euc:{l:"End user computing", c:"#7048e8"},
+  frontend:{l:"Frontend web & mobile", c:"#1098ad"},
+  iot:{l:"Internet of Things", c:"#66a80f"},
+  business:{l:"Business applications", c:"#c2255c"},
+  enablement:{l:"Customer enablement", c:"#868e96"}
+};
+const SV = [];
+function S(id, n, c, w, u, k, h, a, v, l){ SV.push({id, n, c, w, u, k: k.split(",").map(s => s.trim()).filter(Boolean), h, a, v, l: l.split(/\s+/).filter(Boolean)}); }
+// id, name, cat, what, use, keywords, hook, analogy, differentiate, links
+S("ec2","Amazon EC2","compute","Resizable virtual servers you choose, configure and pay for by the second or hour.","Any app that needs full control of the operating system: web servers, legacy apps, game servers.","virtual machine, instance, AMI, instance type, On-Demand, Reserved, Spot, Savings Plans","EC2 = Elastic Compute Cloud: rent a computer by the second.","Renting an apartment: you pick the size and furnish it yourself.","vs Lambda: EC2 runs all the time and you manage the OS; Lambda runs only when triggered, with no servers to manage.","ebs vpc elb autoscaling cloudwatch ssm iam");
+S("beanstalk","AWS Elastic Beanstalk","compute","Upload your code; Beanstalk provisions EC2, load balancing, scaling and monitoring for you.","Deploy a standard web app (Java, .NET, Node.js, Python, PHP) without designing the infrastructure.","PaaS, upload code, managed environment, deploy web app quickly","Plant your code and the beanstalk grows the infrastructure around it.","A serviced apartment: move in with a suitcase, the building handles the rest.","vs CloudFormation: Beanstalk is a ready-made app platform; CloudFormation builds any infrastructure from your own template.","ec2 elb autoscaling cloudwatch rds");
+S("lightsail","Amazon Lightsail","compute","Simple virtual private servers with a fixed monthly price that includes storage, DNS and data transfer.","A blog, small website or dev server for someone who wants simplicity over flexibility.","simple, fixed monthly price, VPS, WordPress, small business","Lightsail: light, simple sailing for beginners.","A prepaid phone plan: one fixed price, fewer choices.","vs EC2: Lightsail is bundled and simple at a fixed price; EC2 is flexible and priced per component.","ec2 route53");
+S("batch","AWS Batch","compute","Runs batch computing jobs at any scale, managing the job queue and EC2 or Fargate capacity for you.","Overnight risk models, video rendering, genomics: many jobs that can wait their turn.","batch jobs, job queue, large-scale processing, HPC","Batch: a queue of jobs AWS works through.","A laundry service: drop off the bags, they run as many machines as needed.","vs Lambda: Batch suits long, heavy jobs that run for hours; Lambda suits short event-driven tasks (15 minutes max).","ec2 fargate s3");
+S("outposts","AWS Outposts","compute","AWS-designed racks installed in your own data centre, running AWS services on premises.","Workloads that need very low latency or must keep data on site but want the same AWS APIs.","on-premises, hybrid, AWS hardware in your data center, low latency, data residency","Outposts: an AWS outpost inside your building.","An ATM installed inside your office lobby.","vs Snow Family: Outposts stays permanently on site; Snow devices are shipped for data transfer or temporary edge use.","ec2 ebs s3 vpc");
+S("ecs","Amazon ECS","containers","AWS's own container orchestrator that runs and scales Docker containers on EC2 or Fargate.","Run microservices in containers without learning Kubernetes.","containers, Docker, orchestration, task, service","ECS = Elastic Container Service: AWS's own way to run containers.","A shipping port that loads containers onto ships.","vs EKS: ECS is AWS-native and simpler; EKS is managed Kubernetes for teams that already use Kubernetes.","fargate ecr elb ec2 cloudwatch");
+S("eks","Amazon EKS","containers","Managed Kubernetes control plane on AWS.","Run Kubernetes workloads, or move existing Kubernetes apps to AWS.","Kubernetes, K8s, open source, portable containers","EKS: the K is for Kubernetes.","The same port, but run with the international standard everyone knows.","vs ECS: when the question says Kubernetes, the answer is EKS.","fargate ecr ec2 elb");
+S("ecr","Amazon ECR","containers","Private registry that stores, scans and shares container images.","Store the Docker images that ECS, EKS or Lambda pull when they deploy.","container image registry, Docker images, image scanning","ECR: the R is for Registry, a shelf for images.","A warehouse of packed containers waiting to ship.","vs ECS/EKS: ECR stores images; ECS and EKS run them.","ecs eks lambda codebuild inspector");
+S("lambda","AWS Lambda","serverless","Runs your code in response to events without servers; you pay per request and per millisecond.","APIs, file processing, scheduled jobs and glue between AWS services.","serverless, event-driven, function, no servers, 15 minutes max, pay per execution","λ means function: code runs only when something happens.","A taxi: it comes when called and you pay only for the ride.","vs EC2: no server to manage and no idle cost, but each run is limited to 15 minutes.","apigateway s3 dynamodb sqs eventbridge stepfunctions cloudwatch");
+S("fargate","AWS Fargate","serverless","Serverless compute engine for containers on ECS or EKS, with no EC2 instances to manage.","Run containers without patching or scaling servers.","serverless containers, no servers to manage, ECS/EKS launch type","Fargate: you stay far from the servers and never see them.","A valet: hand over the car, someone else parks it.","vs EC2 launch type: Fargate manages capacity for you; with the EC2 launch type you manage the instances.","ecs eks ecr");
+S("s3","Amazon S3","storage","Object storage for any amount of data, designed for 99.999999999% (11 nines) durability.","Backups, data lakes, static websites, images and video, logs.","object storage, bucket, unlimited, 11 nines durability, static website, storage classes, versioning","S3 = Simple Storage Service: three S's.","An endless warehouse of labelled boxes.","vs EBS: S3 is object storage reached over the network; EBS is a disk attached to one EC2 instance.","cloudfront glacier athena lambda kms macie iam");
+S("glacier","Amazon S3 Glacier","storage","Low-cost S3 storage classes for archives: Instant Retrieval, Flexible Retrieval and Deep Archive.","Keep records for years for compliance at very low cost.","archive, long-term, compliance, retrieval time, lowest cost","Glacier: frozen data, cheap to keep but slow to thaw.","A storage unit outside town: cheap, but fetching takes a trip.","vs S3 Standard: much cheaper to store, but retrieval takes time and costs extra (Deep Archive takes hours).","s3 backup");
+S("ebs","Amazon EBS","storage","Block storage volumes that attach to an EC2 instance like a hard drive.","Boot volumes and databases running on EC2.","block storage, volume, attached to EC2, same AZ, snapshots","EBS = Elastic Block Store: the EC2 instance's hard drive.","The hard drive inside your laptop.","vs EFS: an EBS volume attaches to one instance in one AZ; EFS is shared by many instances.","ec2 backup kms");
+S("efs","Amazon EFS","storage","Managed, elastic NFS file system that many Linux instances can mount at once.","Shared content for a fleet of web servers, or shared home directories.","shared file system, NFS, Linux, multiple instances, elastic","EFS: the F is for shared Files.","The shared network drive in an office.","vs FSx: EFS is Linux NFS; FSx offers Windows File Server, Lustre and others.","ec2 backup lambda");
+S("fsx","Amazon FSx","storage","Fully managed third-party file systems: FSx for Windows File Server, Lustre, NetApp ONTAP and OpenZFS.","Windows file shares joined to Active Directory, or high-performance computing with Lustre.","Windows file server, SMB, Lustre, HPC, NetApp","FSx: the X is the file-system brand you pick.","Renting a branded filing system that comes with the vendor's support.","vs EFS: choose FSx for Windows (SMB) or Lustre; choose EFS for Linux NFS.","ec2 directoryservice backup");
+S("storagegateway","AWS Storage Gateway","storage","Hybrid service connecting on-premises apps to AWS storage through file, volume and tape gateways.","Back up office servers to S3, or replace physical tape libraries.","hybrid storage, on-premises to cloud, file gateway, volume gateway, tape gateway","Storage Gateway: a gate between your office and S3.","A loading dock between your shop and the warehouse.","vs Snow Family: Storage Gateway is an ongoing hybrid link; Snow is a one-time physical move.","s3 glacier ebs backup");
+S("backup","AWS Backup","storage","Central, policy-based backup across EC2, EBS, RDS, DynamoDB, EFS, FSx and more.","Daily backups with retention rules and cross-region copies for a whole account.","centralized backup, backup plan, backup vault, retention, cross-region copy","AWS Backup: one plan backs up everything.","A night guard who copies every office's files into the vault.","vs Elastic Disaster Recovery: Backup keeps point-in-time copies; DRS keeps whole servers continuously replicated for fast failover.","ec2 rds dynamodb efs kms");
+S("drs","AWS Elastic Disaster Recovery","storage","Continuously replicates servers to AWS so you can recover them in minutes after a disaster.","Disaster recovery for on-premises or cloud servers with low RPO and RTO.","disaster recovery, continuous replication, low RPO/RTO, failover","DRS keeps a spare copy of your servers ready in the background.","A standby generator that switches on when the power fails.","vs AWS Backup: DRS is for fast recovery of whole servers; Backup is for scheduled copies.","ec2 ebs backup");
+S("rds","Amazon RDS","database","Managed relational databases: MySQL, PostgreSQL, MariaDB, Oracle and SQL Server.","Transactional apps: orders, accounts, bookings.","relational, SQL, managed database, Multi-AZ, read replicas, automated backups, OLTP","RDS = Relational Database Service: tables, rows and joins.","A managed filing cabinet with a librarian who backs it up every night.","vs DynamoDB: RDS is SQL with joins; DynamoDB is NoSQL key-value that scales without limits.","aurora ec2 backup kms cloudwatch dms");
+S("aurora","Amazon Aurora","database","AWS's cloud-native MySQL- and PostgreSQL-compatible database, with storage kept as 6 copies across 3 AZs.","High-performance, highly available relational workloads.","MySQL/PostgreSQL compatible, up to 5x MySQL throughput, 6 copies across 3 AZs, Aurora Serverless","Aurora: the dawn of a faster relational database.","RDS with a race-tuned engine built by AWS.","vs RDS for MySQL: Aurora is faster and more durable but costs more.","rds dms kms");
+S("dynamodb","Amazon DynamoDB","database","Serverless NoSQL key-value and document database with single-digit millisecond performance at any scale.","Shopping carts, sessions, gaming leaderboards, IoT data.","NoSQL, key-value, serverless, millisecond latency, any scale, DAX, global tables","DynamoDB: dynamic and fast, no SQL.","A huge coat check: hand over a ticket (the key) and get your coat (the item) instantly.","vs RDS: no joins or complex SQL, but it scales without limits and has no servers.","lambda apigateway backup kms");
+S("elasticache","Amazon ElastiCache","database","Managed in-memory cache with Redis, Valkey or Memcached.","Speed up apps by caching database results and sessions.","in-memory, cache, Redis, Memcached, microseconds, reduce database load","ElastiCache: cache it in memory. It's a database, not storage.","Sticky notes on your desk instead of walking to the filing room every time.","vs DynamoDB/RDS: ElastiCache sits in front of a database as a cache; it isn't the main store.","rds dynamodb ec2");
+S("docdb","Amazon DocumentDB","database","Managed document database compatible with MongoDB.","JSON content such as catalogues, user profiles and CMS data.","document database, MongoDB compatible, JSON","DocumentDB: Documents, think MongoDB.","Folders of complete documents rather than spreadsheet rows.","vs DynamoDB: when the question says MongoDB, pick DocumentDB.","dms");
+S("neptune","Amazon Neptune","database","Managed graph database for highly connected data.","Social networks, fraud detection, recommendations, knowledge graphs.","graph database, relationships, social network, fraud detection","Neptune: a planet made of connections.","A detective's wall of photos joined with string.","vs RDS: Neptune is built for following relationships, where SQL joins become slow.","");
+
+S("vpc","Amazon VPC","network","Your logically isolated private network in AWS, with subnets, route tables and gateways.","Put servers and databases in private subnets and expose only what must be public.","private network, public/private subnet, route table, internet gateway, NAT gateway, security group, network ACL","VPC = your Virtual Private Cloud: your own fenced land.","A gated subdivision with its own streets and guards.","Security group vs network ACL: security groups are stateful and attach to instances; NACLs are stateless and attach to subnets.","ec2 rds directconnect vpn transitgateway privatelink");
+S("elb","Elastic Load Balancing","network","Spreads incoming traffic across healthy targets in multiple AZs: Application, Network and Gateway Load Balancers.","Keep a web app available when an instance or a whole AZ fails.","load balancer, ALB (HTTP, layer 7), NLB (TCP/UDP, layer 4), health checks, high availability","ELB: Every request Load Balanced.","A restaurant host seating guests at whichever tables are free.","vs Auto Scaling: ELB spreads the traffic; Auto Scaling changes how many servers there are. They work as a pair.","ec2 autoscaling ecs waf acm");
+S("route53","Amazon Route 53","network","Highly available DNS, domain registration and health-checked traffic routing.","Point a domain at CloudFront or a load balancer, and route users by latency, location or failover.","DNS, domain registration, routing policies (simple, weighted, latency, failover, geolocation), health checks","Route 53: DNS runs on port 53.","The internet's phone book and switchboard.","vs CloudFront: Route 53 answers where to go; CloudFront delivers the content.","cloudfront elb s3");
+S("cloudfront","Amazon CloudFront","network","Content delivery network that caches content at hundreds of edge locations worldwide.","Speed up websites, video and APIs for users everywhere, and shield the origin.","CDN, edge locations, caching, low latency, global users","CloudFront: the front of the cloud, closest to users.","Convenience stores in every town, stocked from one central warehouse.","vs Global Accelerator: CloudFront caches content; Global Accelerator speeds up traffic over AWS's network without caching.","s3 route53 waf shield acm");
+S("apigateway","Amazon API Gateway","network","Create, publish, secure and throttle REST, HTTP and WebSocket APIs.","The front door to Lambda functions or backend services.","API, REST, front door, throttling, authorizers, API keys, serverless API","API Gateway: the gate every API call passes through.","A receptionist who checks IDs and directs visitors.","vs ELB: API Gateway manages APIs (auth, throttling, keys); ELB simply balances traffic to servers.","lambda cognito waf cloudwatch");
+S("globalaccelerator","AWS Global Accelerator","network","Routes users to your app over AWS's global network through two static anycast IP addresses.","Global TCP/UDP apps (gaming, VoIP) that need fast failover and fixed IPs.","static anycast IP, AWS global network, TCP/UDP, fast regional failover","Global Accelerator: get on the AWS highway sooner.","An express toll road instead of local streets.","vs CloudFront: no caching; it speeds up any TCP/UDP traffic and gives you static IPs.","elb ec2");
+S("directconnect","AWS Direct Connect","network","A dedicated private network connection from your data centre to AWS.","Consistent, high-bandwidth hybrid connectivity that avoids the public internet.","dedicated line, private connection, consistent bandwidth, hybrid, not over the internet","Direct Connect: a direct cable, no internet.","A private road from your factory to the warehouse.","vs Site-to-Site VPN: Direct Connect is a physical private line that takes weeks to set up; VPN is encrypted over the internet and ready in minutes.","vpc vpn transitgateway");
+S("vpn","AWS Site-to-Site VPN","network","An encrypted IPsec tunnel over the internet between your network and a VPC.","Connect an office to AWS quickly and cheaply.","IPsec, encrypted tunnel, over the internet, hybrid, quick setup","Site-to-Site: building to building through an encrypted tunnel.","An armoured van driving on public roads.","vs Direct Connect: quicker and cheaper to set up, but internet performance varies.","vpc directconnect transitgateway");
+S("clientvpn","AWS Client VPN","network","Managed VPN that lets individual users connect securely to AWS and on-premises networks.","Remote employees reaching private resources from their laptops.","remote users, OpenVPN-based client, secure remote access","Client VPN: one laptop at a time.","A personal keycard to the office network.","vs Site-to-Site VPN: Client VPN connects people; Site-to-Site connects whole networks.","vpc directoryservice");
+S("transitgateway","AWS Transit Gateway","network","A central hub that connects many VPCs and on-premises networks.","Replace a tangled mesh of VPC peering connections in a growing company.","hub and spoke, connect many VPCs, simplify networking","Transit Gateway: the central bus terminal.","An airport hub instead of direct flights between every pair of cities.","vs VPC peering: peering is one-to-one; Transit Gateway is one hub for many.","vpc directconnect vpn");
+S("privatelink","AWS PrivateLink","network","Private access to AWS services or other VPCs' services without the public internet, through interface endpoints.","Let private subnets reach an AWS API or SaaS without a NAT or internet gateway.","private access, VPC endpoint, interface endpoint, no internet","PrivateLink: a link that stays private.","An internal corridor between two buildings.","vs Transit Gateway: PrivateLink exposes one service privately; Transit Gateway connects whole networks.","vpc");
+S("iam","AWS IAM","security","Controls who can sign in and what they can do in AWS, using users, groups, roles and policies.","Give each person and service least-privilege permissions and enforce MFA.","users, groups, roles, policies, least privilege, MFA, root user","IAM: I Am who I say, and I can only do what I'm allowed.","Office ID badges that open only certain doors.","vs Cognito: IAM is for staff and services using AWS; Cognito is for your app's customers.","organizations identitycenter kms cloudtrail");
+S("identitycenter","AWS IAM Identity Center","security","Single sign-on to many AWS accounts and business apps from one place (successor to AWS SSO).","Staff sign in once with company credentials and reach every account they need.","single sign-on, SSO, multiple accounts, workforce identity","Identity Center: the centre of all your sign-ins.","One master keycard for every building the company owns.","vs IAM users: Identity Center gives central, temporary access across accounts instead of separate long-lived users.","iam organizations directoryservice");
+S("cognito","Amazon Cognito","security","Sign-up, sign-in and access control for the users of your web and mobile apps.","Customer login with email, social accounts (Google, Facebook) or enterprise identity.","app users, sign-up/sign-in, user pools, identity pools, social login","Cognito: it recognises your app's customers.","The membership desk at a gym.","vs IAM: Cognito is for millions of app customers; IAM is for your staff and AWS resources.","apigateway amplify iam");
+S("directoryservice","AWS Directory Service","security","Managed Microsoft Active Directory in AWS, or a connector to your existing AD.","Join Windows EC2 servers, WorkSpaces or FSx to Active Directory.","Microsoft Active Directory, AD, domain join","Directory Service: Active Directory in the cloud.","The company staff directory, maintained by AWS.","vs Identity Center: Directory Service is AD itself; Identity Center can use it for single sign-on.","workspaces fsx identitycenter");
+S("kms","AWS KMS","security","Create and control the encryption keys used across AWS services.","Encrypt S3, EBS and RDS data with keys you manage and audit.","encryption keys, encryption at rest, customer managed key, key rotation","KMS: the Key Management Service holds the keys.","A locksmith who keeps the master keys in a safe.","vs CloudHSM: KMS is managed and simple on shared hardware; CloudHSM is dedicated hardware you control.","s3 ebs rds secretsmanager cloudtrail");
+S("cloudhsm","AWS CloudHSM","security","Dedicated hardware security modules in AWS, holding keys that only you control.","Strict compliance needing single-tenant hardware key storage.","dedicated HSM, hardware, single tenant, you manage keys, compliance","CloudHSM: your own Hardware Security Module.","Your own safe-deposit box rather than the bank's shared vault.","vs KMS: more control and more responsibility; AWS cannot access your keys.","kms");
+S("acm","AWS Certificate Manager","security","Provisions and automatically renews SSL/TLS certificates for HTTPS.","HTTPS on CloudFront, load balancers and API Gateway, with public certificates at no cost.","SSL/TLS certificate, HTTPS, free public certificates, auto-renewal","ACM: the Certificate Manager that renews itself.","A website's government-issued ID card.","vs KMS: ACM handles certificates for data in transit; KMS handles keys for data at rest.","cloudfront elb apigateway");
+S("secretsmanager","AWS Secrets Manager","security","Stores, rotates and retrieves secrets such as database passwords and API keys.","Take passwords out of code and rotate them automatically.","secrets, passwords, API keys, automatic rotation","Secrets Manager keeps secrets and changes them regularly.","A password manager for your applications.","vs Systems Manager Parameter Store: Secrets Manager adds built-in automatic rotation, at a cost.","rds lambda kms ssm");
+S("waf","AWS WAF","security","Web application firewall that filters HTTP requests with rules for SQL injection, cross-site scripting, bots and rate limits.","Protect websites and APIs on CloudFront, a load balancer or API Gateway.","web application firewall, layer 7, SQL injection, cross-site scripting, rate limiting, web ACL","WAF: the Web Application Firewall reads every web request.","A bouncer checking each guest at the door.","vs Shield: WAF filters malicious requests; Shield absorbs DDoS floods.","cloudfront elb apigateway shield firewallmanager");
+S("shield","AWS Shield","security","DDoS protection: Shield Standard is free and automatic; Shield Advanced adds a 24/7 response team and cost protection.","Keep sites online during distributed denial-of-service attacks.","DDoS, Shield Standard (free), Shield Advanced, Shield Response Team","Shield: a shield against floods of traffic.","Flood barriers around the building.","vs WAF: Shield handles volume attacks (DDoS); WAF handles malicious request content.","cloudfront route53 elb waf");
+S("firewallmanager","AWS Firewall Manager","security","Centrally sets WAF, Shield Advanced, security group and Network Firewall rules across accounts.","Enforce the same firewall rules in every account of an organization.","central firewall rules, multiple accounts, AWS Organizations","Firewall Manager manages the firewalls everywhere at once.","The head of security setting rules for every branch.","vs WAF: WAF is the firewall itself; Firewall Manager rolls it out across accounts.","waf shield organizations");
+S("guardduty","Amazon GuardDuty","security","Intelligent threat detection that analyses CloudTrail events, VPC Flow Logs, DNS logs and more.","Detect compromised instances, leaked credentials and crypto-mining.","threat detection, machine learning, anomalies, findings, continuous monitoring","GuardDuty: on guard duty 24/7.","A security guard watching CCTV for suspicious behaviour.","vs Inspector: GuardDuty detects active threats; Inspector finds weaknesses before they're exploited.","cloudtrail eventbridge securityhub detective");
+S("inspector","Amazon Inspector","security","Automated vulnerability scanning of EC2 instances, container images in ECR and Lambda functions.","Continuously find unpatched software and unintended network exposure.","vulnerability scanning, CVE, EC2, ECR images, Lambda","Inspector inspects your software for weaknesses.","A building inspector checking for faulty wiring.","vs GuardDuty: Inspector finds weaknesses; GuardDuty finds attacks in progress.","ec2 ecr lambda securityhub");
+S("detective","Amazon Detective","security","Investigates security findings by building a graph of related activity.","Find the root cause after GuardDuty raises an alert.","investigation, root cause, security findings, behaviour graph","Detective solves the case after the alarm.","The detective who arrives after the guard calls it in.","vs GuardDuty: GuardDuty raises the alarm; Detective investigates it.","guardduty securityhub");
+S("macie","Amazon Macie","security","Uses machine learning to discover and protect sensitive data such as personal information in S3.","Find credit card numbers or personal data sitting in buckets.","sensitive data, PII, S3, data privacy, machine learning","Macie makes sure personal info isn't exposed in S3.","A privacy officer scanning filing cabinets for ID numbers.","vs GuardDuty: Macie is about sensitive data in S3; GuardDuty is about threats.","s3 securityhub");
+S("securityhub","AWS Security Hub","security","A single view of security findings and best-practice checks across accounts.","Prioritise findings from GuardDuty, Inspector and Macie and track a security score.","central dashboard, findings, compliance standards, security score","Security Hub: the hub where every alert lands.","The security control room with every screen in one place.","vs GuardDuty: Security Hub aggregates findings; GuardDuty is one of its sources.","guardduty inspector macie config detective");
+S("artifact","AWS Artifact","security","Self-service portal for AWS's compliance reports (SOC, ISO, PCI) and agreements.","Hand auditors AWS's own compliance evidence.","compliance reports, SOC, PCI, ISO, agreements, auditors","Artifact: the artifacts proving AWS's compliance.","The certificates framed on a clinic's wall.","vs Audit Manager: Artifact gives AWS's own reports; Audit Manager collects evidence about your usage.","auditmanager");
+S("auditmanager","AWS Audit Manager","security","Continuously collects evidence of your AWS usage, mapped to compliance frameworks.","Prepare for audits such as PCI DSS or GDPR with automatically gathered evidence.","audit evidence, compliance frameworks, continuous auditing","Audit Manager keeps your audit binder up to date.","An assistant who files every receipt for tax season.","vs Config: Config tracks resource settings; Audit Manager packages evidence for auditors.","config securityhub artifact");
+S("ram","AWS Resource Access Manager","security","Securely shares AWS resources such as subnets and Transit Gateways across accounts.","Share a central VPC's subnets with other accounts in an organization.","share resources, across accounts, AWS Organizations","RAM: share resources between accounts.","Lending your conference room to another department.","vs IAM cross-account roles: RAM shares the resource itself rather than granting access to log in.","organizations vpc transitgateway");
+
+S("cloudwatch","Amazon CloudWatch","mgmt","Monitoring and observability: metrics, logs, alarms and dashboards.","Alert when CPU is high, an app throws errors or a queue backs up.","metrics, logs, alarms, dashboards, monitoring, performance","CloudWatch watches the cloud's health.","A car dashboard with warning lights.","vs CloudTrail: CloudWatch shows performance; CloudTrail shows who did what.","sns autoscaling lambda ec2 xray");
+S("cloudtrail","AWS CloudTrail","mgmt","Records API calls and account activity for governance and auditing.","Find out who deleted a resource, when and from where.","API calls, audit, who did what, governance, event history","CloudTrail: a trail of footprints.","CCTV recording everyone who enters the building.","vs Config: CloudTrail records actions; Config records how resources are set up over time.","s3 guardduty cloudwatch");
+S("config","AWS Config","mgmt","Records resource configurations over time and checks them against rules.","Flag public buckets or unencrypted volumes, and see exactly what changed.","configuration history, compliance rules, resource inventory, drift","Config asks: is everything configured correctly?","Before-and-after photos of every room, plus a checklist.","vs CloudTrail: Config shows how a resource is set up; CloudTrail shows who changed it.","cloudtrail securityhub ssm eventbridge");
+S("cloudformation","AWS CloudFormation","mgmt","Infrastructure as code: describe resources in YAML or JSON templates and deploy them as stacks.","Rebuild identical environments repeatably, and tear them down cleanly.","infrastructure as code, IaC, template, stack, repeatable","CloudFormation forms your cloud from a template.","An architect's blueprint the builder follows exactly.","vs Elastic Beanstalk: CloudFormation builds anything you describe; Beanstalk runs web apps for you.","cdk servicecatalog");
+S("ssm","AWS Systems Manager","mgmt","Operate servers at scale: Patch Manager, Run Command, Session Manager, Parameter Store and Automation.","Patch 500 instances and connect to servers securely without SSH keys.","Patch Manager, Run Command, Session Manager, Parameter Store, fleet management, hybrid","Systems Manager manages your systems in bulk.","A remote IT admin for every computer you own.","vs Config: Systems Manager acts on servers; Config only records and evaluates.","ec2 config secretsmanager");
+S("autoscaling","AWS Auto Scaling","mgmt","Automatically adds or removes capacity (EC2, ECS, DynamoDB and more) to match demand.","Handle traffic spikes and cut costs when it's quiet.","scale out/in, elasticity, desired capacity, scaling policies","Auto Scaling scales itself.","A store opening more checkout lanes as the queue grows.","vs ELB: Auto Scaling changes how many servers there are; ELB spreads traffic across them.","ec2 elb cloudwatch");
+S("trustedadvisor","AWS Trusted Advisor","mgmt","Checks your account against best practices for cost, performance, security, fault tolerance and service limits.","Find idle resources, open security groups and limits close to their maximum.","best-practice checks, cost optimization, security, service limits, recommendations","Trusted Advisor: an advisor you can trust.","A financial planner reviewing your spending.","vs Compute Optimizer: Trusted Advisor is broad; Compute Optimizer right-sizes compute specifically.","support computeoptimizer");
+S("computeoptimizer","AWS Compute Optimizer","mgmt","Uses machine learning on your usage to recommend right-sized EC2, EBS, Lambda and more.","Downsize oversized instances.","right-sizing, recommendations, over-provisioned","Compute Optimizer optimises compute sizes.","A tailor adjusting clothes to fit.","vs Trusted Advisor: deeper, compute-specific sizing recommendations.","ec2 lambda trustedadvisor");
+S("organizations","AWS Organizations","mgmt","Manage many AWS accounts centrally, with consolidated billing and service control policies (SCPs).","Separate dev and prod accounts and limit what each one is allowed to do.","multi-account, consolidated billing, SCP, organizational units, volume discounts","Organizations: organise accounts into one family.","A holding company with subsidiaries.","vs Control Tower: Organizations is the building block; Control Tower sets it up with guardrails for you.","controltower iam ram identitycenter");
+S("controltower","AWS Control Tower","mgmt","Sets up and governs a secure multi-account landing zone with guardrails.","Launch a best-practice multi-account setup quickly.","landing zone, guardrails (controls), multi-account setup","Control Tower: the air-traffic tower for your accounts.","A franchise starter kit that comes with rules.","vs Organizations: Control Tower automates a best-practice Organizations setup.","organizations config identitycenter");
+S("servicecatalog","AWS Service Catalog","mgmt","A curated catalogue of approved CloudFormation products that users can launch.","Let teams self-serve only approved, compliant setups.","approved products, self-service, governance","Service Catalog: a menu of approved items.","A company's approved-supplier catalogue.","vs CloudFormation: Service Catalog controls who can launch which templates.","cloudformation");
+S("servicequotas","Service Quotas","mgmt","View service limits and request increases from one place.","Raise the EC2 vCPU limit before a big launch.","limits, quotas, increase request","Service Quotas: your quota counter.","Asking the bank to raise your card limit.","vs Trusted Advisor: Service Quotas manages limits; Trusted Advisor warns you about them.","trustedadvisor");
+S("health","AWS Health Dashboard","mgmt","Shows AWS service events and scheduled changes that affect your own resources.","Check whether an AWS outage or maintenance is behind your problem.","service health, account-specific events, scheduled maintenance","Health Dashboard: AWS's health report about your account.","The power company's outage notice for your street.","vs CloudWatch: Health covers AWS's side; CloudWatch covers your app's metrics.","eventbridge");
+S("licensemanager","AWS License Manager","mgmt","Tracks software licences (Microsoft, Oracle and others) across AWS and on premises.","Avoid licence overuse and audit penalties.","licenses, BYOL, license compliance","License Manager counts your licences.","A library card catalogue for software licences.","vs Marketplace: License Manager tracks licences you own; Marketplace is where you buy software.","ec2");
+S("console","AWS Management Console","mgmt","The web interface for managing AWS services.","Click-based setup, exploration and quick checks.","web UI, browser, point and click","Console: the cockpit you click.","A car's touchscreen.","vs CLI: the Console is for clicking; the CLI is for commands and scripts.","cli");
+S("watool","AWS Well-Architected Tool","mgmt","Free tool to review workloads against the six Well-Architected pillars and track improvements.","Run a Well-Architected review on a project and get an improvement plan.","six pillars, workload review, best practices, lenses","Well-Architected Tool: a report card for your architecture.","A teacher grading your design against a rubric.","vs Trusted Advisor: the W-A Tool is a guided questionnaire; Trusted Advisor runs automated checks.","trustedadvisor");
+S("budgets","AWS Budgets","finance","Set cost or usage budgets, with alerts when actual or forecast spend crosses a threshold.","Get an email if this month is on track to pass US$20.","budget, alert, forecast, threshold, budget actions","Budgets warns you before you overspend.","A phone plan's 'you've used 80% of your data' text.","vs Cost Explorer: Budgets alerts about the future; Cost Explorer analyses the past.","sns costexplorer");
+S("costexplorer","AWS Cost Explorer","finance","Visualise and analyse costs and usage, with up to 12 months of history and forecasts.","See which service drove last month's bill.","visualize costs, trends, forecast, filter by service or tag","Cost Explorer: explore where the money went.","The spending charts in your banking app.","vs Cost and Usage Report: Cost Explorer is charts; the CUR is raw, detailed data.","budgets cur");
+S("cur","AWS Cost and Usage Report","finance","The most detailed billing data available, delivered to S3 (now through Data Exports).","Analyse your bill line by line with Athena or QuickSight.","most detailed, line items, hourly, delivered to S3, Athena","CUR: the raw itemised receipt.","The itemised receipt, not just the total.","vs Cost Explorer: the CUR is raw data for your own analysis.","s3 athena quicksight");
+S("pricingcalc","AWS Pricing Calculator","finance","Free web tool to estimate the monthly cost of an architecture before you build it.","Price out InvoiceIQ or a migration before committing.","estimate, before you build, cost planning, quote","Pricing Calculator: price it before you build it.","Getting a quote before the renovation starts.","vs Cost Explorer: the Pricing Calculator estimates future cost of something new; Cost Explorer analyses what you actually spent.","costexplorer budgets");
+S("marketplace","AWS Marketplace","finance","A digital catalogue to find, buy and deploy third-party software that runs on AWS.","Buy a firewall appliance or SaaS product, billed on your AWS invoice.","third-party software, AMIs, SaaS, billed on AWS invoice","Marketplace: the AWS app store.","An app store for business software.","vs License Manager: Marketplace is where you buy; License Manager tracks what you own.","ec2");
+S("sqs","Amazon SQS","integration","Fully managed message queue that decouples components; consumers pull messages when ready.","Buffer orders so a slow worker never loses one.","queue, decouple, pull, buffer, Standard/FIFO, dead-letter queue","SQS = Simple Queue Service: messages wait in line.","Taking a number at the deli counter.","vs SNS: SQS is a queue that consumers pull from; SNS pushes to many subscribers. They're often used together (fan-out).","sns lambda ec2");
+S("sns","Amazon SNS","integration","Pub/sub messaging that pushes one message to many subscribers: email, SMS, SQS, Lambda or HTTP.","Alerts, and fan-out to several systems at once.","publish/subscribe, push, fan-out, notifications, topics","SNS = Simple Notification Service: one shout, heard by all.","An announcement in a group chat.","vs SQS: SNS pushes to many; SQS queues work for one consumer to pull.","sqs lambda cloudwatch eventbridge");
+S("eventbridge","Amazon EventBridge","integration","Serverless event bus that routes events from AWS, SaaS apps and your own apps using rules; also schedules jobs.","When an S3 object or a GuardDuty finding appears, trigger a Lambda.","event bus, rules, event-driven, scheduler, SaaS events","EventBridge: a bridge that carries events to their targets.","A mail sorting centre routing letters by address.","vs SNS: EventBridge filters and routes on event content and supports many targets and SaaS sources.","lambda stepfunctions sns sqs");
+S("stepfunctions","AWS Step Functions","integration","Visual workflows that coordinate Lambda functions and AWS services, with retries and error handling.","Order processing: reserve stock, charge the card, ship, and roll back on failure.","workflow, state machine, orchestration, retries, visual","Step Functions: step by step.","A recipe card followed one step at a time.","vs SQS: Step Functions orchestrates a sequence of steps; SQS just holds messages.","lambda eventbridge dynamodb");
+S("athena","Amazon Athena","analytics","Run SQL queries directly on data in S3; serverless, and you pay for the data scanned.","Query logs or CSV files without loading them into a database.","SQL on S3, serverless, pay per query, ad hoc analysis","Athena, goddess of wisdom, reads S3 with SQL.","Searching files in a cabinet without moving them.","vs Redshift: Athena is for ad hoc queries on S3; Redshift is a data warehouse for heavy, repeated analytics.","s3 glue quicksight");
+S("redshift","Amazon Redshift","analytics","Petabyte-scale columnar data warehouse for SQL analytics.","Business intelligence over years of sales data.","data warehouse, OLAP, petabyte scale, columnar, analytics","Redshift: shift your data into red-hot analytics.","A research library built for big studies.","vs RDS: Redshift is for analytics (OLAP); RDS is for transactions (OLTP).","s3 glue quicksight");
+S("glue","AWS Glue","analytics","Serverless ETL that discovers, catalogues, cleans and transforms data (Data Catalog, crawlers).","Prepare raw S3 data for Athena or Redshift.","ETL, extract transform load, Data Catalog, crawler, serverless","Glue sticks your data sources together.","A prep cook washing and chopping ingredients.","vs EMR: Glue is serverless ETL; EMR gives you managed Hadoop/Spark clusters to size yourself.","s3 athena redshift");
+S("emr","Amazon EMR","analytics","Managed big data clusters running Spark, Hadoop, Hive and more.","Process huge datasets with Spark.","Hadoop, Spark, big data, clusters","EMR = Elastic MapReduce.","A factory floor full of machines for bulk processing.","vs Glue: EMR gives more control over big clusters.","s3 ec2");
+S("kinesis","Amazon Kinesis","analytics","Collect and process real-time streaming data (Data Streams, Data Firehose, Video Streams).","Clickstreams, IoT telemetry and live dashboards.","real-time, streaming, ingest, Data Firehose","Kinesis: data in motion (kinetic).","A river you can draw from anywhere along its banks.","vs SQS: Kinesis streams data that many consumers can replay; SQS holds task messages for one consumer.","s3 lambda redshift opensearch");
+S("opensearch","Amazon OpenSearch Service","analytics","Managed OpenSearch (a fork of Elasticsearch) for search, log analytics and vector search.","Site search, log dashboards and semantic search.","search, log analytics, Elasticsearch, dashboards, vector search","OpenSearch: search, opened up.","A library index that finds any word instantly.","vs Athena: OpenSearch searches indexed data in real time; Athena queries files sitting in S3.","kinesis cloudwatch");
+S("quicksight","Amazon QuickSight","analytics","Serverless business intelligence dashboards with machine-learning insights.","Interactive sales dashboards for managers.","BI, dashboards, visualization, pay per session","QuickSight: quick insights at a sight.","The screen in the boardroom showing live charts.","vs CloudWatch dashboards: QuickSight is for business analytics; CloudWatch is for operational metrics.","athena redshift s3");
+
+S("sagemaker","Amazon SageMaker AI","ml","Build, train and deploy your own machine learning models.","Custom models for fraud detection or demand forecasting.","build/train/deploy ML, data scientists, custom models, notebooks","SageMaker: the sage who makes models.","A full kitchen to cook your own recipe.","vs Bedrock: SageMaker is for building your own models; Bedrock gives you ready-made foundation models.","s3 bedrock");
+S("bedrock","Amazon Bedrock","ml","Access foundation models (Claude, Llama, Amazon Nova and others) through one API, with guardrails and knowledge bases.","Generative AI chatbots, summarisation and question-answering over your documents (RAG).","generative AI, foundation models, LLM, guardrails, knowledge bases, RAG","Bedrock: the foundation that generative AI apps are built on.","A restaurant menu of ready-made dishes.","vs SageMaker: no training needed. Note: Bedrock isn't on the CLF-C02 in-scope list.","lambda sagemaker opensearch");
+S("q","Amazon Q","ml","Generative AI assistant for business (Q Business) and for developers (Q Developer).","Ask questions over company data, or get coding help in the IDE and console.","AI assistant, Q Developer, Q Business, code generation","Q: just ask a Question.","An expert coworker you can ask anything.","vs Bedrock: Q is a ready-made assistant; Bedrock is for building your own AI apps.","bedrock");
+S("rekognition","Amazon Rekognition","ml","Image and video analysis: objects, faces, text in images and unsafe content.","Moderate uploaded photos or verify identity.","image analysis, video analysis, face detection, object labels, content moderation","Rekognition recognises what's in the picture.","A pair of eyes.","vs Textract: Rekognition understands images; Textract pulls text, forms and tables out of documents.","s3 lambda");
+S("textract","Amazon Textract","ml","Extracts printed and handwritten text, forms and tables from documents.","Process invoices, ID cards and forms automatically.","OCR, documents, forms, tables, extract text","Textract: extract text.","A clerk who retypes forms instantly.","vs Comprehend: Textract reads the text off documents; Comprehend understands what it means.","s3 comprehend lambda");
+S("comprehend","Amazon Comprehend","ml","Natural language processing: sentiment, entities, key phrases, language and PII detection.","Analyse customer reviews or support messages for sentiment.","NLP, sentiment analysis, entities, key phrases","Comprehend comprehends text.","A reader who picks up the tone of a letter.","vs Translate: Comprehend understands text; Translate converts it to another language.","textract transcribe");
+S("transcribe","Amazon Transcribe","ml","Converts speech to text.","Transcribe call recordings or create subtitles.","speech to text, audio, captions","Transcribe writes down what was said.","A stenographer.","vs Polly: Transcribe goes speech → text; Polly goes text → speech.","connect comprehend");
+S("polly","Amazon Polly","ml","Turns text into lifelike speech.","Voices for apps, audiobooks and phone menus.","text to speech, TTS, voices","Polly the parrot talks.","A parrot reading aloud.","vs Transcribe: the opposite direction.","lex connect");
+S("translate","Amazon Translate","ml","Neural machine translation between languages.","Translate product pages or live chats.","language translation, real-time, localization","Translate does what it says.","An interpreter.","vs Comprehend: Translate converts language; it doesn't analyse meaning.","comprehend");
+S("lex","Amazon Lex","ml","Builds conversational chatbots with voice and text, using the same technology as Alexa.","Customer service bots and booking bots.","chatbot, conversational interface, Alexa, intents","Lex: a lexicon for conversations.","A receptionist answering from a script.","vs Connect: Lex is the bot; Connect is the contact centre that can use it.","connect lambda polly");
+S("kendra","Amazon Kendra","ml","Intelligent enterprise search across documents using natural-language questions.","Staff search internal wikis and policies in plain English.","enterprise search, natural language questions, documents","Kendra: ken (know) where things are.","A librarian who answers your question, not just your keywords.","vs OpenSearch: Kendra is ready-made ML document search; OpenSearch is a search engine you configure.","s3");
+S("cli","AWS CLI","devtools","Command-line tool to control AWS services and script tasks.","Automate repetitive tasks in scripts.","command line, scripting, automation","CLI = Command Line Interface.","Typing instructions instead of clicking buttons.","vs Management Console: scripted versus clicked.","console iam");
+S("cdk","AWS CDK","devtools","Define infrastructure in programming languages such as TypeScript or Python; it compiles to CloudFormation.","Developers write infrastructure as real, testable code.","infrastructure as code, programming languages, constructs","CDK = Cloud Development Kit: code in, CloudFormation out.","Lego instructions written in your own language.","vs CloudFormation: the CDK generates CloudFormation templates for you.","cloudformation");
+S("codepipeline","AWS CodePipeline","devtools","Continuous delivery service that automates build, test and deploy stages.","Every Git push is built, tested and deployed automatically.","CI/CD, pipeline, release automation","CodePipeline: a pipe from code to production.","A factory assembly line.","vs CodeBuild: CodePipeline orchestrates the stages; CodeBuild runs the build step.","codebuild codedeploy cloudformation");
+S("codebuild","AWS CodeBuild","devtools","Fully managed build service that compiles code, runs tests and produces packages.","Build and test on every commit.","build, compile, test, continuous integration","CodeBuild builds code.","The workshop where the parts are made.","vs CodeDeploy: build versus deploy.","codepipeline ecr");
+S("codedeploy","AWS CodeDeploy","devtools","Automates deployments to EC2, on-premises servers, Lambda and ECS.","Rolling or blue/green deployments with automatic rollback.","deployment, blue/green, rolling, rollback","CodeDeploy deploys code.","Delivery trucks taking finished goods to the stores.","vs CodeBuild: deploy versus build.","codepipeline ec2 lambda ecs");
+S("xray","AWS X-Ray","devtools","Traces requests through distributed applications to find bottlenecks and errors.","Find which microservice is slowing down checkout.","tracing, distributed apps, service map, latency, debugging","X-Ray: see inside the request.","A medical X-ray of your app.","vs CloudWatch: X-Ray traces one request end to end; CloudWatch aggregates metrics and logs. (Listed under Developer tools.)","lambda apigateway cloudwatch");
+S("mgn","AWS Application Migration Service","migration","Lift-and-shift servers to AWS with continuous replication and a controlled cutover.","Rehost on-premises virtual machines as EC2 instances.","lift and shift, rehost, server migration","MGN: migrate servers as they are.","Moving house with the furniture exactly as it is.","vs DMS: MGN moves whole servers; DMS moves databases.","ec2 migrationhub");
+S("dms","AWS Database Migration Service","migration","Migrates databases to AWS with minimal downtime, between the same or different engines.","Move an on-premises Oracle database to Aurora while it keeps running.","database migration, minimal downtime, homogeneous, heterogeneous","DMS = Database Migration Service.","Moving a shop's stock while the shop stays open.","vs SCT: DMS moves the data; SCT converts the schema between different engines.","sct rds aurora");
+S("sct","AWS Schema Conversion Tool","migration","Converts database schemas and code from one engine to another (for example Oracle to PostgreSQL).","Prepare a heterogeneous database migration.","schema conversion, heterogeneous migration","SCT translates the schema.","Converting a recipe from cups to grams.","vs DMS: they're used together, SCT first and then DMS.","dms");
+S("ads","AWS Application Discovery Service","migration","Collects data about on-premises servers (specs, usage, dependencies) to plan a migration.","Build an inventory before migrating.","discovery, inventory, dependencies, migration planning","Discovery: find out what you have first.","Listing everything in the house before the movers come.","vs Migration Evaluator: Discovery is the technical inventory; Evaluator is the business case.","migrationhub");
+S("evaluator","Migration Evaluator","migration","Builds a data-driven business case and cost estimate for moving to AWS.","Show management the projected savings.","business case, TCO, cost estimate","Evaluator evaluates the money.","A quote from the moving company.","vs Application Discovery Service: business case versus technical inventory.","ads");
+S("migrationhub","AWS Migration Hub","migration","One place to track migration progress across AWS and partner tools.","Track 200 servers moving in waves.","track migrations, central view","Migration Hub: the control centre for the move.","A project board for moving day.","vs Application Migration Service: the Hub tracks; MGN does the moving.","mgn dms ads");
+S("snow","AWS Snow Family","migration","Rugged physical devices (Snowball Edge) to move terabytes to petabytes offline, or compute at the edge.","Ship 80 TB when the network would take months.","offline data transfer, petabytes, edge computing, rugged device","Snowball: roll a ball of data to AWS.","Sending hard drives by courier.","vs Direct Connect or DataSync: Snow is physical shipping for huge data or poor connectivity.","s3");
+S("workspaces","Amazon WorkSpaces","euc","Managed virtual desktops in the cloud (Windows or Linux).","Give remote staff a secure, managed desktop.","virtual desktop, DaaS, VDI, remote work","WorkSpaces: your workspace in the cloud.","A desk you can sit at from any device.","vs AppStream 2.0: WorkSpaces gives a whole desktop; AppStream streams one app.","directoryservice");
+S("appstream","Amazon AppStream 2.0","euc","Streams individual desktop applications to a web browser.","Run design software on a Chromebook.","application streaming, browser, no install","AppStream: stream one app.","Netflix, but for apps.","vs WorkSpaces: one app, not a full desktop.","");
+S("securebrowser","Amazon WorkSpaces Secure Browser","euc","Secure, managed browser access to internal websites and SaaS apps without a VPN.","Contractors use internal web apps safely from their own devices.","secure browser, internal websites, no VPN","Secure Browser: you browse inside AWS, not on your laptop.","Reading documents through a glass window, with nothing taken home.","vs Client VPN: web access only, not access to the whole network.","");
+S("amplify","AWS Amplify","frontend","Build, deploy and host full-stack web and mobile apps quickly.","Frontend developers ship a React app with sign-in and an API.","full-stack, frontend, hosting, mobile apps, web apps","Amplify amplifies frontend developers.","A starter kit with everything already wired.","vs Elastic Beanstalk: Amplify is for frontend/mobile and serverless backends; Beanstalk is for server-based web apps.","cognito appsync s3");
+S("appsync","AWS AppSync","frontend","Managed GraphQL and real-time APIs.","A mobile app that updates live for every user.","GraphQL, real-time, data sync","AppSync syncs app data with GraphQL.","A live news ticker feeding many screens.","vs API Gateway: AppSync is GraphQL; API Gateway is REST, HTTP and WebSocket.","dynamodb lambda amplify");
+S("iotcore","AWS IoT Core","iot","Connects billions of IoT devices and routes their messages to AWS services.","Smart meters and sensors sending readings over MQTT.","IoT devices, MQTT, sensors, device connectivity","IoT Core: the core where devices connect.","A switchboard for gadgets.","vs Kinesis: IoT Core connects devices; Kinesis streams any kind of data.","kinesis lambda dynamodb");
+S("connect","Amazon Connect","business","Cloud contact centre for voice calls and chat.","Set up a customer service phone line in minutes.","contact center, call center, omnichannel","Connect connects customers to agents.","A call centre in a box.","vs SES: Connect handles calls and chats; SES sends email.","lex transcribe polly");
+S("ses","Amazon SES","business","Scalable email sending (and receiving) for applications.","Order confirmations, password resets and newsletters.","email, transactional email, bulk email, marketing","SES = Simple Email Service.","A post office for your app's emails.","vs SNS: SES sends full, branded email; SNS email is for simple notifications.","sns lambda");
+S("support","AWS Support plans","enablement","Current plans (2026): Basic (free), Business Support+, Enterprise Support and Unified Operations. Developer, Business (classic) and Enterprise On-Ramp retire on January 1, 2027.","Pick the response time and expert help your production workloads need.","Basic, Business Support+, Enterprise, Unified Operations, TAM, response time, Trusted Advisor checks","Higher plan, faster help; a designated TAM comes with Enterprise.","Insurance tiers: you pay more for faster, closer help.","Exam note: older questions use the classic five plans (Basic, Developer, Business, Enterprise On-Ramp, Enterprise). Business = 24/7 phone and under 1 hour for production down; Enterprise = under 15 minutes and a designated TAM. Full details are in the Concepts tab.","trustedadvisor health");
+
+const EXAM = [["Questions","65 (50 scored + 15 unscored)"],["Time","90 minutes"],["Passing score","700 out of 1000"],["Domain 1 · Cloud Concepts","24%"],["Domain 2 · Security and Compliance","30%"],["Domain 3 · Cloud Technology and Services","34%"],["Domain 4 · Billing, Pricing and Support","12%"]];
+
+const GENERAL_DP = ["Stop guessing your capacity needs","Test systems at production scale","Automate with architectural experimentation in mind","Consider evolutionary architectures","Drive architectures using data","Improve through game days"];
+
+const PILLARS = [
+ {n:"Operational Excellence", areas:["Organization","Prepare","Operate","Evolve"], do:["Define everything as code (CloudFormation/CDK) and deploy through pipelines","Use CloudWatch metrics, logs and alarms; trace requests with X-Ray","Write runbooks and playbooks; automate them with Systems Manager","Make small changes you can roll back; run game days","Hold post-incident reviews and feed the lessons back"], q:"Can we run it, see it and improve it?", hook:"Run it like a pro: automate, observe, learn.",
+  p:["Organize teams around business outcomes","Implement observability for actionable insights","Safely automate where possible","Make frequent, small, reversible changes","Refine operations procedures frequently","Anticipate failure","Learn from all operational events and metrics","Use managed services"],
+  older:"Older study material lists 5: perform operations as code; make frequent, small, reversible changes; refine operations procedures frequently; anticipate failure; learn from all operational failures.",
+  svc:"cloudformation cloudwatch ssm xray config"},
+ {n:"Security", areas:["Security foundations","Identity and access management","Detection","Infrastructure protection","Data protection","Incident response","Application security"], do:["Protect the root user with MFA and never create root access keys","Grant least privilege; use IAM roles and temporary credentials, not long-lived keys","Turn on CloudTrail in all Regions, plus GuardDuty and Security Hub","Encrypt at rest (KMS) and in transit (TLS via ACM)","Keep S3 Block Public Access on; use private subnets and security groups","Prepare and practise an incident response plan"], q:"Is everything protected, and would we know if it weren't?", hook:"Identity first, trace everything, protect every layer.",
+  p:["Implement a strong identity foundation","Maintain traceability (older wording: enable traceability)","Apply security at all layers","Automate security best practices","Protect data in transit and at rest","Keep people away from data","Prepare for security events"],
+  svc:"iam kms cloudtrail guardduty waf shield securityhub"},
+ {n:"Reliability", areas:["Foundations","Workload architecture","Change management","Failure management"], do:["Deploy across multiple Availability Zones; use Multi-AZ databases","Put Elastic Load Balancing and Auto Scaling in front of servers","Watch service quotas so you don't hit limits","Back up with AWS Backup and actually test restores","Decouple components with SQS so one failure doesn't cascade"], q:"Does it keep working, and recover when it doesn't?", hook:"Expect failure: recover automatically, scale out, test the recovery.",
+  p:["Automatically recover from failure","Test recovery procedures","Scale horizontally to increase aggregate workload availability","Stop guessing capacity","Manage change through automation"],
+  svc:"elb autoscaling route53 backup cloudformation"},
+ {n:"Performance Efficiency", areas:["Architecture selection","Compute and hardware","Data management","Networking and content delivery","Process and culture"], do:["Pick the right type: serverless, containers or instances; right-size with Compute Optimizer","Choose the database for the access pattern (SQL, key-value, graph, cache)","Cache with CloudFront and ElastiCache","Deploy close to users; use Global Accelerator for global TCP/UDP","Benchmark and load-test, then keep reviewing as new options appear"], q:"Are we using the right resources, efficiently, as needs change?", hook:"Let AWS do the hard tech; go global; go serverless; experiment.",
+  p:["Democratize advanced technologies","Go global in minutes","Use serverless architectures","Experiment more often","Consider mechanical sympathy"],
+  svc:"lambda cloudfront dynamodb computeoptimizer"},
+ {n:"Cost Optimization", areas:["Practice Cloud Financial Management","Expenditure and usage awareness","Cost-effective resources","Manage demand and supply resources","Optimize over time"], do:["Tag everything and activate cost allocation tags","Set AWS Budgets alerts; review Cost Explorer monthly","Right-size and delete idle resources (Trusted Advisor, Compute Optimizer)","Use Savings Plans or Reserved Instances for steady use, Spot for flexible jobs","Use S3 lifecycle rules and storage classes; prefer managed and serverless services"], q:"Are we getting the most value for the money?", hook:"Pay only for what you use, and know who spent what.",
+  p:["Implement cloud financial management","Adopt a consumption model","Measure overall efficiency","Stop spending money on undifferentiated heavy lifting","Analyze and attribute expenditure"],
+  svc:"costexplorer budgets cur trustedadvisor computeoptimizer"},
+ {n:"Sustainability", areas:["Region selection","Alignment to demand","Software and architecture","Data management","Hardware and services","Process and culture"], do:["Scale to demand so nothing sits idle","Use Graviton (arm64) and newer instance types","Prefer managed and serverless services that share infrastructure","Delete unneeded data; use lifecycle policies and efficient storage classes","Choose Regions close to users and with lower-carbon energy where possible"], q:"Are we minimising environmental impact?", hook:"Use less, use it fully, use newer and managed.",
+  p:["Understand your impact","Establish sustainability goals","Maximize utilization","Anticipate and adopt new, more efficient hardware and software offerings","Use managed services","Reduce the downstream impact of your cloud workloads"],
+  svc:"autoscaling computeoptimizer lambda"}
+];
+
+const CONCEPTS = [
+ {t:"Six advantages of cloud computing", lead:"Domain 1 favourite. Learn them word for word.", rows:[
+  ["Trade fixed expense for variable expense","Pay for what you use instead of buying data centres up front."],
+  ["Benefit from massive economies of scale","AWS's huge scale means lower pay-as-you-go prices."],
+  ["Stop guessing capacity","Scale up or down as needed instead of over- or under-buying."],
+  ["Increase speed and agility","New resources are a click away, in minutes not weeks."],
+  ["Stop spending money running and maintaining data centers","Focus on customers, not racking servers."],
+  ["Go global in minutes","Deploy in multiple Regions around the world with a few clicks."]]},
+ {t:"Security best-practice checklist", lead:"Security is 30% of the exam. If an answer matches one of these, it's usually right.", rows:[
+  ["Root user","Enable MFA, don't create access keys, use it only for root-only tasks."],
+  ["Least privilege","Grant only the permissions needed; start small and add."],
+  ["Roles over keys","Give EC2, Lambda and apps IAM roles with temporary credentials instead of storing access keys."],
+  ["MFA everywhere","Require MFA for console users, especially admins."],
+  ["Groups, not individual policies","Attach policies to IAM groups and roles; manage people centrally with IAM Identity Center."],
+  ["Rotate and remove","Rotate credentials, remove unused users and keys (IAM credential report, Access Analyzer)."],
+  ["Log everything","CloudTrail in all Regions, logs to a protected S3 bucket; CloudWatch for operations."],
+  ["Detect continuously","GuardDuty, Inspector, Macie, Config rules, all feeding Security Hub."],
+  ["Encrypt","At rest with KMS; in transit with TLS (ACM certificates)."],
+  ["Protect the network","Private subnets for databases, least-open security groups, WAF and Shield at the edge."],
+  ["Block public data","Keep S3 Block Public Access on; share files with presigned URLs."],
+  ["Automate response","EventBridge rules plus Lambda or Systems Manager to fix issues automatically."]]},
+ {t:"Shared responsibility model", lead:"AWS secures the cloud itself; you secure what you put in it.", rows:[
+  ["AWS: security OF the cloud","Physical data centres, hardware, global network, the virtualization layer, and the software behind managed services."],
+  ["Customer: security IN the cloud","Your data, IAM users and permissions, encryption choices, security group and network settings, and the guest OS and apps on EC2."],
+  ["Shared controls","Patch management, configuration management, and awareness and training: each side does it for its own layer."],
+  ["It shifts with the service","EC2 (IaaS): you patch the OS. RDS: AWS patches the database engine, you manage users and data. Lambda/S3: AWS runs almost everything; you still own data and access."]]},
+ {t:"Global infrastructure", lead:"Know what each piece is for.", rows:[
+  ["Region","A geographic area with multiple, isolated Availability Zones. Choose by compliance and data residency, latency to users, service availability and price."],
+  ["Availability Zone (AZ)","One or more discrete data centres with redundant power and networking, physically separated from other AZs in the Region. Use 2+ AZs for high availability."],
+  ["Edge location","Sites in major cities used by CloudFront, Route 53, AWS WAF, Shield and Global Accelerator to serve users with low latency."],
+  ["Local Zone","AWS compute and storage placed near a large city for single-digit-millisecond latency."],
+  ["Wavelength Zone","AWS infrastructure inside 5G telecom networks for ultra-low-latency mobile apps."],
+  ["Outposts","AWS racks in your own data centre (hybrid)."]]},
+ {t:"Root user: tasks only the root user can do", lead:"Lock the root user away with MFA and use it only for these.", rows:[
+  ["Change account settings","Account name, email address, root password and root access keys."],
+  ["Close the AWS account",""],
+  ["Change or cancel the AWS Support plan",""],
+  ["Restore IAM user permissions","For example, when the only IAM admin locked themselves out."],
+  ["Activate IAM access to the Billing console",""],
+  ["View certain tax invoices",""],
+  ["Register as a seller in the Reserved Instance Marketplace",""],
+  ["Configure MFA Delete on an S3 bucket",""],
+  ["Edit or delete an S3 bucket policy that denies all principals","Including a policy that locked everyone out."],
+  ["Sign up for AWS GovCloud (US)",""]]},
+ {t:"AWS Cloud Adoption Framework (CAF): 6 perspectives", lead:"First three are business capabilities, last three technical. Hook: “Business People Govern; Platform Security Operates.”", rows:[
+  ["Business","Make cloud investments drive business outcomes. (CEO, CFO, strategy)"],
+  ["People","Culture, skills, change management. (HR, leaders)"],
+  ["Governance","Programs, risk, portfolio, cloud financial management. (CIO, CFO, risk)"],
+  ["Platform","Build a scalable, hybrid cloud platform. (CTO, architects, engineers)"],
+  ["Security","Confidentiality, integrity and availability of data and workloads. (CISO)"],
+  ["Operations","Deliver cloud services at agreed service levels. (IT operations)"]]},
+ {t:"Migration strategies: the 7 Rs", lead:"Ordered from least to most change.", rows:[
+  ["Retire","Switch it off; nobody needs it."],
+  ["Retain","Keep it on premises for now."],
+  ["Rehost (lift and shift)","Move as is to EC2. Tool: Application Migration Service."],
+  ["Relocate","Move VMware workloads to VMware Cloud on AWS without changes."],
+  ["Repurchase (drop and shop)","Replace with SaaS, such as a hosted CRM."],
+  ["Replatform (lift, tinker and shift)","Small optimisations, for example self-managed database to RDS."],
+  ["Refactor / re-architect","Rebuild cloud-native: serverless, microservices."]]},
+ {t:"Cloud models", lead:"Two ways the exam slices the cloud.", rows:[
+  ["IaaS","You manage the OS and up. Example: EC2."],
+  ["PaaS","You manage the app and data. Example: Elastic Beanstalk."],
+  ["SaaS","You just use the software. Example: Amazon WorkSpaces, or any web app like email."],
+  ["Cloud (all-in) deployment","Everything runs in the cloud."],
+  ["Hybrid deployment","Cloud connected to on-premises (Direct Connect, VPN, Outposts, Storage Gateway)."],
+  ["On-premises (private cloud)","Virtualization in your own data centre."]]},
+ {t:"Ways to use AWS", lead:"", rows:[
+  ["AWS Management Console","Point-and-click in a browser."],
+  ["AWS CLI","Commands and scripts."],
+  ["AWS SDKs","Call AWS from your code (Python, JavaScript, Java…)."],
+  ["Infrastructure as code","CloudFormation templates or the CDK."],
+  ["Programmatic access","Uses access keys or, better, temporary credentials from a role."]]},
+ {t:"EC2 and compute pricing models", lead:"Match the workload to the model.", rows:[
+  ["On-Demand","No commitment, pay by the second/hour. Short, spiky or unpredictable workloads."],
+  ["Savings Plans","Commit to a $/hour spend for 1 or 3 years, up to 72% off. Compute Savings Plans also cover Fargate and Lambda."],
+  ["Reserved Instances","Commit to an instance configuration for 1 or 3 years, up to 72% off. Standard (bigger discount) vs Convertible (can change instance family)."],
+  ["Spot Instances","Spare capacity, up to 90% off, but AWS can reclaim it with a 2-minute warning. For fault-tolerant, flexible jobs."],
+  ["Dedicated Hosts","A whole physical server for you: bring your own per-socket/per-core licences, compliance."],
+  ["Dedicated Instances","Instances on hardware not shared with other customers."],
+  ["Capacity Reservations","Reserve capacity in an AZ, without a long-term commitment."],
+  ["Pricing principles","Pay as you go, save when you commit, pay less per unit by using more (volume tiers)."],
+  ["Data transfer","Data IN from the internet is free; data OUT to the internet and between Regions is charged."]]},
+ {t:"Billing and cost tools", lead:"Before, during and after spending.", rows:[
+  ["AWS Pricing Calculator","Estimate cost BEFORE you build."],
+  ["AWS Budgets","Alerts when actual or forecast spend crosses your threshold."],
+  ["AWS Cost Explorer","Charts of past spend plus forecasts."],
+  ["Cost Anomaly Detection","Machine learning alerts on unusual spend."],
+  ["Cost and Usage Report","Most detailed line-item data, delivered to S3."],
+  ["Cost allocation tags","Tag resources (Project, Team) and activate the tags to break down the bill."],
+  ["Consolidated billing (Organizations)","One bill for many accounts, with combined volume discounts."]]},
+ {t:"AWS Free Tier", lead:"It changed in July 2025. Know both versions.", rows:[
+  ["Accounts created on or after July 15, 2025","Choose a Free plan or a Paid plan. US$100 in credits, plus up to US$100 more for onboarding activities. A Free plan account ends after 6 months or when credits run out, whichever comes first."],
+  ["Accounts created before July 15, 2025 (legacy)","Always Free offers, 12-month free tier, and short-term trials."],
+  ["Exam tip","Older practice questions describe the legacy three types: Always Free, 12 Months Free, Trials."]]},
+ {t:"AWS Support plans", lead:"AWS restructured these. The exam may still use the classic plan names.", rows:[
+  ["Current plans (2026)","Basic (free), Business Support+, Enterprise Support, Unified Operations."],
+  ["Basic","Free for all: account and billing help, service quota increases, documentation, re:Post, health checks. No technical support cases."],
+  ["Business Support+","From US$29/month: 24/7 phone, web and chat; under 30 min human engagement for business-critical system down; 500+ Trusted Advisor checks; AI-assisted help."],
+  ["Enterprise Support","From US$5,000/month: designated Technical Account Manager (TAM), up to 15-minute response for production-critical cases, Security Incident Response included."],
+  ["Unified Operations","Top tier: designated TAM plus domain specialist engineers, critical workload reviews, event management."],
+  ["Retiring Jan 1, 2027","Developer, Business (classic) and Enterprise On-Ramp."],
+  ["Classic plans, as older exam questions use them","Basic · Developer (business-hours email, <12 h system impaired) · Business (24/7 phone, <1 h production down, full Trusted Advisor) · Enterprise On-Ramp (<30 min business-critical, pool of TAMs) · Enterprise (<15 min business-critical, designated TAM, Concierge billing team)."]]},
+ {t:"Help, people and programs", lead:"Domain 4 asks who to turn to.", rows:[
+  ["AWS re:Post","Community Q&A run by AWS (replaced the old forums)."],
+  ["AWS Knowledge Center","AWS articles answering the most common questions."],
+  ["AWS Documentation and Prescriptive Guidance","Official docs, whitepapers and step-by-step patterns."],
+  ["AWS Professional Services","AWS's own consultants for large projects."],
+  ["AWS Partner Network (APN)","Third-party consulting and technology partners."],
+  ["AWS Marketplace","Buy third-party software billed through AWS."],
+  ["AWS Trust & Safety","Report abuse, such as AWS resources used for spam, phishing or attacks."],
+  ["AWS Managed Services (AMS)","AWS operates your infrastructure for you."],
+  ["Technical Account Manager (TAM)","Your named AWS adviser on Enterprise-level support."],
+  ["AWS Activate","Credits and support for startups."]]}
+];
+
+const GROUPS = [
+ {t:"Monitoring and audit", rows:[["cloudwatch","How is it performing? Metrics, logs, alarms."],["cloudtrail","Who did what, when? API call history."],["config","How is it configured, and is that compliant?"],["xray","Where is this one request slow?"]]},
+ {t:"Threat and data security", rows:[["guardduty","Detects attacks happening now."],["inspector","Finds software vulnerabilities before attacks."],["detective","Investigates the root cause after an alert."],["macie","Finds sensitive data (PII) in S3."],["securityhub","Collects all findings in one place."]]},
+ {t:"Network protection", rows:[["waf","Filters bad web requests (SQL injection, XSS, bots)."],["shield","Absorbs DDoS floods. Standard is free."],["firewallmanager","Applies firewall rules across all accounts."],["vpc","Security groups: stateful, per instance, allow rules only. Network ACLs: stateless, per subnet, allow and deny."]]},
+ {t:"Keys, secrets and certificates", rows:[["kms","Managed encryption keys (shared hardware)."],["cloudhsm","Your own dedicated key hardware."],["secretsmanager","Passwords and API keys with automatic rotation."],["ssm","Parameter Store: config values and simple secrets, no built-in rotation."],["acm","SSL/TLS certificates for HTTPS."]]},
+ {t:"Messaging and events", rows:[["sqs","Queue: one consumer pulls; decouples."],["sns","Push one message to many (fan-out)."],["eventbridge","Route events by rules; also scheduled jobs."],["kinesis","Real-time streaming data, replayable."],["stepfunctions","Orchestrate steps in a workflow."]]},
+ {t:"Storage", rows:[["s3","Objects (files) over the network, unlimited."],["ebs","A disk for one EC2 instance (block)."],["efs","Shared Linux file system (NFS)."],["fsx","Windows (SMB) or Lustre file systems."],["glacier","Cheap archives, slower retrieval."],["storagegateway","Hybrid link from on-premises to S3."]]},
+ {t:"Databases", rows:[["rds","Relational SQL, transactions (OLTP)."],["aurora","AWS's faster MySQL/PostgreSQL-compatible engine."],["dynamodb","Serverless NoSQL key-value, any scale."],["elasticache","In-memory cache in front of a database."],["redshift","Data warehouse for analytics (OLAP)."],["docdb","MongoDB-compatible documents."],["neptune","Graph relationships."]]},
+ {t:"Getting traffic to your app", rows:[["route53","DNS: where to go."],["cloudfront","Caches content at the edge (CDN)."],["globalaccelerator","Static IPs, AWS network, no caching."],["elb","Spreads traffic across servers."],["apigateway","Manages APIs: auth, throttling."]]},
+ {t:"Connecting to AWS (hybrid)", rows:[["directconnect","Private physical line, consistent speed."],["vpn","Encrypted tunnel over the internet, quick to set up."],["clientvpn","Individual users connect from laptops."],["transitgateway","Hub connecting many VPCs and networks."],["privatelink","Private access to one service."]]},
+ {t:"Cost tools", rows:[["pricingcalc","Estimate before you build."],["budgets","Alert before you overspend."],["costexplorer","Analyse past spending."],["cur","Raw, most detailed billing data."],["trustedadvisor","Best-practice checks incl. idle resources."],["computeoptimizer","Right-size compute."]]},
+ {t:"Identity", rows:[["iam","Staff and services in AWS."],["identitycenter","Single sign-on across many accounts."],["cognito","Your app's customers."],["directoryservice","Microsoft Active Directory."],["organizations","SCPs set the maximum permissions for accounts."]]},
+ {t:"Compliance and governance", rows:[["artifact","AWS's own compliance reports."],["auditmanager","Evidence about your usage for auditors."],["config","Resource compliance rules."],["controltower","Set up a governed multi-account landing zone."],["servicecatalog","Approved templates for self-service."]]},
+ {t:"Deploying apps", rows:[["beanstalk","Upload code; AWS runs the platform."],["cloudformation","Templates for any infrastructure."],["cdk","Infrastructure in real code, makes CloudFormation."],["lightsail","Simple fixed-price servers."],["codepipeline","CI/CD release pipeline."]]},
+ {t:"Migration", rows:[["mgn","Move servers as they are."],["dms","Move databases with little downtime."],["sct","Convert schema to a different engine."],["snow","Ship huge data physically."],["ads","Inventory servers before migrating."],["evaluator","Build the business case."]]},
+ {t:"AI services by sense", rows:[["rekognition","See images and video."],["textract","Read text from documents."],["comprehend","Understand meaning and sentiment."],["transcribe","Speech to text."],["polly","Text to speech."],["translate","Change language."],["lex","Chatbots."],["kendra","Search company documents."],["sagemaker","Build your own models."],["bedrock","Use ready foundation models."]]},
+ {t:"Containers", rows:[["ecs","AWS's own orchestrator."],["eks","Kubernetes."],["fargate","Run containers with no servers."],["ecr","Store container images."]]}
+];
+
+const TRIGGERS = [
+ ["who made this API call / audit trail of actions","cloudtrail"],["configuration history / is this resource compliant","config"],["CPU alarm / application logs / dashboards","cloudwatch"],
+ ["DDoS","shield"],["SQL injection / cross-site scripting / web exploits","waf"],["leaked credentials / crypto-mining / malicious IP","guardduty"],
+ ["vulnerabilities / CVE / unpatched software","inspector"],["PII / sensitive data in S3","macie"],["compliance reports / SOC / PCI documents from AWS","artifact"],
+ ["decouple / buffer / queue","sqs"],["fan-out / push notification to many","sns"],["real-time streaming / clickstream","kinesis"],["orchestrate a workflow / state machine","stepfunctions"],
+ ["SQL queries directly on S3","athena"],["data warehouse / OLAP / petabytes of analytics","redshift"],["ETL / data catalog","glue"],["BI dashboards","quicksight"],
+ ["Kubernetes","eks"],["MongoDB","docdb"],["graph / social network / fraud relationships","neptune"],["in-memory cache / microseconds","elasticache"],["NoSQL key-value / millisecond at any scale","dynamodb"],
+ ["block storage for EC2","ebs"],["shared file system for Linux","efs"],["Windows file server / SMB","fsx"],["archive / long-term retention / cheapest storage","glacier"],
+ ["hybrid storage / on-premises backup to S3 / tape","storagegateway"],["petabytes offline / poor network","snow"],
+ ["dedicated private connection / consistent bandwidth","directconnect"],["encrypted tunnel over the internet / fast setup","vpn"],["connect many VPCs / hub","transitgateway"],
+ ["static IP / global TCP or UDP / faster failover","globalaccelerator"],["CDN / cache at edge / lower latency for static content","cloudfront"],["DNS / domain / routing policy","route53"],
+ ["upload code, AWS handles the rest / PaaS","beanstalk"],["infrastructure as code / template","cloudformation"],["least operational overhead / no servers / event-driven code","lambda"],
+ ["run containers without managing servers","fargate"],["simple fixed-price server / WordPress","lightsail"],["single sign-on across accounts","identitycenter"],
+ ["app user sign-up and sign-in / social login","cognito"],["central management of many accounts / consolidated billing / SCP","organizations"],
+ ["estimate cost before deploying","pricingcalc"],["alert when spend exceeds threshold","budgets"],["analyse past spending / forecast","costexplorer"],
+ ["best-practice checks / idle resources / service limits","trustedadvisor"],["review against the six pillars","watool"],
+ ["image or video analysis / face detection","rekognition"],["extract text from forms / OCR","textract"],["sentiment analysis","comprehend"],["speech to text","transcribe"],["text to speech","polly"],["chatbot","lex"],
+ ["generative AI / foundation models","bedrock"],["build and train custom ML models","sagemaker"],["patch fleets / Session Manager / Parameter Store","ssm"],
+ ["virtual desktops","workspaces"],["contact centre","connect"],["send email from an app","ses"],["IoT devices / MQTT","iotcore"],["track down slow microservice requests","xray"]
+];
+
+const CLASSIC = [
+ ["“AWS patches my EC2 operating system.”","No. On EC2 you patch the guest OS. AWS patches the host. On RDS, AWS patches the database engine."],
+ ["“SCPs give permissions.”","No. Service control policies only set the maximum allowed; IAM policies still have to grant access."],
+ ["“An Availability Zone is one data centre.”","An AZ is one or more discrete data centres, separate from the other AZs in the Region."],
+ ["“Shield costs extra.”","Shield Standard is free and automatic for everyone. Only Shield Advanced costs extra."],
+ ["“Data coming into AWS costs money.”","Inbound data transfer from the internet is free. Outbound to the internet and between Regions is charged."],
+ ["“Use the root user for daily admin.”","No. Enable MFA on root, create admin users or roles, and use root only for root-only tasks."],
+ ["“S3 is block storage.”","S3 is object storage. EBS is block; EFS and FSx are file."],
+ ["“Route 53 is a CDN.”","Route 53 is DNS. CloudFront is the CDN."],
+ ["“CloudTrail shows CPU usage.”","CloudTrail records API calls. CPU and performance metrics are in CloudWatch."],
+ ["“Spot is cheapest, so use it for the production database.”","Spot can be interrupted with a 2-minute warning. Use it only for fault-tolerant, flexible work."],
+ ["“Reserved Instances and Savings Plans are the same.”","Both need 1- or 3-year commitments. RIs commit to an instance configuration; Savings Plans commit to a $/hour spend and are more flexible (Compute SP also covers Fargate and Lambda)."],
+ ["“Trusted Advisor gives every check on Basic support.”","Basic gets core checks only. Full checks come with Business-level support and above."],
+ ["“Security groups can deny traffic.”","Security groups only have allow rules and are stateful. Network ACLs can allow and deny, and are stateless."],
+ ["“Artifact checks my resources for compliance.”","Artifact gives AWS's own compliance reports. Config and Audit Manager look at your resources."],
+ ["“Elastic Beanstalk and CloudFormation are the same.”","Beanstalk is a platform for running your app. CloudFormation builds any resources from a template."],
+ ["“Multi-AZ RDS is for read scaling.”","Multi-AZ is for high availability (standby). Read replicas are for read scaling."],
+ ["“Global services live in one Region.”","IAM, Route 53, CloudFront and Organizations are global. S3 bucket names are global, but each bucket lives in one Region."],
+ ["“Inspector detects attacks.”","Inspector finds vulnerabilities. GuardDuty detects active threats."],
+ ["“The CUR is the dashboard for my bill.”","The CUR is raw data. Cost Explorer is the visual tool; Budgets sends alerts."],
+ ["“Lambda can run for hours.”","Each Lambda invocation can run for at most 15 minutes. Longer jobs: Fargate, Batch or EC2."]
+];
+
+const BY = Object.fromEntries(SV.map(s => [s.id, s]));
+SV.forEach(s => { s.l = s.l.filter(id => BY[id] && id !== s.id); });
+SV.forEach(s => { s.back = SV.filter(o => o.l.includes(s.id)).map(o => o.id).filter(id => !s.l.includes(id)); });
+
+const $ = q => document.querySelector(q);
+let cat = "all", sel = null;
+const norm = t => t.toLowerCase();
+
+function matches(s, q){
+  if (!q) return true;
+  const hay = norm([s.n, s.w, s.u, s.k.join(" "), s.h, s.a, s.v, CATS[s.c].l].join(" "));
+  return norm(q).split(/\s+/).every(t => hay.includes(t));
+}
+
+function renderCats(){
+  const box = $("#cats"); box.innerHTML = "";
+  const mk = (key, label, color, n) => {
+    const b = document.createElement("button"); b.className = "cat" + (cat === key ? " on" : "");
+    if (color) b.style.setProperty("--c", color);
+    b.innerHTML = (color ? "<i></i>" : "") + `<span></span> <b>${n}</b>`;
+    b.querySelector("span").textContent = label;
+    b.addEventListener("click", () => { cat = key; renderCats(); renderGrid(); });
+    box.appendChild(b);
+  };
+  mk("all", "All", null, SV.length);
+  Object.entries(CATS).forEach(([k, v]) => mk(k, v.l, v.c, SV.filter(s => s.c === k).length));
+}
+
+function renderGrid(){
+  const q = $("#q").value.trim();
+  const list = SV.filter(s => (cat === "all" || s.c === cat) && matches(s, q));
+  $("#count").textContent = `${list.length} of ${SV.length} services`;
+  const g = $("#grid"); g.innerHTML = "";
+  if (!list.length){ g.innerHTML = `<div class="empty">No service matches that. Try a keyword like “queue”, “DDoS” or “Kubernetes”.</div>`; return; }
+  list.forEach(s => {
+    const b = document.createElement("button"); b.className = "card" + (sel === s.id ? " on" : "");
+    b.style.setProperty("--c", CATS[s.c].c);
+    b.innerHTML = `<span class="cc"></span><span class="cn"></span><span class="cw"></span>`;
+    b.querySelector(".cc").textContent = CATS[s.c].l;
+    b.querySelector(".cn").textContent = s.n;
+    b.querySelector(".cw").textContent = s.w;
+    b.addEventListener("click", () => select(s.id, true));
+    g.appendChild(b);
+  });
+}
+
+function renderMap(s){
+  const svg = $("#map"), NS = "http://www.w3.org/2000/svg"; svg.innerHTML = "";
+  const el = (t, a, p) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); (p || svg).appendChild(e); return e; };
+  const ids = [...s.l, ...s.back].slice(0, 12);
+  const cx = 230, cy = 150, RX = 112, RY = ids.length > 8 ? 108 : 96;
+  const pts = ids.map((id, i) => { const ang = -Math.PI/2 + i * 2*Math.PI / Math.max(ids.length, 1); return {id, x: cx + Math.cos(ang) * RX, y: cy + Math.sin(ang) * RY}; });
+  pts.forEach(p => el("line", {x1: cx, y1: cy, x2: p.x, y2: p.y, stroke: s.l.includes(p.id) ? "#4a6390" : "#2c3a55", "stroke-width": 1.4, "stroke-dasharray": s.l.includes(p.id) ? "" : "4 4"}));
+  pts.forEach(p => {
+    const o = BY[p.id], g = el("g", {class: "node", tabindex: 0, role: "button"});
+    g.addEventListener("click", () => select(p.id, true));
+    g.addEventListener("keydown", e => { if (e.key === "Enter") select(p.id, true); });
+    el("circle", {cx: p.x, cy: p.y, r: 7, fill: CATS[o.c].c, stroke: "#0b1222", "stroke-width": 2}, g);
+    const short = o.n.replace(/^(Amazon|AWS) /, "");
+    const anchor = p.x < cx - 20 ? "end" : p.x > cx + 20 ? "start" : "middle";
+    const dx = anchor === "end" ? -11 : anchor === "start" ? 11 : 0, dy = anchor === "middle" ? (p.y < cy ? -12 : 20) : 4;
+    const t = el("text", {x: p.x + dx, y: p.y + dy, "text-anchor": anchor, class: "lbl"}, g); t.textContent = short.length > 16 ? short.slice(0, 15) + "…" : short;
+  });
+  el("circle", {cx, cy, r: 26, fill: CATS[s.c].c, opacity: .22});
+  el("circle", {cx, cy, r: 13, fill: CATS[s.c].c, stroke: "#fff", "stroke-width": 2});
+  const t = el("text", {x: cx, y: cy + 42, "text-anchor": "middle", class: "lbl center"}); t.textContent = s.n.replace(/^(Amazon|AWS) /, "");
+  if (!ids.length){ const n = el("text", {x: cx, y: 40, "text-anchor": "middle", class: "lbl"}); n.textContent = "Usually stands on its own"; }
+}
+
+function renderDetail(s){
+  const d = $("#detail"), c = CATS[s.c];
+  const linkBtns = arr => arr.map(id => `<button class="link" data-id="${id}" style="--c:${CATS[BY[id].c].c}">${BY[id].n.replace(/^(Amazon|AWS) /, "")}</button>`).join("");
+  d.innerHTML = `<div class="dk"><span class="pill" style="--c:${c.c}">${c.l}</span></div><h2 id="dn"></h2>
+    <div class="sec"><h3>What it does</h3><p id="dw"></p></div>
+    <div class="sec"><h3>Use case</h3><p id="du"></p></div>
+    <div class="sec"><h3>#keywords</h3><div class="kws">${s.k.map(() => `<span class="kw"></span>`).join("")}</div></div>
+    <div class="sec"><h3>#memoryhook</h3><p class="hook" id="dh"></p></div>
+    <div class="sec"><h3>#analogy</h3><p id="da"></p></div>
+    <div class="sec"><h3>#differentiate</h3><p id="dv"></p></div>
+    ${s.l.length ? `<div class="sec"><h3>Connects to (solid lines)</h3><div class="links">${linkBtns(s.l)}</div></div>` : ""}
+    ${s.back.length ? `<div class="sec"><h3>Often used by (dashed lines)</h3><div class="links">${linkBtns(s.back)}</div></div>` : ""}
+    <p class="note">Tip: type an exam keyword in the search box, like “stateful firewall” or “speech to text”, to practise picking the service.</p>`;
+  d.querySelector("#dn").textContent = s.n;
+  d.querySelector("#dw").textContent = s.w;
+  d.querySelector("#du").textContent = s.u;
+  d.querySelectorAll(".kw").forEach((e, i) => e.textContent = "#" + s.k[i].replace(/\s+/g, "-"));
+  d.querySelector("#dh").textContent = s.h;
+  d.querySelector("#da").textContent = s.a;
+  d.querySelector("#dv").textContent = s.v;
+  d.querySelectorAll(".link").forEach(b => b.addEventListener("click", () => select(b.dataset.id, true)));
+  d.scrollTop = 0;
+}
+
+function select(id, updateHash){
+  const s = BY[id]; if (!s) return;
+  sel = id; renderMap(s); renderDetail(s); renderGrid();
+  if (updateHash){ try { history.replaceState(null, "", "#" + id); } catch (e) {} }
+  const card = document.querySelector(".card.on");
+  if (updateHash && card && matchMedia("(min-width: 981px)").matches){ const r = card.getBoundingClientRect(); if (r.top < 0 || r.bottom > innerHeight) card.scrollIntoView({block: "nearest", behavior: "smooth"}); }
+  if (matchMedia("(max-width: 980px)").matches && updateHash) document.querySelector("aside").scrollIntoView({behavior: "smooth"});
+}
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const chip = id => BY[id] ? `<button class="link" data-id="${id}" style="--c:${CATS[BY[id].c].c}">${esc(BY[id].n.replace(/^(Amazon|AWS) /, ""))}</button>` : "";
+const bindChips = root => root.querySelectorAll(".link[data-id]").forEach(b => b.addEventListener("click", () => select(b.dataset.id, true)));
+function renderConcepts(){
+  const v = $("#v-concepts");
+  let h = `<div class="box"><h2>The exam at a glance</h2><p class="lead">AWS Certified Cloud Practitioner (CLF-C02)</p><dl class="rows">${EXAM.map(([a,b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join("")}</dl></div>`;
+  h += `<div class="box"><h2>Well-Architected Framework</h2><p class="lead">Six pillars, each with design principles (the ideas), best-practice areas (how AWS groups the work) and practices to apply. Hook for the order: <b>“O-S-R-P-C-S: Only Smart Rangers Prefer Cheap Sustainability.”</b></p>
+    <h4 class="small" style="margin:0 0 4px">General design principles</h4><ol>${GENERAL_DP.map(p => `<li>${esc(p)}</li>`).join("")}</ol></div>`;
+  h += `<div class="pillars">${PILLARS.map(p => `<div class="pillar"><h3>${esc(p.n)}</h3><p class="q">${esc(p.q)}</p><p class="hook" style="font-size:13px">${esc(p.hook)}</p>
+    <h4>#designprinciples</h4><ol>${p.p.map(x => `<li>${esc(x)}</li>`).join("")}</ol>${p.older ? `<p class="small">${esc(p.older)}</p>` : ""}
+    <h4>#bestpractice-areas</h4><div class="kws">${p.areas.map(a => `<span class="kw">${esc(a)}</span>`).join("")}</div>
+    <h4>#bestpractices (what to do)</h4><ul>${p.do.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+    <h4>Key services</h4><div class="chips">${p.svc.split(" ").map(chip).join("")}</div></div>`).join("")}</div>`;
+  h += CONCEPTS.map(c => `<div class="box"><h2>${esc(c.t)}</h2>${c.lead ? `<p class="lead">${esc(c.lead)}</p>` : ""}<dl class="rows">${c.rows.map(([a,b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join("")}</dl></div>`).join("");
+  h += `<p class="small">Sources: <a href="https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html">AWS Well-Architected Framework</a> · <a href="https://docs.aws.amazon.com/aws-certification/latest/userguide/clf-02-in-scope-services.html">CLF-C02 in-scope services</a> · <a href="https://docs.aws.amazon.com/awssupport/latest/user/aws-support-plans.html">AWS Support plans</a> · <a href="https://aws.amazon.com/free/terms">AWS Free Tier terms</a>. Checked November 2026.</p>`;
+  v.innerHTML = h; bindChips(v);
+}
+function renderTraps(){
+  const v = $("#v-traps");
+  let h = `<div class="box"><h2>If the question says… pick this</h2><p class="lead">Trigger words that point to one service. Tick “Quiz me” to hide the answers; hover or tab to a row to reveal it.</p>
+    <label class="small" style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><input type="checkbox" id="quiz"> Quiz me (hide answers)</label>
+    <input id="tq" type="search" placeholder="Filter trigger words" aria-label="Filter trigger words"><div id="trows"></div></div>`;
+  h += `<div class="box"><h2>Look-alike groups</h2><p class="lead">The exam puts these side by side as answer options. Know the one-line difference.</p></div>`;
+  h += `<div class="grp">${GROUPS.map(g => `<div class="box"><h3>${esc(g.t)}</h3><div class="grow">${g.rows.map(([id, d]) => `${chip(id)}<span>${esc(d)}</span>`).join("")}</div></div>`).join("")}</div>`;
+  h += `<div class="box"><h2>Classic wrong beliefs</h2><p class="lead">Each one shows up as a tempting wrong answer.</p>${CLASSIC.map(([a,b]) => `<div class="trap"><div class="no">${esc(a)}</div><div class="yes">${esc(b)}</div></div>`).join("")}</div>`;
+  v.innerHTML = h; bindChips(v);
+  const draw = () => {
+    const q = $("#tq").value.toLowerCase().trim();
+    const rows = TRIGGERS.filter(([p, id]) => !q || (p + " " + (BY[id] ? BY[id].n : "")).toLowerCase().includes(q));
+    $("#trows").innerHTML = rows.map(([p, id]) => `<div class="trow" tabindex="0"><span>“${esc(p)}”</span><span class="ans">${chip(id)}</span></div>`).join("") || `<p class="small">No trigger matches.</p>`;
+    bindChips($("#trows"));
+  };
+  $("#tq").addEventListener("input", draw);
+  $("#quiz").addEventListener("change", e => $("#trows").classList.toggle("quiz", e.target.checked));
+  draw();
+}
+function showView(name){
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.v === name));
+  ["services","concepts","traps"].forEach(n => $("#v-" + n).hidden = n !== name);
+}
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { showView(b.dataset.v); if (b.dataset.v !== "services") { try { history.replaceState(null, "", "#" + b.dataset.v); } catch (e) {} } }));
+
+$("#q").addEventListener("input", () => { showView("services"); renderGrid(); });
+$("#rand").addEventListener("click", () => { const list = SV.filter(s => cat === "all" || s.c === cat); select(list[Math.floor(Math.random() * list.length)].id, true); });
+window.addEventListener("hashchange", () => { const id = location.hash.slice(1); if (BY[id] && id !== sel) select(id, false); });
+
+renderCats(); renderConcepts(); renderTraps();
+{ const h = location.hash.slice(1); if (h === "concepts" || h === "traps") showView(h); select(BY[h] ? h : "s3", false); }
+</script>
+</body>
+</html>
