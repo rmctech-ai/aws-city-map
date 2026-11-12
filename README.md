@@ -19,14 +19,6 @@ These are design-only case studies for exam review; nothing in them is deployed.
 
 Live: `https://rmctech-ai.github.io/aws-city-map/atlas/`
 
-## Cloud Request Explorer (`/explorer`)
-
-An animated walkthrough in the [`explorer/`](explorer/) folder. Watch one request move through the InvoiceIQ architecture service by service, with the AWS category, Well-Architected pillar and key facts for each step, and an event log that fills in like an X-Ray trace. Three lessons: the happy path (16 steps), a failure lesson (retries, dead-letter queue, CloudWatch alarm) and Cognito sign-in with MFA and a blocked request. Play, step, go back, and set the move speed and the pause between steps.
-
-Teaching pattern inspired by [Protocol Explorer](https://protocol-explorer-alpha.vercel.app/) by Dilum Sanjaya. Numbers are illustrative.
-
-Live: `https://rmctech-ai.github.io/aws-city-map/explorer/`
-
 ## Run it
 
 Open `index.html` in any browser. No build step. It loads Google Fonts and rough.js from a CDN for the hand-drawn look.
