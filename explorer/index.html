@@ -163,6 +163,40 @@ footer a{color:inherit}
 </style>
 </head>
 <body>
+<!-- ===== Study-kit navigation (shared by Request Explorer and Field Guide) ===== -->
+<style id="kitNavCss">
+.kitnav{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 14px;margin:12px 12px 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;font-size:12.5px}
+.kitnav a,.kitnav button{color:var(--ink);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:transparent;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+.kitnav a:hover,.kitnav button:hover{border-color:var(--accent);color:var(--accent)}
+.kitnav a.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.kitnav .hub{border-color:transparent;padding-left:2px;color:var(--muted)}
+.kitnav .sp{flex:1}
+.kitnav .tbtn{border-radius:999px;padding:4px 11px;font-size:12px}
+.kitnav .stb{display:inline-block;min-width:16px;padding:0 4px;margin-left:5px;border-radius:9px;background:#e11d48;color:#fff;font-size:10px;line-height:16px;text-align:center}
+@media (max-width:760px){.kitnav{margin:8px 8px 0;font-size:11.5px}.kitnav .sp{display:none}}
+</style>
+<nav class="kitnav" aria-label="AWS City Map study kit">
+  <a class="hub" href="https://rmctech-ai.github.io/" title="Raul's Cloud Learning Hub">☁ Cloud Learning Hub</a>
+  <a href="../" data-k="map">🗺️ City Map</a>
+  <a href="../atlas/" data-k="atlas">🏛️ Architecture Atlas</a>
+  <a href="../explorer/" data-k="explorer">🛰️ Request Explorer</a>
+  <a href="../field-guide/" data-k="field-guide">📘 Field Guide</a>
+  <span class="sp"></span><span id="stAnchor"></span>
+  <button id="themeBtn" title="Switch light / dark">◐ Theme</button>
+</nav>
+<script>
+(function () {
+  const here = location.pathname.includes('/field-guide') ? 'field-guide' : location.pathname.includes('/explorer') ? 'explorer' : '';
+  document.querySelectorAll('.kitnav [data-k]').forEach(a => { if (a.dataset.k === here) { a.classList.add('on'); a.setAttribute('aria-current', 'page'); } });
+  const root = document.documentElement;
+  try { const t = localStorage.getItem('acm-theme'); if (t) root.dataset.theme = t; } catch (e) {}
+  document.getElementById('themeBtn').onclick = () => {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark'; try { localStorage.setItem('acm-theme', root.dataset.theme); } catch (e) {}
+  };
+})();
+</script>
+
 <div class="app">
   <header>
     <div class="brand">
@@ -1333,5 +1367,47 @@ window.addEventListener("hashchange", () => { const i = PROJECTS.findIndex(p => 
   else render();
 })();
 </script>
+<!-- ===== Study-kit add-on: mobile layout + Field Guide links ===== -->
+<style id="kitExplorerCss">
+.fgl{margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
+.fgl h3{margin:0 0 6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:var(--mono)}
+.fgl a{display:inline-block;margin:0 6px 6px 0;padding:3px 9px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;font-size:12px}
+.fgl a:hover{border-color:var(--accent);color:var(--accent)}
+@media (max-width:760px){
+  header{order:0} main.stage{order:1;overflow-x:auto} aside.detail{order:2} section.log{order:3} aside.projects{order:4} footer{order:5}
+  #scene{min-width:760px}
+  main.stage::after{content:"\2194  swipe the diagram sideways";display:block;font:11px var(--mono);color:var(--stage-muted);padding:4px 2px 0}
+}
+</style>
+<script>
+(function () {
+  /* map Explorer node names to Field Guide service ids */
+  const RULES = [[/λ|lambda/i, 'lambda'], [/cloudfront/i, 'cloudfront'], [/cognito/i, 'cognito'], [/api gateway/i, 'apigateway'], [/glacier/i, 'glacier'], [/\bs3\b/i, 's3'],
+    [/sqs/i, 'sqs'], [/sns/i, 'sns'], [/textract/i, 'textract'], [/bedrock/i, 'bedrock'], [/dynamo/i, 'dynamodb'], [/cloudwatch/i, 'cloudwatch'], [/eventbridge/i, 'eventbridge'],
+    [/cost explorer/i, 'costexplorer'], [/budget/i, 'budgets'], [/ec2/i, 'ec2'], [/\bebs\b/i, 'ebs'], [/aurora/i, 'aurora'], [/rds/i, 'rds'], [/backup/i, 'backup'], [/vault/i, 'backup'], [/kms/i, 'kms'],
+    [/route ?53/i, 'route53'], [/load balancer|\balb\b|\belb\b/i, 'elb'], [/auto ?scaling/i, 'autoscaling'], [/step functions/i, 'stepfunctions'], [/rekognition/i, 'rekognition'],
+    [/comprehend/i, 'comprehend'], [/guardduty/i, 'guardduty'], [/security hub/i, 'securityhub'], [/cloudtrail/i, 'cloudtrail'], [/config/i, 'config'], [/\bwaf\b/i, 'waf'], [/shield/i, 'shield'],
+    [/secrets/i, 'secretsmanager'], [/\biam\b/i, 'iam'], [/inspector/i, 'inspector'], [/macie/i, 'macie'], [/detective/i, 'detective'], [/ses\b|simple email/i, 'ses'], [/athena/i, 'athena'],
+    [/quicksight/i, 'quicksight'], [/kinesis/i, 'kinesis'], [/vpc/i, 'vpc'], [/nat/i, 'vpc'], [/elasticache/i, 'elasticache'], [/amplify/i, 'amplify'], [/systems manager|\bssm\b/i, 'ssm'], [/organizations/i, 'organizations']];
+  const fgId = name => { for (const [re, id] of RULES) if (re.test(name)) return id; return null; };
+  if (typeof renderDetail !== 'function' || typeof proj !== 'function') return;
+  const orig = renderDetail;
+  renderDetail = function () {
+    orig.apply(this, arguments);
+    try {
+      const p = proj(), box = document.getElementById('detail'); if (!p || !box) return;
+      const ids = typeof awsNodes === 'function' ? awsNodes(p) : Object.keys(p.nodes);
+      const seen = new Map(); ids.forEach(k => { const n = (p.nodes[k] || {}).n || k; const id = fgId(n); if (id && !seen.has(id)) seen.set(id, n.replace(/\s*λ$/, ' (Lambda)')); });
+      if (!seen.size) return;
+      const d = document.createElement('div'); d.className = 'fgl';
+      d.innerHTML = '<h3>Look these up in the Field Guide</h3>' + [...seen].map(([id, n]) => `<a href="../field-guide/#${id}" title="Open ${n} in the AWS Service Field Guide">📘 ${n.replace(/[<>&"]/g, '')}</a>`).join('');
+      box.appendChild(d);
+    } catch (e) {}
+  };
+  try { renderDetail(); } catch (e) {}
+})();
+</script>
+<script src="../field-guide/study.js"></script>
+
 </body>
 </html>
