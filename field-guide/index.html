@@ -181,7 +181,7 @@ footer a{color:inherit}
     <div class="detail" id="detail"></div>
   </aside>
 
-  <footer>Built by rmctech-ai for CLF-C02 review. The service list follows AWS's official in-scope list (non-exhaustive), plus Elastic Load Balancing, CodeDeploy, CDK, Pricing Calculator and Bedrock. Memory hooks and analogies are study aids, not definitions.</footer>
+  <footer>Built by rmctech-ai for CLF-C02 review. The service list follows AWS's official CLF-C02 in-scope list (exam guide v1.3, Oct 29, 2026), plus Elastic Load Balancing and Pricing Calculator. Cards marked NOT ON v1.3 LIST or OUT OF SCOPE are kept for context only. Memory hooks and analogies are study aids, not definitions.</footer>
 </div>
 
 <script>
@@ -222,8 +222,8 @@ S("fargate","AWS Fargate","serverless","Serverless compute engine for containers
 S("s3","Amazon S3","storage","Object storage for any amount of data, designed for 99.999999999% (11 nines) durability.","Backups, data lakes, static websites, images and video, logs.","object storage, bucket, unlimited, 11 nines durability, static website, storage classes, versioning","S3 = Simple Storage Service: three S's.","An endless warehouse of labelled boxes.","vs EBS: S3 is object storage reached over the network; EBS is a disk attached to one EC2 instance.","cloudfront glacier athena lambda kms macie iam");
 S("glacier","Amazon S3 Glacier","storage","Low-cost S3 storage classes for archives: Instant Retrieval, Flexible Retrieval and Deep Archive.","Keep records for years for compliance at very low cost.","archive, long-term, compliance, retrieval time, lowest cost","Glacier: frozen data, cheap to keep but slow to thaw.","A storage unit outside town: cheap, but fetching takes a trip.","vs S3 Standard: much cheaper to store, but retrieval takes time and costs extra (Deep Archive takes hours).","s3 backup");
 S("ebs","Amazon EBS","storage","Block storage volumes that attach to an EC2 instance like a hard drive.","Boot volumes and databases running on EC2.","block storage, volume, attached to EC2, same AZ, snapshots","EBS = Elastic Block Store: the EC2 instance's hard drive.","The hard drive inside your laptop.","vs EFS: an EBS volume attaches to one instance in one AZ; EFS is shared by many instances.","ec2 backup kms");
-S("efs","Amazon EFS","storage","Managed, elastic NFS file system that many Linux instances can mount at once.","Shared content for a fleet of web servers, or shared home directories.","shared file system, NFS, Linux, multiple instances, elastic","EFS: the F is for shared Files.","The shared network drive in an office.","vs FSx: EFS is Linux NFS; FSx offers Windows File Server, Lustre and others.","ec2 backup lambda");
-S("fsx","Amazon FSx","storage","Fully managed third-party file systems: FSx for Windows File Server, Lustre, NetApp ONTAP and OpenZFS.","Windows file shares joined to Active Directory, or high-performance computing with Lustre.","Windows file server, SMB, Lustre, HPC, NetApp","FSx: the X is the file-system brand you pick.","Renting a branded filing system that comes with the vendor's support.","vs EFS: choose FSx for Windows (SMB) or Lustre; choose EFS for Linux NFS.","ec2 directoryservice backup");
+S("efs","Amazon EFS","storage","Managed, elastic NFS file system that many Linux instances can mount at once.","Shared content for a fleet of web servers, or shared home directories.","shared file system, NFS, Linux, multiple instances, elastic","EFS: the F is for shared Files.","The shared network drive in an office.","vs FSx: EFS is Linux NFS; FSx offers Windows File Server (SMB), NetApp ONTAP and OpenZFS.","ec2 backup lambda");
+S("fsx","Amazon FSx","storage","Fully managed third-party file systems: FSx for Windows File Server, NetApp ONTAP and OpenZFS (FSx for Lustre is out of scope in exam guide v1.3).","Windows file shares joined to Active Directory (SMB), or moving NetApp storage to AWS.","Windows file server, SMB, Active Directory, NetApp ONTAP, managed file system","FSx: the X is the file-system brand you pick.","Renting a branded filing system that comes with the vendor's support.","vs EFS: choose FSx for Windows (SMB, Active Directory); choose EFS for Linux NFS.","ec2 directoryservice backup");
 S("storagegateway","AWS Storage Gateway","storage","Hybrid service connecting on-premises apps to AWS storage through file, volume and tape gateways.","Back up office servers to S3, or replace physical tape libraries.","hybrid storage, on-premises to cloud, file gateway, volume gateway, tape gateway","Storage Gateway: a gate between your office and S3.","A loading dock between your shop and the warehouse.","vs Snow Family: Storage Gateway is an ongoing hybrid link; Snow is a one-time physical move.","s3 glacier ebs backup");
 S("backup","AWS Backup","storage","Central, policy-based backup across EC2, EBS, RDS, DynamoDB, EFS, FSx and more.","Daily backups with retention rules and cross-region copies for a whole account.","centralized backup, backup plan, backup vault, retention, cross-region copy","AWS Backup: one plan backs up everything.","A night guard who copies every office's files into the vault.","vs Elastic Disaster Recovery: Backup keeps point-in-time copies; DRS keeps whole servers continuously replicated for fast failover.","ec2 rds dynamodb efs kms");
 S("drs","AWS Elastic Disaster Recovery","storage","Continuously replicates servers to AWS so you can recover them in minutes after a disaster.","Disaster recovery for on-premises or cloud servers with low RPO and RTO.","disaster recovery, continuous replication, low RPO/RTO, failover","DRS keeps a spare copy of your servers ready in the background.","A standby generator that switches on when the power fails.","vs AWS Backup: DRS is for fast recovery of whole servers; Backup is for scheduled copies.","ec2 ebs backup");
@@ -283,7 +283,7 @@ S("console","AWS Management Console","mgmt","The web interface for managing AWS 
 S("watool","AWS Well-Architected Tool","mgmt","Free tool to review workloads against the six Well-Architected pillars and track improvements.","Run a Well-Architected review on a project and get an improvement plan.","six pillars, workload review, best practices, lenses","Well-Architected Tool: a report card for your architecture.","A teacher grading your design against a rubric.","vs Trusted Advisor: the W-A Tool is a guided questionnaire; Trusted Advisor runs automated checks.","trustedadvisor");
 S("budgets","AWS Budgets","finance","Set cost or usage budgets, with alerts when actual or forecast spend crosses a threshold.","Get an email if this month is on track to pass US$20.","budget, alert, forecast, threshold, budget actions","Budgets warns you before you overspend.","A phone plan's 'you've used 80% of your data' text.","vs Cost Explorer: Budgets alerts about the future; Cost Explorer analyses the past.","sns costexplorer");
 S("costexplorer","AWS Cost Explorer","finance","Visualise and analyse costs and usage, with up to 12 months of history and forecasts.","See which service drove last month's bill.","visualize costs, trends, forecast, filter by service or tag","Cost Explorer: explore where the money went.","The spending charts in your banking app.","vs Cost and Usage Report: Cost Explorer is charts; the CUR is raw, detailed data.","budgets cur");
-S("cur","AWS Cost and Usage Report","finance","The most detailed billing data available, delivered to S3 (now through Data Exports).","Analyse your bill line by line with Athena or QuickSight.","most detailed, line items, hourly, delivered to S3, Athena","CUR: the raw itemised receipt.","The itemised receipt, not just the total.","vs Cost Explorer: the CUR is raw data for your own analysis.","s3 athena quicksight");
+S("cur","AWS Cost and Usage Report","finance","The most detailed billing data available, delivered to S3 (now through Data Exports).","Analyse your bill line by line with Athena or Amazon Quick.","most detailed, line items, hourly, delivered to S3, Athena","CUR: the raw itemised receipt.","The itemised receipt, not just the total.","vs Cost Explorer: the CUR is raw data for your own analysis.","s3 athena quicksight");
 S("pricingcalc","AWS Pricing Calculator","finance","Free web tool to estimate the monthly cost of an architecture before you build it.","Price out InvoiceIQ or a migration before committing.","estimate, before you build, cost planning, quote","Pricing Calculator: price it before you build it.","Getting a quote before the renovation starts.","vs Cost Explorer: the Pricing Calculator estimates future cost of something new; Cost Explorer analyses what you actually spent.","costexplorer budgets");
 S("marketplace","AWS Marketplace","finance","A digital catalogue to find, buy and deploy third-party software that runs on AWS.","Buy a firewall appliance or SaaS product, billed on your AWS invoice.","third-party software, AMIs, SaaS, billed on AWS invoice","Marketplace: the AWS app store.","An app store for business software.","vs License Manager: Marketplace is where you buy; License Manager tracks what you own.","ec2");
 S("sqs","Amazon SQS","integration","Fully managed message queue that decouples components; consumers pull messages when ready.","Buffer orders so a slow worker never loses one.","queue, decouple, pull, buffer, Standard/FIFO, dead-letter queue","SQS = Simple Queue Service: messages wait in line.","Taking a number at the deli counter.","vs SNS: SQS is a queue that consumers pull from; SNS pushes to many subscribers. They're often used together (fan-out).","sns lambda ec2");
@@ -296,7 +296,7 @@ S("glue","AWS Glue","analytics","Serverless ETL that discovers, catalogues, clea
 S("emr","Amazon EMR","analytics","Managed big data clusters running Spark, Hadoop, Hive and more.","Process huge datasets with Spark.","Hadoop, Spark, big data, clusters","EMR = Elastic MapReduce.","A factory floor full of machines for bulk processing.","vs Glue: EMR gives more control over big clusters.","s3 ec2");
 S("kinesis","Amazon Kinesis","analytics","Collect and process real-time streaming data (Data Streams, Data Firehose, Video Streams).","Clickstreams, IoT telemetry and live dashboards.","real-time, streaming, ingest, Data Firehose","Kinesis: data in motion (kinetic).","A river you can draw from anywhere along its banks.","vs SQS: Kinesis streams data that many consumers can replay; SQS holds task messages for one consumer.","s3 lambda redshift opensearch");
 S("opensearch","Amazon OpenSearch Service","analytics","Managed OpenSearch (a fork of Elasticsearch) for search, log analytics and vector search.","Site search, log dashboards and semantic search.","search, log analytics, Elasticsearch, dashboards, vector search","OpenSearch: search, opened up.","A library index that finds any word instantly.","vs Athena: OpenSearch searches indexed data in real time; Athena queries files sitting in S3.","kinesis cloudwatch");
-S("quicksight","Amazon QuickSight","analytics","Serverless business intelligence dashboards with machine-learning insights.","Interactive sales dashboards for managers.","BI, dashboards, visualization, pay per session","QuickSight: quick insights at a sight.","The screen in the boardroom showing live charts.","vs CloudWatch dashboards: QuickSight is for business analytics; CloudWatch is for operational metrics.","athena redshift s3");
+S("quicksight","Amazon Quick (formerly QuickSight)","analytics","Business intelligence dashboards plus AI-powered insights and agents. QuickSight became Amazon Quick in 2025-26 (shown as AWS Quick since Nov 2026); its BI part is Quick Sight.","Interactive sales dashboards for managers; asking questions of your data in plain language.","BI, dashboards, visualization, Quick Sight, QuickSight, business intelligence","Quick = quick insights at a sight. Exam guide v1.3 calls it Amazon Quick.","The screen in the boardroom showing live charts.","vs CloudWatch dashboards: Amazon Quick is for business analytics; CloudWatch is for operational metrics.","athena redshift s3");
 
 S("sagemaker","Amazon SageMaker AI","ml","Build, train and deploy your own machine learning models.","Custom models for fraud detection or demand forecasting.","build/train/deploy ML, data scientists, custom models, notebooks","SageMaker: the sage who makes models.","A full kitchen to cook your own recipe.","vs Bedrock: SageMaker is for building your own models; Bedrock gives you ready-made foundation models.","s3 bedrock");
 S("bedrock","Amazon Bedrock","ml","Access foundation models (Claude, Llama, Amazon Nova and others) through one API, with guardrails and knowledge bases.","Generative AI chatbots, summarisation and question-answering over your documents (RAG).","generative AI, foundation models, LLM, guardrails, knowledge bases, RAG","Bedrock: the foundation that generative AI apps are built on.","A restaurant menu of ready-made dishes.","vs SageMaker: no training needed. Note: Bedrock isn't on the CLF-C02 in-scope list.","lambda sagemaker opensearch");
@@ -330,7 +330,7 @@ S("appsync","AWS AppSync","frontend","Managed GraphQL and real-time APIs.","A mo
 S("iotcore","AWS IoT Core","iot","Connects billions of IoT devices and routes their messages to AWS services.","Smart meters and sensors sending readings over MQTT.","IoT devices, MQTT, sensors, device connectivity","IoT Core: the core where devices connect.","A switchboard for gadgets.","vs Kinesis: IoT Core connects devices; Kinesis streams any kind of data.","kinesis lambda dynamodb");
 S("connect","Amazon Connect","business","Cloud contact centre for voice calls and chat.","Set up a customer service phone line in minutes.","contact center, call center, omnichannel","Connect connects customers to agents.","A call centre in a box.","vs SES: Connect handles calls and chats; SES sends email.","lex transcribe polly");
 S("ses","Amazon SES","business","Scalable email sending (and receiving) for applications.","Order confirmations, password resets and newsletters.","email, transactional email, bulk email, marketing","SES = Simple Email Service.","A post office for your app's emails.","vs SNS: SES sends full, branded email; SNS email is for simple notifications.","sns lambda");
-S("support","AWS Support plans","enablement","Current plans (2026): Basic (free), Business Support+, Enterprise Support and Unified Operations. Developer, Business (classic) and Enterprise On-Ramp retire on January 1, 2027.","Pick the response time and expert help your production workloads need.","Basic, Business Support+, Enterprise, Unified Operations, TAM, response time, Trusted Advisor checks","Higher plan, faster help; a designated TAM comes with Enterprise.","Insurance tiers: you pay more for faster, closer help.","Exam note: older questions use the classic five plans (Basic, Developer, Business, Enterprise On-Ramp, Enterprise). Business = 24/7 phone and under 1 hour for production down; Enterprise = under 15 minutes and a designated TAM. Full details are in the Concepts tab.","trustedadvisor health");
+S("support","AWS Support plans","enablement","Exam guide v1.3 plans: Basic (free), Business Support+, Enterprise Support and Unified Operations. (Developer, Business and Enterprise On-Ramp closed to new customers in Dec 2025 and end on January 1, 2027.)","Pick the response time and expert help your production workloads need.","Basic, Business Support+, Enterprise, Unified Operations, TAM, response time, Trusted Advisor checks","30 · 15 · 5: Business Support+ answers critical cases in 30 minutes, Enterprise in 15 (with a designated TAM), Unified Operations in 5 (with a designated team).","Insurance tiers: you pay more for faster, closer help.","Lowest plan with 24/7 engineers = Business Support+. Lowest plan with a designated TAM = Enterprise Support. Fastest response and a whole designated team = Unified Operations. Basic = free self-help, billing help, Health Dashboard, core Trusted Advisor checks.","trustedadvisor health");
 
 const EXAM = [["Questions","65 (50 scored + 15 unscored)"],["Time","90 minutes"],["Passing score","700 out of 1000"],["Domain 1 · Cloud Concepts","24%"],["Domain 2 · Security and Compliance","30%"],["Domain 3 · Cloud Technology and Services","34%"],["Domain 4 · Billing, Pricing and Support","12%"]];
 
@@ -389,8 +389,10 @@ const CONCEPTS = [
   ["Availability Zone (AZ)","One or more discrete data centres with redundant power and networking, physically separated from other AZs in the Region. Use 2+ AZs for high availability."],
   ["Edge location","Sites in major cities used by CloudFront, Route 53, AWS WAF, Shield and Global Accelerator to serve users with low latency."],
   ["Local Zone","AWS compute and storage placed near a large city for single-digit-millisecond latency."],
-  ["Wavelength Zone","AWS infrastructure inside 5G telecom networks for ultra-low-latency mobile apps."],
-  ["Outposts","AWS racks in your own data centre (hybrid)."]]},
+  ["Wavelength Zone","AWS inside 5G telecom networks. OUT OF SCOPE in exam guide v1.3: know the name only."],
+  ["Outposts","AWS racks in your own data centre (hybrid)."],
+  ["No shared single points of failure","AZs have separate power, cooling and networking, so one AZ failing doesn't take down the others."],
+  ["When to use multiple Regions","Disaster recovery and business continuity, low latency for users far apart, and data sovereignty (keeping data under a country's laws)."]]},
  {t:"Root user: tasks only the root user can do", lead:"Lock the root user away with MFA and use it only for these.", rows:[
   ["Change account settings","Account name, email address, root password and root access keys."],
   ["Close the AWS account",""],
@@ -439,7 +441,11 @@ const CONCEPTS = [
   ["Dedicated Instances","Instances on hardware not shared with other customers."],
   ["Capacity Reservations","Reserve capacity in an AZ, without a long-term commitment."],
   ["Pricing principles","Pay as you go, save when you commit, pay less per unit by using more (volume tiers)."],
-  ["Data transfer","Data IN from the internet is free; data OUT to the internet and between Regions is charged."]]},
+  ["Data transfer","IN from the internet: free. OUT to the internet: charged. Between Regions: charged. Between AZs in the same Region: charged per GB. Within one AZ on private IPs: free."],
+  ["Reserved Instance flexibility","Regional RIs apply in any AZ of the Region and (Linux, default tenancy) to any size in the same instance family. Convertible RIs can be exchanged for another family; Standard RIs can't but give a bigger discount."],
+  ["RIs in AWS Organizations","With consolidated billing, RI and Savings Plans discounts are shared across accounts by default. The management account can turn sharing off."],
+  ["Licensing: BYOL vs license included","BYOL = bring licences you already own (often with Dedicated Hosts). License included = the licence cost is built into the hourly price."],
+  ["Rightsizing","Match instance type and size to real usage (Compute Optimizer helps). Automation (IaC, schedules, Auto Scaling) removes manual effort and idle cost."]]},
  {t:"Billing and cost tools", lead:"Before, during and after spending.", rows:[
   ["AWS Pricing Calculator","Estimate cost BEFORE you build."],
   ["AWS Budgets","Alerts when actual or forecast spend crosses your threshold."],
@@ -452,25 +458,32 @@ const CONCEPTS = [
   ["Accounts created on or after July 15, 2025","Choose a Free plan or a Paid plan. US$100 in credits, plus up to US$100 more for onboarding activities. A Free plan account ends after 6 months or when credits run out, whichever comes first."],
   ["Accounts created before July 15, 2025 (legacy)","Always Free offers, 12-month free tier, and short-term trials."],
   ["Exam tip","Older practice questions describe the legacy three types: Always Free, 12 Months Free, Trials."]]},
- {t:"AWS Support plans", lead:"AWS restructured these. The exam may still use the classic plan names.", rows:[
-  ["Current plans (2026)","Basic (free), Business Support+, Enterprise Support, Unified Operations."],
-  ["Basic","Free for all: account and billing help, service quota increases, documentation, re:Post, health checks. No technical support cases."],
-  ["Business Support+","From US$29/month: 24/7 phone, web and chat; under 30 min human engagement for business-critical system down; 500+ Trusted Advisor checks; AI-assisted help."],
-  ["Enterprise Support","From US$5,000/month: designated Technical Account Manager (TAM), up to 15-minute response for production-critical cases, Security Incident Response included."],
-  ["Unified Operations","Top tier: designated TAM plus domain specialist engineers, critical workload reviews, event management."],
-  ["Retiring Jan 1, 2027","Developer, Business (classic) and Enterprise On-Ramp."],
-  ["Classic plans, as older exam questions use them","Basic · Developer (business-hours email, <12 h system impaired) · Business (24/7 phone, <1 h production down, full Trusted Advisor) · Enterprise On-Ramp (<30 min business-critical, pool of TAMs) · Enterprise (<15 min business-critical, designated TAM, Concierge billing team)."]]},
+ {t:"AWS Support plans", lead:"Exam guide v1.3 uses these four plans. Learn 30 · 15 · 5.", rows:[
+  ["Basic","Free for every account: customer service for billing and account, service quota increases, documentation, whitepapers, re:Post, AWS Health Dashboard, core Trusted Advisor checks. No technical support cases."],
+  ["AWS Business Support+","Lowest paid plan: 24/7 phone, web and chat with Cloud Support Engineers, AI-powered help, full Trusted Advisor checks, 30-minute response for critical cases."],
+  ["AWS Enterprise Support","Adds a designated Technical Account Manager (TAM), up to 15-minute response for production-critical cases, AWS Security Incident Response included, proactive reviews."],
+  ["AWS Unified Operations","Top plan for mission-critical workloads: a designated team (TAM, domain engineer, billing and account specialist) and 5-minute response for critical incidents."],
+  ["Old plan names","Developer, Business and Enterprise On-Ramp stopped taking new customers in December 2025 and end on January 1, 2027. If you see them, pick by the feature described."]]},
  {t:"Help, people and programs", lead:"Domain 4 asks who to turn to.", rows:[
+  ["AWS Support Center","Where you open and track support cases in the console."],
   ["AWS re:Post","Community Q&A run by AWS (replaced the old forums)."],
   ["AWS Knowledge Center","AWS articles answering the most common questions."],
-  ["AWS Documentation and Prescriptive Guidance","Official docs, whitepapers and step-by-step patterns."],
-  ["AWS Professional Services","AWS's own consultants for large projects."],
-  ["AWS Partner Network (APN)","Third-party consulting and technology partners."],
-  ["AWS Marketplace","Buy third-party software billed through AWS."],
+  ["AWS Prescriptive Guidance","Proven strategies, guides and patterns for migration and modernization."],
+  ["Documentation, whitepapers, blogs","On aws.amazon.com, including the AWS Security Blog and AWS Security Center."],
+  ["AWS Health Dashboard / AWS Health API","See (or receive programmatically) AWS events that affect your resources."],
+  ["AWS solutions architects","AWS experts who give technical guidance on designs."],
+  ["AWS Professional Services","AWS's own consultants who deliver large projects with you."],
+  ["AWS Partner Network (APN)","Partners: ISVs (independent software vendors) sell software that runs on AWS; system integrators / consulting partners design, migrate and build for you. Partner benefits: training and certification, partner events, go-to-market programs, partner discounts."],
+  ["AWS Marketplace","Find, buy and deploy third-party software (including security products) billed through AWS, with cost management, governance and license entitlement features."],
   ["AWS Trust & Safety","Report abuse, such as AWS resources used for spam, phishing or attacks."],
-  ["AWS Managed Services (AMS)","AWS operates your infrastructure for you."],
-  ["Technical Account Manager (TAM)","Your named AWS adviser on Enterprise-level support."],
-  ["AWS Activate","Credits and support for startups."]]}
+  ["Technical Account Manager (TAM)","Your named AWS adviser, from Enterprise Support up."],
+  ["Out of scope in v1.3","AWS Activate, AWS IQ and AWS Managed Services (AMS): know the names only."]]},
+ {t:"Exam guide v1.3: what changed (Oct 29, 2026)", lead:"AWS says guide updates reach the exam about one month after publishing. This is the version for December 2026.", rows:[
+  ["Support plans","Basic, Business Support+, Enterprise Support, Unified Operations."],
+  ["Renamed","Amazon Quick → Amazon Quick (AWS Quick since Nov 2026)."],
+  ["New skills listed","RI flexibility and RI sharing in Organizations, data transfer within and between Regions, BYOL vs license included, rightsizing, access reports, credential storage (Secrets Manager, Systems Manager), federated identity, database replication, Health API, Prescriptive Guidance, ISVs and system integrators, partner benefits, Marketplace features, solutions architects."],
+  ["Not on the in-scope list (low priority)","Snow Family, DataSync, Kendra, Bedrock, Audit Manager, AppSync, CDK. Know what they are; don't spend study time."],
+  ["Explicitly OUT of scope","Wavelength, Ground Station, Device Farm, Elemental Media services, CodeGuru, CodeDeploy, CodeArtifact, CloudShell, Transfer Family, Network Firewall, MemoryDB, Keyspaces, FSx for Lustre, Fraud Detector, Personalize, Launch Wizard, AppFlow, MSK, Data Exchange, Clean Rooms, DataZone, Activate, AWS IQ, Managed Services, GameLift, IoT Greengrass, IoT Device Defender, VPC Lattice, Cloud Map, Billing Conductor."]]}
 ];
 
 const GROUPS = [
@@ -479,7 +492,7 @@ const GROUPS = [
  {t:"Network protection", rows:[["waf","Filters bad web requests (SQL injection, XSS, bots)."],["shield","Absorbs DDoS floods. Standard is free."],["firewallmanager","Applies firewall rules across all accounts."],["vpc","Security groups: stateful, per instance, allow rules only. Network ACLs: stateless, per subnet, allow and deny."]]},
  {t:"Keys, secrets and certificates", rows:[["kms","Managed encryption keys (shared hardware)."],["cloudhsm","Your own dedicated key hardware."],["secretsmanager","Passwords and API keys with automatic rotation."],["ssm","Parameter Store: config values and simple secrets, no built-in rotation."],["acm","SSL/TLS certificates for HTTPS."]]},
  {t:"Messaging and events", rows:[["sqs","Queue: one consumer pulls; decouples."],["sns","Push one message to many (fan-out)."],["eventbridge","Route events by rules; also scheduled jobs."],["kinesis","Real-time streaming data, replayable."],["stepfunctions","Orchestrate steps in a workflow."]]},
- {t:"Storage", rows:[["s3","Objects (files) over the network, unlimited."],["ebs","A disk for one EC2 instance (block)."],["efs","Shared Linux file system (NFS)."],["fsx","Windows (SMB) or Lustre file systems."],["glacier","Cheap archives, slower retrieval."],["storagegateway","Hybrid link from on-premises to S3."]]},
+ {t:"Storage", rows:[["s3","Objects (files) over the network, unlimited."],["ebs","A disk for one EC2 instance (block)."],["efs","Shared Linux file system (NFS)."],["fsx","Windows (SMB) file shares and other managed file systems."],["glacier","Cheap archives, slower retrieval."],["storagegateway","Hybrid link from on-premises to S3."]]},
  {t:"Databases", rows:[["rds","Relational SQL, transactions (OLTP)."],["aurora","AWS's faster MySQL/PostgreSQL-compatible engine."],["dynamodb","Serverless NoSQL key-value, any scale."],["elasticache","In-memory cache in front of a database."],["redshift","Data warehouse for analytics (OLAP)."],["docdb","MongoDB-compatible documents."],["neptune","Graph relationships."]]},
  {t:"Getting traffic to your app", rows:[["route53","DNS: where to go."],["cloudfront","Caches content at the edge (CDN)."],["globalaccelerator","Static IPs, AWS network, no caching."],["elb","Spreads traffic across servers."],["apigateway","Manages APIs: auth, throttling."]]},
  {t:"Connecting to AWS (hybrid)", rows:[["directconnect","Private physical line, consistent speed."],["vpn","Encrypted tunnel over the internet, quick to set up."],["clientvpn","Individual users connect from laptops."],["transitgateway","Hub connecting many VPCs and networks."],["privatelink","Private access to one service."]]},
@@ -527,7 +540,7 @@ const CLASSIC = [
  ["“Reserved Instances and Savings Plans are the same.”","Both need 1- or 3-year commitments. RIs commit to an instance configuration; Savings Plans commit to a $/hour spend and are more flexible (Compute SP also covers Fargate and Lambda)."],
  ["“Trusted Advisor gives every check on Basic support.”","Basic gets core checks only. Full checks come with Business-level support and above."],
  ["“Security groups can deny traffic.”","Security groups only have allow rules and are stateful. Network ACLs can allow and deny, and are stateless."],
- ["“Artifact checks my resources for compliance.”","Artifact gives AWS's own compliance reports. Config and Audit Manager look at your resources."],
+ ["“Artifact checks my resources for compliance.”","Artifact gives AWS's own compliance reports. Config (and Audit Manager) look at your resources."],
  ["“Elastic Beanstalk and CloudFormation are the same.”","Beanstalk is a platform for running your app. CloudFormation builds any resources from a template."],
  ["“Multi-AZ RDS is for read scaling.”","Multi-AZ is for high availability (standby). Read replicas are for read scaling."],
  ["“Global services live in one Region.”","IAM, Route 53, CloudFront and Organizations are global. S3 bucket names are global, but each bucket lives in one Region."],
@@ -537,6 +550,9 @@ const CLASSIC = [
 ];
 
 const BY = Object.fromEntries(SV.map(s => [s.id, s]));
+/* Exam guide CLF-C02 v1.3 (Oct 29, 2026): out = explicitly out of scope; off = not on the in-scope list (low priority) */
+const SCOPE = {codedeploy:"out", snow:"off", kendra:"off", bedrock:"off", auditmanager:"off", appsync:"off", cdk:"off"};
+const SCOPE_TXT = {out:"OUT OF SCOPE (v1.3)", off:"NOT ON v1.3 LIST · low priority"};
 SV.forEach(s => { s.l = s.l.filter(id => BY[id] && id !== s.id); });
 SV.forEach(s => { s.back = SV.filter(o => o.l.includes(s.id)).map(o => o.id).filter(id => !s.l.includes(id)); });
 
@@ -567,14 +583,15 @@ function renderCats(){
 function renderGrid(){
   const q = $("#q").value.trim();
   const list = SV.filter(s => (cat === "all" || s.c === cat) && matches(s, q));
-  $("#count").textContent = `${list.length} of ${SV.length} services`;
+  $("#count").textContent = `${list.length} of ${SV.length} services · ${SV.filter(x => !SCOPE[x.id]).length} on the exam guide v1.3 in-scope list`;
   const g = $("#grid"); g.innerHTML = "";
   if (!list.length){ g.innerHTML = `<div class="empty">No service matches that. Try a keyword like “queue”, “DDoS” or “Kubernetes”.</div>`; return; }
   list.forEach(s => {
     const b = document.createElement("button"); b.className = "card" + (sel === s.id ? " on" : "");
     b.style.setProperty("--c", CATS[s.c].c);
     b.innerHTML = `<span class="cc"></span><span class="cn"></span><span class="cw"></span>`;
-    b.querySelector(".cc").textContent = CATS[s.c].l;
+    b.querySelector(".cc").textContent = CATS[s.c].l + (SCOPE[s.id] ? " · " + SCOPE_TXT[SCOPE[s.id]] : "");
+    if (SCOPE[s.id]) b.style.opacity = ".62";
     b.querySelector(".cn").textContent = s.n;
     b.querySelector(".cw").textContent = s.w;
     b.addEventListener("click", () => select(s.id, true));
@@ -608,7 +625,7 @@ function renderMap(s){
 function renderDetail(s){
   const d = $("#detail"), c = CATS[s.c];
   const linkBtns = arr => arr.map(id => `<button class="link" data-id="${id}" style="--c:${CATS[BY[id].c].c}">${BY[id].n.replace(/^(Amazon|AWS) /, "")}</button>`).join("");
-  d.innerHTML = `<div class="dk"><span class="pill" style="--c:${c.c}">${c.l}</span></div><h2 id="dn"></h2>
+  d.innerHTML = `<div class="dk"><span class="pill" style="--c:${c.c}">${c.l}</span>${SCOPE[s.id] ? `<span class="pill" style="--c:#e8590c;margin-left:6px">${SCOPE_TXT[SCOPE[s.id]]}</span>` : ""}</div><h2 id="dn"></h2>
     <div class="sec"><h3>What it does</h3><p id="dw"></p></div>
     <div class="sec"><h3>Use case</h3><p id="du"></p></div>
     <div class="sec"><h3>#keywords</h3><div class="kws">${s.k.map(() => `<span class="kw"></span>`).join("")}</div></div>
@@ -766,7 +783,7 @@ renderCats(); renderConcepts(); renderTraps();
     $q('#qzGo').onclick = () => start($q('#qzCat').value, $q('#qzKind').value, +$q('#qzN').value);
   }
   function start(c, kind, n) {
-    const pool = shuffle(SV.filter(s => c === 'all' || s.c === c)).slice(0, n);
+    const pool = shuffle(SV.filter(s => (c === 'all' || s.c === c) && !SCOPE[s.id])).slice(0, n);
     Q = { items: pool.map(s => { const k = kind === 'mix' ? ['w', 'u', 'k'][Math.floor(Math.random() * 3)] : kind;
       const same = shuffle(SV.filter(x => x.id !== s.id && x.c === s.c)), other = shuffle(SV.filter(x => x.c !== s.c));
       const opts = shuffle([s].concat(same.slice(0, 3), other).slice(0, 4));

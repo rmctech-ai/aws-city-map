@@ -8,14 +8,15 @@ A hand-drawn, clickable mind map for reviewing the **AWS Certified Cloud Practit
 
 - **Mind map** of core services in 8 districts. Click a service for a plain explanation, an analogy, a memory hook, exam keyword triggers, and which services it works with.
 - **Show the flow**: a website request and a serverless invoice pipeline, traced on the map step by step.
-- **Don't mix these up**: 24 groups of look-alike services (CloudWatch vs CloudTrail vs Config, SQS vs SNS vs EventBridge, KMS vs CloudHSM vs Secrets Manager, and more).
+- **Don't mix these up**: 26 groups of look-alike services (CloudWatch vs CloudTrail vs Config, SQS vs SNS vs EventBridge, KMS vs CloudHSM vs Secrets Manager, and more).
 - **All exam services**: one card for every service on AWS's CLF-C02 in-scope list.
 - **Keyword finder**: type an exam phrase, get the service.
-- **14-day review plan** with tick boxes saved in your browser.
+- **Final four-week plan** (Nov 19 – Dec 15, 2026) with tick boxes saved in your browser.
+- Updated for **exam guide v1.3 (Oct 29, 2026)**: new support plan names, Amazon Quick, pricing and partner skills; services AWS lists as out of scope or no longer lists are marked low priority.
 
 ## AWS Architecture Atlas (`/atlas`)
 
-A companion study page in the [`atlas/`](atlas/) folder: five real-world system designs (typhoon alerts, clinic records, delivery tracking, real estate, OFW remittance) built from interconnected AWS services. Each design has a clickable architecture diagram (tap a service for its meaning, tap a numbered arrow to play the request step by step), a 4-domain map, decision records (chosen service vs. closest distractor) and 5 batches of 15 multiple-choice questions (375 in total). Exam mode runs full 75-question batches in a 1 → 5 cycle and tracks a readiness streak (five batches in a row at 80%+), with scores and flags saved in your browser. Batch 6 is a 65-question timed mock exam weighted like CLF-C02, with Choose TWO questions, reshuffled on every attempt, and a domain breakdown. Batch 7 is a 98-question trainer for Select TWO, Select THREE and NOT / odd-one-out questions, with feedback on every option. The trigger-word table covers every service on the official in-scope list. It also has a searchable trigger-word and memory-hook table and a CLF-C02 coverage check.
+A companion study page in the [`atlas/`](atlas/) folder: five real-world system designs (typhoon alerts, clinic records, delivery tracking, real estate, OFW remittance) built from interconnected AWS services. Each design has a clickable architecture diagram (tap a service for its meaning, tap a numbered arrow to play the request step by step), a 4-domain map, decision records (chosen service vs. closest distractor) and 5 batches of 15 multiple-choice questions (375 in total). Exam mode runs full 75-question batches in a 1 → 5 cycle and tracks a readiness streak (five batches in a row at 80%+), with scores and flags saved in your browser. Batch 6 is a 65-question timed mock exam weighted like CLF-C02, with Choose TWO questions, reshuffled on every attempt, and a domain breakdown. Batch 7 is a 132-question trainer for Select TWO, Select THREE and NOT / odd-one-out questions, with feedback on every option. The trigger-word table covers every service on the official in-scope list. It also has a searchable trigger-word and memory-hook table and a CLF-C02 coverage check.
 
 These are design-only case studies for exam review; nothing in them is deployed.
 
@@ -29,4 +30,8 @@ To publish it with GitHub Pages: **Settings → Pages → Deploy from a branch �
 
 ## Note
 
-Analogies are memory aids, not exact definitions. The service list follows the [official CLF-C02 in-scope services](https://docs.aws.amazon.com/aws-certification/latest/userguide/clf-02-in-scope-services.html), which AWS says is not exhaustive.
+Analogies are memory aids, not exact definitions. The service list follows the official CLF-C02 exam guide v1.3 (Oct 29, 2026) in-scope list, which AWS says is not exhaustive.
+
+## Service Field Guide (`/field-guide`)
+
+One card per service (120), with what it does, use case, keywords, memory hook, analogy and the look-alike to tell it apart. Concepts, exam traps, an "Exam guide v1.3: what changed" section and a Quiz me mode that only asks about in-scope services. Cards for services outside the v1.3 list are badged.
