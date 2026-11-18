@@ -10,8 +10,9 @@ A hand-drawn, clickable mind map for reviewing the **AWS Certified Cloud Practit
 - **Show the flow**: a website request and a serverless invoice pipeline, traced on the map step by step.
 - **Don't mix these up**: 26 groups of look-alike services (CloudWatch vs CloudTrail vs Config, SQS vs SNS vs EventBridge, KMS vs CloudHSM vs Secrets Manager, and more).
 - **All exam services**: one card for every service on AWS's CLF-C02 in-scope list.
-- **Keyword finder**: type an exam phrase, get the service.
-- **Final four-week plan** (Nov 19 – Dec 15, 2026) with tick boxes saved in your browser.
+- **Design principles & Well-Architected**: the six pillars with their design principles, trigger words and key services, the classic cloud design principles, and a "Which pillar?" quick check.
+- **Keyword finder**: 4–7 triggers for every service (606 in total). View them by service or by keyword.
+- **Two-week sprint**: 14 days of 6–8 hours across all four domains. Every block links straight to its topic in the hub, Field Guide, Atlas or this map. You can change the start date, and tick boxes are saved in your browser.
 - Updated for **exam guide v1.3 (Oct 29, 2026)**: new support plan names, Amazon Quick, pricing and partner skills; services AWS lists as out of scope or no longer lists are marked low priority.
 
 ## AWS Architecture Atlas (`/atlas`)

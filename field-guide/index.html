@@ -658,17 +658,19 @@ function select(id, updateHash){
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const chip = id => BY[id] ? `<button class="link" data-id="${id}" style="--c:${CATS[BY[id].c].c}">${esc(BY[id].n.replace(/^(Amazon|AWS) /, ""))}</button>` : "";
 const bindChips = root => root.querySelectorAll(".link[data-id]").forEach(b => b.addEventListener("click", () => select(b.dataset.id, true)));
+const slug = t => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32).replace(/-$/, "");
+function goConcept(h){ if (!/^c-/.test(h)) return false; showView("concepts"); const el = document.getElementById(h); if (el) setTimeout(() => { el.scrollIntoView({block: "start"}); el.style.outline = "3px solid var(--accent, #f59f00)"; setTimeout(() => el.style.outline = "", 2200); }, 60); return true; }
 function renderConcepts(){
   const v = $("#v-concepts");
   let h = `<div class="box"><h2>The exam at a glance</h2><p class="lead">AWS Certified Cloud Practitioner (CLF-C02)</p><dl class="rows">${EXAM.map(([a,b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join("")}</dl></div>`;
-  h += `<div class="box"><h2>Well-Architected Framework</h2><p class="lead">Six pillars, each with design principles (the ideas), best-practice areas (how AWS groups the work) and practices to apply. Hook for the order: <b>“O-S-R-P-C-S: Only Smart Rangers Prefer Cheap Sustainability.”</b></p>
+  h += `<div class="box" id="c-wa"><h2>Well-Architected Framework</h2><p class="lead">Six pillars, each with design principles (the ideas), best-practice areas (how AWS groups the work) and practices to apply. Hook for the order: <b>“O-S-R-P-C-S: Only Smart Rangers Prefer Cheap Sustainability.”</b></p>
     <h4 class="small" style="margin:0 0 4px">General design principles</h4><ol>${GENERAL_DP.map(p => `<li>${esc(p)}</li>`).join("")}</ol></div>`;
-  h += `<div class="pillars">${PILLARS.map(p => `<div class="pillar"><h3>${esc(p.n)}</h3><p class="q">${esc(p.q)}</p><p class="hook" style="font-size:13px">${esc(p.hook)}</p>
+  h += `<div class="pillars" id="c-pillars">${PILLARS.map(p => `<div class="pillar"><h3>${esc(p.n)}</h3><p class="q">${esc(p.q)}</p><p class="hook" style="font-size:13px">${esc(p.hook)}</p>
     <h4>#designprinciples</h4><ol>${p.p.map(x => `<li>${esc(x)}</li>`).join("")}</ol>${p.older ? `<p class="small">${esc(p.older)}</p>` : ""}
     <h4>#bestpractice-areas</h4><div class="kws">${p.areas.map(a => `<span class="kw">${esc(a)}</span>`).join("")}</div>
     <h4>#bestpractices (what to do)</h4><ul>${p.do.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
     <h4>Key services</h4><div class="chips">${p.svc.split(" ").map(chip).join("")}</div></div>`).join("")}</div>`;
-  h += CONCEPTS.map(c => `<div class="box"><h2>${esc(c.t)}</h2>${c.lead ? `<p class="lead">${esc(c.lead)}</p>` : ""}<dl class="rows">${c.rows.map(([a,b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join("")}</dl></div>`).join("");
+  h += CONCEPTS.map(c => `<div class="box" id="c-${slug(c.t)}"><h2>${esc(c.t)}</h2>${c.lead ? `<p class="lead">${esc(c.lead)}</p>` : ""}<dl class="rows">${c.rows.map(([a,b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join("")}</dl></div>`).join("");
   h += `<p class="small">Sources: <a href="https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html">AWS Well-Architected Framework</a> · <a href="https://docs.aws.amazon.com/aws-certification/latest/userguide/clf-02-in-scope-services.html">CLF-C02 in-scope services</a> · <a href="https://docs.aws.amazon.com/awssupport/latest/user/aws-support-plans.html">AWS Support plans</a> · <a href="https://aws.amazon.com/free/terms">AWS Free Tier terms</a>. Checked November 2026.</p>`;
   v.innerHTML = h; bindChips(v);
 }
@@ -702,7 +704,8 @@ $("#rand").addEventListener("click", () => { const list = SV.filter(s => cat ===
 window.addEventListener("hashchange", () => { const id = location.hash.slice(1); if (BY[id] && id !== sel) select(id, false); });
 
 renderCats(); renderConcepts(); renderTraps();
-{ const h = location.hash.slice(1); if (h === "concepts" || h === "traps") showView(h); select(BY[h] ? h : "s3", false); }
+{ const h = location.hash.slice(1); if (h === "concepts" || h === "traps") showView(h); select(BY[h] ? h : "s3", false); goConcept(h); }
+window.addEventListener("hashchange", () => goConcept(location.hash.slice(1)));
 </script>
 <!-- ===== Study-kit add-on: reviewed tracker, Quiz me, mobile back-to-list ===== -->
 <style id="kitFgCss">
