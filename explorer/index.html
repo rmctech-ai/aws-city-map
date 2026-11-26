@@ -163,7 +163,7 @@ footer a{color:inherit}
 </style>
 </head>
 <body>
-<!-- ===== Study-kit navigation (City Map, Atlas, Request Explorer, Field Guide) ===== -->
+<!-- ===== Study-kit navigation (City Map, Atlas, Request Explorer, Field Guide, Visual Reviewer) ===== -->
 <script>(function(){var t='dark';try{t=localStorage.getItem('rmc-theme')||'dark'}catch(e){}document.documentElement.dataset.theme=t;})();</script>
 <style id="kitNavCss">
 .kitnav{--kn-bg:var(--panel,var(--card,#121a27));--kn-ink:var(--ink,var(--fg,#e6ebf2));--kn-line:var(--line,#243043);--kn-acc:var(--accent,#f39a3c);--kn-mut:var(--muted,#93a1b5);
@@ -183,12 +183,13 @@ footer a{color:inherit}
   <a href="/aws-city-map/atlas/" data-k="atlas">🏛️ Architecture Atlas</a>
   <a href="/aws-city-map/explorer/" data-k="explorer">🛰️ Request Explorer</a>
   <a href="/aws-city-map/field-guide/" data-k="field-guide">📘 Field Guide</a>
+  <a href="/aws-city-map/reviewer/" data-k="reviewer">🧩 Visual Reviewer</a>
   <span class="sp"></span><span id="stAnchor"></span>
   <button id="themeBtn" title="Switch light / dark (applies to all your study pages)">◐ Theme</button>
 </nav>
 <script>
 (function () {
-  var p = location.pathname, here = /field-guide/.test(p) ? 'field-guide' : /explorer/.test(p) ? 'explorer' : /atlas/.test(p) ? 'atlas' : 'map';
+  var p = location.pathname, here = /reviewer/.test(p) ? 'reviewer' : /field-guide/.test(p) ? 'field-guide' : /explorer/.test(p) ? 'explorer' : /atlas/.test(p) ? 'atlas' : 'map';
   document.querySelectorAll('.kitnav [data-k]').forEach(function (a) { if (a.dataset.k === here) { a.classList.add('on'); a.setAttribute('aria-current', 'page'); } });
   document.getElementById('themeBtn').onclick = function () {
     var r = document.documentElement, t = r.dataset.theme === 'dark' ? 'light' : 'dark'; r.dataset.theme = t;
